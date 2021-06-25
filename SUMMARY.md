@@ -1,7 +1,6 @@
 # Table of contents
 
-* [Main Page](README.md)
-* [parallel](parallel.md)
+* [Center](README.md)
 
 ## python
 
@@ -12,8 +11,14 @@
 
 * [STL](c++/stl.md)
 * [C++ standard](c++/standard.md)
+* [Parallel](c++/c++-parallel.md)
 
 ## Flask
 
 * [Flask-basic](flask/flask-basic.md)
+
+## shell
+
+* [Windows](shell/shell-windows.md)
+* [Bash](shell/shell-bash.md)
 

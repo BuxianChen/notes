@@ -1,6 +1,4 @@
-# parallel
-
-\[toc\]
+# Parallel
 
 参考书: 并行程序设计导论
 
