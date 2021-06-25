@@ -1,8 +1,6 @@
----
-description: 主页
----
-
 # Center
+
+git仓库地址: [https://github.com/BuxianChen/notes](https://github.com/BuxianChen/notes)
 
 ## 目录
 
