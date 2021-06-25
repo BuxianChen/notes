@@ -2,7 +2,6 @@
 
 * [Main Page](README.md)
 * [parallel](parallel.md)
-* [Pytorch](pytorch.md)
 
 ## python
 
@@ -13,4 +12,8 @@
 
 * [STL](c++/stl.md)
 * [C++ standard](c++/standard.md)
+
+## Flask
+
+* [Flask-basic](flask/flask-basic.md)
 
