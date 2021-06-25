@@ -1,5 +1,6 @@
 # Table of contents
 
 * [Main Page](README.md)
-* [index](untitled.md)
+* [parallel](parallel.md)
+* [Pytorch](pytorch.md)
 
