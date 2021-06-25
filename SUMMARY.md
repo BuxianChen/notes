@@ -10,7 +10,9 @@
 ## C++
 
 * [STL](c++/stl.md)
-* [C++ standard](c++/standard.md)
+* [C++ standard](c++/standard/README.md)
+  * [C++11](c++/standard/c++11.md)
+  * [C++14](c++/standard/c++14.md)
 * [Parallel](c++/c++-parallel.md)
 
 ## Tools
