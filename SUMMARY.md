@@ -4,21 +4,21 @@
 
 ## python
 
-* [draft](python/draft.md)
+* [python-draft](python/python-draft.md)
 
 ## Tools
 
-* [Git](tools/git.md)
 * [Pytorch](tools/pytorch.md)
+* [Git](tools/git.md)
 
 ## learn
 
+* [C++primerplus\(5ed\)](learn/c++primerplus-5ed.md)
+* [CSAPP](learn/csapp.md)
 * [并行设计导论](learn/c++-parallel.md)
 * [计算机组成原理-台湾科技大学CS250](learn/cs250.md)
 * [CS224W-stanford](learn/cs224w.md)
-* [CSAPP](learn/csapp.md)
 * [C++primer\(6ed\)](learn/c++primer.md)
-* [C++primerplus\(5ed\)](learn/c++primerplus-5ed.md)
 
 ## Java
 
@@ -26,7 +26,7 @@
 
 ## C++
 
-* [draft](c++/draft.md)
+* [cpp\_draft](c++/cpp_draft.md)
 
 ## Notes
 
