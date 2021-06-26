@@ -17,5 +17,9 @@ import numpy as np
 np.array([1., 2.])
 ```
 
+图片
+
+![&#x5F15;&#x7528;&#x81EA;coursera: algorithms4 homework 0 image](.gitbook/assets/logo.png)
+
 
 
