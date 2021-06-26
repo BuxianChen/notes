@@ -1,4 +1,4 @@
-# C++primer\(6ed\)
+# C++primer\(5ed\)
 
 基于C++11标准
 
