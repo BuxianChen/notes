@@ -1,5 +1,123 @@
 # cpp\_draft
 
+### C/C++程序的编译\(待补充与修改\)
+
+[参考博客](https://www.cnblogs.com/alexdeblog/p/3240343.html)
+
+[GCC编译器30分钟入门教程 \(biancheng.net\)](http://c.biancheng.net/gcc/)
+
+C或C++文件编译的过程为:
+
+* 编译预处理\(注意只编译`.c`或`.cpp`文件, `.h`文件只用于预处理时的复制粘贴\), 得到object文件\(linux中是`.o`文件\), 这个过程可以有没有定义的部分\(但要有声明\).
+* 链接\(生成可执行文件或库文件, 前者需要`main`函数, 后者不需要\), 分为动态链接与静态链接, windows中的动态链接库文件为`.dll`, linux中为`.so`，它们可以被其他程序在运行时被加载进来.
+
+下面以`gcc`来介绍
+
+```cpp
+#include<iostream>
+int Double(int x){
+    return x * 2;
+}
+
+int main(){
+    std::cout << "succeed" << std::endl;
+    std::cout << Double(1) << std::endl;
+    return 0;
+}
+```
+
+默认情况下生成`a.out`文件\(可执行文件\), 可使用`-o`选项指定生成的文件名
+
+```text
+g++ add.cpp
+./a.out
+g++ add.app -o add.out
+./add.out
+```
+
+使用`-c`选项对编译过程进行控制
+
+```c
+// foo.h
+#ifndef __FOO_H__
+#define __FOO_H__
+void print_msg();
+#endif
+// foo.c
+#include <stdio.h>
+#include "foo.h"
+void print_msg(){printf("Hello\n");}
+// test.c
+#include "foo.h"
+int main(){
+    print_msg();
+    return 0;
+}
+```
+
+记住`-E`选项表示进行到编译预处理为止\(输出为文本文件, linux上以`.i`作为后缀\), `-S`选项表示进行到汇编代码为止\(输出为文本文件, linux上以`.s`作为后缀名\), `-c`选项表示到进行到目标机器码为止
+
+```bash
+gcc -c foo.c -o foo.o  # 注意不需要加.h文件, 会被自动复制粘贴, 生成文件名结尾为.o, 不是可执行文件
+gcc -c test.c -o test.o
+# 可能不是静态链接(待确认): gcc test.o foo.o -o test.out  # 静态链接生成可执行文件
+# ar rcs libmystatic.a foo.o  # linux生成静态链接接库
+# gcc -static test.o libmystatic.a  #使用静态链接的方式生成可执行文件
+./test.out  # 运行代码
+# 以上也可直接写为:
+# gcc -c foo.c test.c -o test.out
+# 或者:
+# gcc -c foo.c -o foo.o
+# gcc test.c foo.o -o test.out
+
+rm *.o *.out
+```
+
+**动态链接**
+
+备注: `shared Object`是linux上的叫法, `dynamic linked library`是windows上的叫法, 两者在概念上说是一致的.
+
+shared表示指定编译器生成shared library, -fPIC选项中PIC是Position-Independent Code的缩写, 意思是生成的机器代码不依赖于某个绝对内存地址. 因为shared library可能被多个程序使用, 若是用绝对地址的话不同的程序使用过程中很可能会产生冲突, 所以使用-fPIC选项, 使得生成的代码适合作为shared library使用. gcc/g++有不少选项是-f开头的, 这些选项常常是一些小功能的开关
+
+```bash
+gcc -shared -fPIC foo.c -o libfoo.so  # 生成shared object
+gcc test.c libfoo.so -o test.out  # 动态链接生成可执行文件
+# 此时如果将libfoo.so移动位置, test.out将不能被运行
+./test.out
+```
+
+更通用的情况
+
+test.c与foo.c和foo.h分别放在两个不同的路径中，设test.c的路径为/u/dev/test/test.c，foo.c\(h\)的路径为/u/dev/foo/foo.c\(h\)。通常库和调用库的程序是不同时写的，放在不同的地方也是最通常的情况。首先到/u/dev/foo/里面去编译libfoo.so，所用的命令同上面的一样。然后回到/u/dev/test/，来编译test。首先第一个问题就是到哪里去找foo.h？这需要用到`-I`选项，它指定了include文件的路径。于是我们可以用这个命令
+
+```bash
+# cd /u/dev/foo
+# gcc -shared -fPIC foo.c -o libfoo.so
+cd /u/dev/test
+gcc -I/u/dev/foo/ test.c /u/dev/foo/libfoo.so -o test
+```
+
+往往库文件会集中放在一个路径中，要指定所有库文件的完整路径非常费事，gcc提供了一个`-L`选项，用来指定库文件的路径，结合`-l`（小写L）来使用，指定用哪一些库文件。用在这个例子上，完整的命令就变为
+
+```bash
+# -l选项后跟的是库文件的名字，注意gcc自动把文件名的lib前缀去掉了，所以-lfoo实际上用的是libfoo.so，如果文件名是foo.so则反而找不到。若/u/dev/foo中有多个库文件需要用，那么使用-lfoo1 -lfoo2就比用完整路径简单多了。据说在某些新版本的gcc中，-l选项要放到-o选项的后面，按照依赖关系来排，不过我还暂时没有遇到这个问题
+gcc -I/u/dev/foo -L/u/dev/foo -lfoo test.c -o test.out
+```
+
+接下来运行test文件时仍然不能正常运行，这是因为找不到foo库文件的缘故。一个（可能不太好但可以用的）解决的办法是使用LD\_LIBRARY\_PATH环境变量，这个环境变量指定了shared library的路径。在运行test之前，更新这个环境变量
+
+```bash
+export LD_LIBRARY_PATH=/u/dev/foo:$LD_LIBRARY_PATH
+```
+
+然后就可以正常执行
+
+```text
+./test.out
+```
+
+在通常的开发过程中，编译好的.so文件一般放在名为lib的文件夹中，.h文件一般放在include文件夹中，linux系统本身也如此。在使用这些库的时候，编译时用-I, -L和-l选项即可。将上述环境变量的更新放在.bashrc中，便可以省去每次运行前都指定库文件目录的麻烦了
+
 ## 0. 杂录
 
 #### 查漏补缺

@@ -9,6 +9,7 @@
 ## Tools
 
 * [Pytorch](tools/pytorch.md)
+* [TensorFlow](tools/tensorflow.md)
 * [Git](tools/git.md)
 
 ## learn

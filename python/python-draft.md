@@ -1,21 +1,10 @@
 # python-draft
 
-## python dict与OrderedDict
+## PART 1 环境配置
 
-关于python自带的字典数据结构, 实现上大致为\([参考stackoverflow回答](https://stackoverflow.com/questions/327311/how-are-pythons-built-in-dictionaries-implemented)\):
+## Python程序的运行方式\(待补充\)
 
-* 哈希表\(开放定址法: 每个位置只存一个元素, 若产生碰撞, 则试探下一个位置是否可以放下\)
-* python 3.6以后自带的字典也是有序的了\([dict vs OrderedDict](https://realpython.com/python-ordereddict/)\)
-
-说明: 这里的顺序是按照key被插入的顺序决定的, 举例
-
-## python 深复制/浅复制/引用赋值
-
-引用赋值: 两者完全一样, 相当于是别名: `x=[1, 2, 3], y=x` 浅赋值: 第一层为复制, 内部为引用: `list.copy(), y=x[:]` 深复制: 全部复制, `import copy; x=[1, 2]; copy.deepcopy(x)`
-
-[Python 直接赋值、浅拷贝和深度拷贝解析 \| 菜鸟教程 \(runoob.com\)](https://www.runoob.com/w3cnote/python-understanding-dict-copy-shallow-or-deep.html)
-
-## 待补充：Python 作为脚本运行
+[参考链接\(realpython.com\)](https://realpython.com/run-python-scripts/)
 
 命令行的启动方式主要有以下两种（**注意这种情况下当前目录下有xx文件夹**）
 
@@ -49,15 +38,15 @@ def wrapper():
 if __name__ == "__main__":
 ```
 
-## Pycharm小技巧
+## Ipython在终端的使用
 
-| 需求 | 方法 | 备注 |
-| :--- | :--- | :--- |
-| 设置python注释风格 | `File --> Settings --> Tools --> Python Integrated Tools` |  |
-|  |  |  |
-|  |  |  |
+使用`ipython`启动, 如果要在一个cell中输入多行, 则可以使用`ctrl+o`快捷键, 注意不要连续使用两个`enter`或者在最后一行输入`enter`, 否则会使得当前cell被运行
 
-## pip国内镜像
+[一个不那么好的教程](https://www.xspdf.com/resolution/50080150.html)
+
+## pip
+
+### 修改pip/conda镜像源
 
 [参考链接](https://www.cnblogs.com/wqpkita/p/7248525.html)
 
@@ -80,7 +69,7 @@ trusted-host=mirrors.aliyun.com
 
 windows下的文件为`C:\Users\54120\pip\pip.ini`，linux下的文件为`~/.pip/pip.conf`
 
-conda国内镜像
+conda国内镜像方式为:
 
 [参考链接](https://blog.csdn.net/qq_29007291/article/details/81103603?utm_medium=distribute.pc_relevant_t0.none-task-blog-BlogCommendFromMachineLearnPai2-1.nonecase&depth_1-utm_source=distribute.pc_relevant_t0.none-task-blog-BlogCommendFromMachineLearnPai2-1.nonecase%20)
 
@@ -119,7 +108,7 @@ channels:
 show_channel_urls: true
 ```
 
-## pip命令
+### pip命令
 
 ```text
 # 查看pip缓存目录
@@ -133,17 +122,7 @@ pip install -r requirements.txt
 
 ### 离线安装python包
 
-制作requirement.txt
-
-```text
-pip freeze > requirements.txt
-```
-
-**内网安装外部依赖包办法：**
-
-**例如:安装pytest包得时候会顺带安装pytest依赖包**
-
-离线下载安装包
+有网环境下载安装包
 
 ```text
 # 下载单个离线包
@@ -152,35 +131,13 @@ pip download -d <your_offline_packages_dir> <package_name>
 pip download -d <your_offline_packages_dir> -r requirements.txt
 ```
 
-离线安装
+将文件拷贝至无网环境安装
 
 ```text
 # 安装单个离线包
 pip install --no-index --find-links=<your_offline_packages_dir> <package_name>
 # 批量安装离线包
 pip install --no-index --find-links=<your_offline_packages_dir> -r requirements.txt
-```
-
-## Python常用包列表
-
-**conda**
-
-```text
-# 科学计算, 机器学习, 作图, 图像, 自然语言处理, 虚拟环境
-conda install numpy pandas scipy scikit-learn matplotlib seaborn scikit-image opencv-python Pillow nltk virtualenv virtualenvwrapper
-# jupyter
-conda install -c conda-forge jupyterlab
-# tensorflow请查看官网说明
-# torch请查看官网说明
-```
-
-**pip**
-
-```text
-# 科学计算, 机器学习, 作图, 图像, 自然语言处理, 虚拟环境, jupyterlab
-pip install numpy pandas scipy scikit-learn matplotlib seaborn scikit-image opencv-python Pillow nltk virtualenv virtualenvwrapper jupyterlab
-# tensorflow请查看官网说明
-# torch请查看官网说明
 ```
 
 ## jupyter使用
@@ -212,15 +169,611 @@ cd 目录名
 jupyter-notebook # jupyter-lab
 ```
 
-### 使用技巧
-
-由于个人喜欢使用VSCode, 因此也会介绍一些VSCode中支持notebook的特性, 但主要还是记录普通网页版的jupyter特性. 这里仅介绍jupyter-lab的一些快捷键
+### 命令模式快捷键
 
 当光标停留某个block里面的时候, 可以按下`Esc`键进入命令模式, 命令模式下的快捷键主要有:
 
 `A`: 在上方插入一个block, `B`: 在下方插入一个block
 
-## python pandas模块操作
+## PART 2 Advanced Python
+
+## Python编程规范
+
+[参考链接](https://blog.csdn.net/u014636245/article/details/89813732)（待整理）
+
+### 1. 命名规范
+
+| 用途 | 命名原则 | 例子 |
+| :--- | :--- | :--- |
+| 类 |  |  |
+| 函数/类的方法 |  |  |
+| 模块名 |  |  |
+| 变量名 |  |  |
+|  |  |  |
+|  |  |  |
+|  |  |  |
+
+### 2. 其他
+
+```python
+a = ()  # 空元组, 注意不能写为(,)
+a = (1,)  # 一个元素的元组, 注意不能写为(1), 否则`a`是一个整型数字1
+a = []  # 空列表, 注意不能写为[,]
+# 不要使用\换行, 可以用`()`, `[]`, `{}`形成隐式换行, 注意用这两种换行方式时第二行缩进多少是任意的, 
+
+# 列表与元组最后是否以逗号结尾要看具体情况
+a = ["a",
+    "b",]
+a = ["a", "b"]
+```
+
+### 3. 注解的规范
+
+[python PEP 484](https://www.python.org/dev/peps/pep-0484/)
+
+```python
+def f(a: int = 1, b: "string" = "") -> str:
+    a: int = 1
+    b: "str" = "a"
+    print(a, b)
+a: int = 1
+f.__annotations__
+```
+
+顺带介绍个骚东西\(上述链接中也有用到\)
+
+```python
+# Iterable等也在这里
+from typing import List
+print(isinstance([], List))  # True
+# 注意List不能实例化
+List([1])  # TypeError: Type List cannot be instantiated; use list() instead
+
+# collections模块内也有Iterable
+from collections.abc import Iterable
+isinstance([], Iterable)  # True
+```
+
+### 4. 避免pycharm中shadows name "xxx" from outer scope的警告
+
+以下是两个典型的情形\(注意: 这两段代码从语法及运行上说是完全正确的\)
+
+```python
+data = [4, 5, 6]
+def print_data(data):  # <-- Warning: "Shadows 'data' from outer scope
+    print data
+print_data(data)
+```
+
+```python
+# test1.py
+def foo(i: int):
+    print(i + 100)
+# test2.py
+from test1 import foo
+def bar(foo: int):  # <-- Warning: "Shadows 'foo' from outer scope
+    print(foo)
+bar(1)
+foo(10)
+```
+
+修改方式: 将形式参数重命名即可
+
+为何要做这种规范\([参考stackoverflow回答](https://stackoverflow.com/questions/20125172/how-bad-is-shadowing-names-defined-in-outer-scopes)\): 以第一段代码为例, 假设print\_data内部语句很多, 在开发过程中突然想将形式参数`data`重命名为`d`, 但可能会由于疏忽漏改了函数内部的某个`data`, 这样代码会出现不可预料的错误, 有时难以发现\(相对于这种情形: 假设一开始将形式参数命名为`d`, 现在希望将形式参数命名为`c`, 结果由于疏忽漏改了某个`d`, 这样程序会立刻报错\). 当然, 许多IDE对重命名做的很完善, 减少了上述错误发生的可能性.
+
+## Python高阶特性
+
+### 1. 装饰器
+
+内置装饰器
+
+```python
+class A:
+    b = 0
+    def __init__(self):
+        self.a = 1
+    @classmethod
+    def foo(cls, a):
+        print(a)
+    @classmethod
+    def bar(cls, a):
+        cls.b += a
+        print(cls.b)
+A.bar(3)
+A.bar(2)
+```
+
+自定义装饰器
+
+```python
+from functools import wraps
+def node_func(name):
+    def decorate(func):
+        @wraps(func)
+        def wrapper(*args, **kwargs):
+            if name == "A":  # in self.nodes_df.columns:
+                return 1  # dict(self.nodes_df[name])
+            else:
+                return func(*args, **kwargs)
+        return wrapper
+    return decorate
+@node_func("A")
+def foo1(a):
+    return "a"
+
+@node_func("B")
+def bar1(a):
+    return "a"
+```
+
+### 2. 魔术方法与相应的内置函数
+
+#### 2.1 `__str__`与`__repr__`
+
+分别对应于内置方法`str`与`repr`, 一般而言, 前者遵循可读性, 后者遵循准确性. 二者在默认情况\(不重写方法的情况下\)下都会输出类似于`<Classname object at 0x000001EA748D6DC8>`的信息.
+
+```python
+>>> class Test:
+...     def __init__(self):
+...         self.a = 1
+...     def __repr__(self): # 一般遵循准确性, 例如出现类似<class xxx>
+...         return "__repr__"
+...     def __str__(self): # 一般遵循可读性
+...         return "__str__"
+...
+>>> test = Test()
+>>> test
+__repr__
+>>> print(test) # print使用__str__
+__str__
+```
+
+```python
+>>> class Test1:
+...     def __str__(self):
+...             return "__str__"
+...
+>>> test1 = Test1()
+>>> print(test1)  # print使用__str__
+__str__
+>>> test1
+<__main__.Test1 object at 0x000001EA748D6DC8>
+```
+
+备注: 在jupyter notebook中, 对`pandas`的`DataFrame`使用`print`方法, 打印出的结果不美观, 但不用`print`却很美观, 原因未知.
+
+### 3. 继承与元类
+
+### 4. with语法\(含少量contextlib包的笔记\)
+
+主要是为了理解pytorch以及tensorflow中各种with语句
+
+主要[参考链接](https://www.geeksforgeeks.org/with-statement-in-python/)
+
+#### 4.1 读写文件的例子
+
+首先厘清读写文件的一些细节
+
+```python
+# test01.py
+file = open("record.txt", "w+")
+file.write("Hello")  # 由于file没有调用close方法, 所以"Hello"未被写入
+file = open("record.txt", "w+")
+file.write("World")
+file.close()  # 这一行是否有都是一样的, 大概是解释器自动调用了close
+# 这个脚本最终只会写入"World"
+```
+
+以下三段代码中
+
+* 代码1如果在write时报错, 那么文件无法被close, 有可能引发BUG
+* 代码2保证文件会被close, 另外可以通过增加except语句, 使得可以处理各类异常
+* 代码3则相对优雅, 并且与代码2功能一致, 即使write出错, close依旧会被调用
+
+```python
+# 1) without using with statement
+file = open('file_path', 'w')
+file.write('hello world !')
+file.close()
+
+# 2) without using with statement
+file = open('file_path', 'w')
+try:
+    file.write('hello world')
+finally:
+    file.close()
+
+# 3) using with statement
+with open('file_path', 'w') as file:
+    file.write('hello world !')
+```
+
+代码3是怎么做到的呢? 其实际上基本等效于
+
+```python
+foo = open("file_path", "w")
+file = foo.__enter__()
+try:
+    file.write("hello world !")
+finally:
+    # 注意: 此处需要传递3个参数, 但一般不会是None
+    foo.__exit__(None, None, None)
+```
+
+注意到一般情况下, 此处的foo与file是不一样的对象, 参见下节中关于`__enter__`方法的返回值. 但在文件读写的情形下, foo与file是相同的对象. 另外, `__exit__`函数有三个参数, 在自定义这个函数时也应该遵循三个参数的设计\(具体可以参考[这个问答](https://www.reddit.com/r/learnprogramming/comments/duvc2r/problem_with_classes_and_with_statement_in_python/)\).
+
+#### 4.2 with语法与怎么让自定义类支持with语法
+
+> This interface of \_\_enter\_\_\(\) and \_\_exit\_\_\(\) methods which provides the support of with statement in user defined objects is called `Context Manager`.
+
+总的来说, 需要让类支持with语法, 只需要定义魔术方法`__enter__`与`__exit__`即可, 一个完整的例子如下
+
+```python
+class A():
+    def __init__(self):
+        print("create A")
+    def do_before_enter(self):
+        print("do before exit")
+        self.a = 1
+    def __enter__(self):
+        self.do_before_enter()
+        print("__enter__")
+        return self.a  # 如果使用with A() as x形式, 此处的返回值由x接收
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.do_before_exit()
+        print("__exit__")
+    def do_before_exit(self):
+        print("do before exit")
+        del self.a
+
+x = A()
+print(hasattr(x, "a"))  # False
+with x as a:
+    print(hasattr(x, "a"))  # True
+    print(x is a)  # False
+    print(f"run with block, a: {a}")
+    # 取消下一行的注释, __exit__方法依然会被调用
+    # xxx(f"run with block, a: {a}")
+print(hasattr(x, "a"))  # False
+
+# 忽略异常处理, 基本等同于如下代码段
+# x = A()
+# a = x.__enter__()
+# print(f"run with block, a: {a}")
+# x.__exit__(None, None, None)
+```
+
+#### \*4.3 使用contextlib包中的函数来使得类支持with语法
+
+按照上一节的做法, 可以使用如下写法让`MassageWriter`支持with语法
+
+```python
+class MessageWriter(object):
+    def __init__(self, file_name):
+        self.file_name = file_name
+
+    def __enter__(self):
+        self.file = open(self.file_name, 'w')
+        return self.file
+
+    def __exit__(self, exc_type, exc_value, traceback):
+        self.file.close()
+
+with MessageWriter('my_file.txt') as xfile:
+    xfile.write('hello world')
+```
+
+也可以使用`contextlib`中的一些方法不进行显式定义`__enter__`与`__exit__`使得自定义类能支持with语法, 例子如下
+
+```python
+from contextlib import contextmanager
+
+class MessageWriter(object):
+    def __init__(self, filename):
+        self.file_name = filename
+
+    # 此处需要定义为生成器而不能是函数
+    @contextmanager
+    def open_file(self):
+        try:
+            file = open(self.file_name, 'w')
+            yield file
+        finally:
+            file.close()
+
+message_writer = MessageWriter('record.txt')
+with message_writer.open_file() as my_file:
+    my_file.write('Hello world')
+```
+
+执行顺序为: 首先`open_file`函数被调用, 并且将返回值`file`传递给`my_file`, 之后执行with语句内部的`write`方法, 之后再回到open\_file方法的`yeild file`后继续执行. 可以简单理解为:
+
+* open_file函数从第一个语句直到第一个yield语句为\`\_enter_\`
+* open_file函数从第一个yield语句到最后为\`\_exit_\`
+
+#### 4.4 "复合"with语句
+
+```python
+with open(in_path) as fr, open(out_path, "w") as fw:
+    pass
+```
+
+```python
+from contextlib import ExitStack
+import csv
+def rel2logic(in_path, logic_dir):
+    """将关系表转为逻辑客关系表形式
+    Example:
+        >>> rel2logic("./python_logical/tests/all_relations.tsv", "./python_logical/tests/gen")
+    """
+    with ExitStack() as stack:
+        fr = csv.DictReader(stack.enter_context(open(in_path, encoding="utf-8")), delimiter="\t")
+        fws = {}
+        for row in fr:
+            start_type, end_type = row["start_type"], row["end_type"]
+            start_id, end_id, relation = row["start_id"], row["end_id"], row["relation"]
+            key = start_type + "-" + end_type + ".tsv"
+            if key not in fws:
+                out_path = os.path.join(logic_dir, key)
+                fw = stack.enter_context(open(out_path, "w", encoding="utf-8"))
+                fws[key] = csv.writer(fw, delimiter="\t", lineterminator="\n")
+                fws[key].writerow([start_type, end_type, "relation"])
+            fws[key].writerow([start_id, end_id, relation])
+```
+
+### 5. for else语法
+
+```python
+# 获取[1, n]中的所有素数
+for n in range(2, 10):
+    for x in range(2, n):
+        if n % x == 0:
+            print( n, 'equals', x, '*', n/x)
+            break
+    else:
+        # loop fell through without finding a factor
+        print(n, 'is a prime number')
+# 来源于Cython文档里的例子
+```
+
+### 6. python基本数据类型
+
+int: 无限精度整数
+
+float: 通常利用`C`里的`double`来实现
+
+## python代码打包
+
+[参考realpython](https://realpython.com/pypi-publish-python-package/#different-ways-of-calling-a-package)
+
+
+
+### 安装依赖包
+
+**1. 获取requirements.txt**
+
+**方法一: 只获取必要的包\(推荐使用\)**
+
+```text
+pip install pipreqs
+cd project_path
+pipreqs ./ --encoding=utf8
+```
+
+**方法二: 获取当前环境下的所有包**
+
+此方案尽量避免使用, 或者在一个干净的虚拟环境下使用
+
+```text
+pip freeze > requirements.txt
+```
+
+**2. 利用requirements.txt安装依赖包**
+
+```text
+pip install -r requirements.txt
+```
+
+### 项目规范写法
+
+### 项目打包详解
+
+问题引出:
+
+* 想开发一个python包上传到PyPI
+* 在一个项目中想使用另一个项目的功能: [stackoverflow的一个问题](https://stackoverflow.com/questions/14509192/how-to-import-functions-from-other-projects-in-python)
+
+一些历史, 关于`distutils`, `distutils2`, `setuptools`等, [参考链接](https://zhuanlan.zhihu.com/p/276461821). 大体来说, `distutils`是最原始的打包工具, 是Python标准库的一部分. 而`setuptools`是一个第三方库, 在`setuptools`的变迁过程中, 曾出现过一个分支`distribute`, 现在已经合并回`setuptools`, 而`distutils2`希望充分利用前述三者:`distutils`, `setuptools`, `distribute`的优点成为标准库的一部分, 但没有成功, 并且已经不再维护了. 总之, `distutils`是标准库, `setuptools`是开发者常用的第三方库, 安装好后还额外带着一个叫`easy_install`的第三方管理工具, 而`easy_install`目前用的比较少, `pip`是其改进版. 顺带提一句: python源码安装一般是下载一个压缩包\(先解压, 再编译, 再安装\), 二进制安装一般是下载一个`.egg`或者`.whl`的二进制文件进行安装, 后者已经取代前者成为现今的通用标准. 下面仅介绍基于`setuptools`的使用, 其关键在于编写`setup.py`. 上传到PyPI的方法参考[python官方文档.](https://packaging.python.org/tutorials/packaging-projects/)
+
+**setup.py编写**
+
+首先尝鲜, 在介绍各个参数的用法\(完整列表参见[官方文档](https://setuptools.readthedocs.io/en/latest/references/keywords.html)\)
+
+```text
+funniest/
+    funniest/
+        __init__.py
+        text.py
+    setup.py
+```
+
+```python
+from setuptools import setup
+
+setup(name='funniest',  # 包的名称, 决定了用pip install xxx
+      version='0.1',  # 版本号
+      description='The funniest joke in the world',  # 项目描述
+      url='http://github.com/storborg/funniest',  # 项目链接(不重要)
+      author='Flying Circus',  # 作者名(不重要)
+      author_email='flyingcircus@example.com',  # 作者邮箱(不重要)
+      license='MIT',
+      packages=['funniest'], # 实际上是内层的funniest, 决定了import xxx
+      install_requires=[
+          'markdown',
+      ])  # 依赖项, 优于手动安装requires.txt里的包的方法
+```
+
+```text
+# 源码安装只需一行
+python setup.py install
+
+# 上传到PyPI也只需一行(实际上有三步: 注册包名, 打包, 上传)
+python setup.py register sdist upload
+# 上传后就可以直接安装了
+pip install funniest
+
+# 打包为whl格式(以后补充)
+```
+
+已经弃用的参数:
+
+| 已弃用的参数 | 替代品 | 含义 |
+| :--- | :--- | :--- |
+| `requires` | `install_requires` | 指定依赖包 |
+| `data_files` | `package_data` | 将 |
+
+将非代码文件加入到安装包中
+
+* 使用`MANIFEST.in`文件\(放在与`setup.py`同级目录下\), 并且设置`include_package_data=True`, 可以将非代码文件一起安装.
+* `package_data`参数
+
+## 不能实例化的类
+
+```python
+from typing import List
+List[int]()  # 注意报错信息
+```
+
+## python dict与OrderedDict
+
+关于python自带的字典数据结构, 实现上大致为\([参考stackoverflow回答](https://stackoverflow.com/questions/327311/how-are-pythons-built-in-dictionaries-implemented)\):
+
+* 哈希表\(开放定址法: 每个位置只存一个元素, 若产生碰撞, 则试探下一个位置是否可以放下\)
+* python 3.6以后自带的字典也是有序的了\([dict vs OrderedDict](https://realpython.com/python-ordereddict/)\)
+
+说明: 这里的顺序是按照key被插入的顺序决定的, 举例
+
+## 深复制/浅复制/引用赋值
+
+引用赋值: 两者完全一样, 相当于是别名: `x=[1, 2, 3], y=x` 浅赋值: 第一层为复制, 内部为引用: `list.copy(), y=x[:]` 深复制: 全部复制, `import copy; x=[1, 2]; copy.deepcopy(x)`
+
+[Python 直接赋值、浅拷贝和深度拷贝解析 \| 菜鸟教程 \(runoob.com\)](https://www.runoob.com/w3cnote/python-understanding-dict-copy-shallow-or-deep.html)
+
+## Immutable与Hashable的区别
+
+immutable是指创建后不能修改的对象, hashable是指定义了`__hash__`函数的对象, 默认情况下, 用户自定义的数据类型是hashable的. 所有的immutable对象都是hashable的, 但反过来不一定.
+
+另外还有特殊方法`__eq__`与`__cmp__`也与这个话题相关
+
+## PART 3 模块
+
+
+
+
+
+## python模块导入\(待整理\)
+
+Note 1: 模块只会被导入一次 \(这意味着: 如果对模块进行了修改, 不能利用再次import的方式使修改后的代码生效\).
+
+```python
+# test.py文件内容如下
+print("abc")
+```
+
+```python
+# 假设test.py文件处于当前目录下
+>>> import test
+abc
+# python的处理逻辑是按如下顺序去寻找test模块:
+# (1) 如果已存在于sys.modules(列表)中, 则不会再次导入
+# (2) built-in modules中是否有test, 如果有, 则将其导入, 并将test添加至sys.modules中.
+# (3) 依据sys.path(列表)中的目录查找. 注: 默认情况下, 列表的第0个元素为当前目录.
+>>> import test        #不会再次导入
+```
+
+Note 2: 包是一种特殊的模块. python 3.3之后, 存在两种类型的包: 常规包与命名空间. 简单来说, 包是一个目录, 常规包的目录下有着`__init__.py`文件, 而命名空间则没有.
+
+```text
+parent/
+    __init__.py
+    one/
+        __init__.py
+    two/
+        __init__.py
+    three/
+        __init__.py
+```
+
+导入 `parent.one` 将隐式地执行 `parent/__init__.py` \(首先执行\) 和 `parent/one/__init__.py`. 后续导入 `parent.two` 或 `parent.three` 则将分别执行 `parent/two/__init__.py` 和 `parent/three/__init__.py`.
+
+Note 3:
+
+包具有属性`__path__` \(列表\) 与`__name__` \(字符串\), 模块只有`__name__`属性.
+
+Note 4:
+
+```python
+# 绝对导入能使用两种语法:
+# import <>
+# from <> import <>
+import test        #注意import的内容必须是一个模块而不能是模块内定义的函数
+from test import f    #可以import包或者函数等
+
+# 相对导入只能使用:
+# from <> import <>
+
+# 假设test1.py与test.py在同一目录下, 在test1.py中
+from .test import f
+# 注意: 假设在test.py同级目录下打开python交互解释器, 上述import语句会报错. 这是由于__main__的特殊性造成的. 具体细节还待考究, 注意__main__的特殊性.
+>>> from .test import f
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named '__main__.test'; '__main__' is not a package
+```
+
+一个有趣的例子:
+
+```python
+# test文件内容
+print("abc")
+def f():
+    return 1
+```
+
+```python
+# 注意两点: (1)不能用这种语法引入函数; (2)执行顺序实际上是先执行test.py文件, 再导入test.f, 此时发现test不是一个包, 报错. 但注意, 虽然test.py文件被执行了, 但test模块并未被导入. 具体原因还有待研究.
+>>> import test.f
+abc
+Traceback (most recent call last):
+  File "<stdin>", line 1, in <module>
+ModuleNotFoundError: No module named 'test.f'; 'test' is not a package
+```
+
+Note 5: 两种包的区别
+
+## Python常用包列表
+
+**conda**
+
+```text
+# 科学计算, 机器学习, 作图, 图像, 自然语言处理, 虚拟环境
+conda install numpy pandas scipy scikit-learn matplotlib seaborn scikit-image opencv-python Pillow nltk virtualenv virtualenvwrapper
+# jupyter
+conda install -c conda-forge jupyterlab
+# tensorflow请查看官网说明
+# torch请查看官网说明
+```
+
+**pip**
+
+```text
+# 科学计算, 机器学习, 作图, 图像, 自然语言处理, 虚拟环境, jupyterlab
+pip install numpy pandas scipy scikit-learn matplotlib seaborn scikit-image opencv-python Pillow nltk virtualenv virtualenvwrapper jupyterlab
+# tensorflow请查看官网说明
+# torch请查看官网说明
+```
+
+## pandas
 
 ### pandas的apply系列
 
@@ -347,14 +900,9 @@ def mymerge(df1, df2, col1, col2):
     return df1_new, df2_new
 ```
 
-## 不能实例化的类
+## 
 
-```python
-from typing import List
-List[int]()  # 注意报错信息
-```
-
-## Python json模块
+## json
 
 ```python
 import json
@@ -376,7 +924,7 @@ json.loads(str)  # str->dict
 json.load(fr)  # read file->dict
 ```
 
-## Python subprocess模块
+## subprocess
 
 **1. 便捷用法: `subprocess.run`函数**
 
@@ -402,7 +950,7 @@ subprocess.run(cmd, shell=True)  #正常运行
 * windows下`cmd`是一个shell, 而平时所说的`dos`是一种操作系统的名字, 而`dos命令`是这个操作系统中的命令. `cmd`窗口下的能执行的命令与`dos`命令有许多重叠之处, 但不能混为一谈.
 * 所谓`shell`, 这是一个操作系统中的概念, 不同的操作系统有不同的`shell`, 常见的有: windows下的`cmd`\(命令行shell\), powershell\(命令行shell\), windows terminal\(命令行shell\), 文件资源管理器\(图形化shell\); linux下的bash\(命令行shell, 全称: Bourne Again shell\), shell是一种脚本语言.
 
-## Python multiprocessing 模块
+## multiprocessing
 
 ### Processing
 
@@ -790,7 +1338,7 @@ pmem(rss=8310784, vms=2481725440, pfaults=3207, pageins=18)
 Terminated: 15 <-- 自己把自己结束了
 ```
 
-## Python os、system、subprocess模块
+## os、sys、subprocess
 
 **片段1**
 
@@ -874,384 +1422,9 @@ print(pipe.read().decode("ISO-8859-1"))
 subprocess.call("dir >> 1.txt && dir >> 2.txt", shell=True)subprocess.call("dir >> 1.txt && dir >> 2.txt", shell=True)
 ```
 
-## Python 语言检测模块
+## 语言检测模块
 
 `langdetect`, `langid`等
-
-## Python编程规范
-
-[参考链接](https://blog.csdn.net/u014636245/article/details/89813732)（待整理）
-
-### 1. 命名规范
-
-| 用途 | 命名原则 | 例子 |
-| :--- | :--- | :--- |
-| 类 |  |  |
-| 函数/类的方法 |  |  |
-| 模块名 |  |  |
-| 变量名 |  |  |
-|  |  |  |
-|  |  |  |
-|  |  |  |
-
-### 2. 其他
-
-```python
-a = ()  # 空元组, 注意不能写为(,)
-a = (1,)  # 一个元素的元组, 注意不能写为(1), 否则`a`是一个整型数字1
-a = []  # 空列表, 注意不能写为[,]
-# 不要使用\换行, 可以用`()`, `[]`, `{}`形成隐式换行, 注意用这两种换行方式时第二行缩进多少是任意的, 
-
-# 列表与元组最后是否以逗号结尾要看具体情况
-a = ["a",
-    "b",]
-a = ["a", "b"]
-```
-
-### 3. 注解的规范
-
-[python PEP 484](https://www.python.org/dev/peps/pep-0484/)
-
-```python
-def f(a: int = 1, b: "string" = "") -> str:
-    a: int = 1
-    b: "str" = "a"
-    print(a, b)
-a: int = 1
-f.__annotations__
-```
-
-顺带介绍个骚东西\(上述链接中也有用到\)
-
-```python
-# Iterable等也在这里
-from typing import List
-print(isinstance([], List))  # True
-# 注意List不能实例化
-List([1])  # TypeError: Type List cannot be instantiated; use list() instead
-
-# collections模块内也有Iterable
-from collections.abc import Iterable
-isinstance([], Iterable)  # True
-```
-
-### 4. 避免pycharm中shadows name "xxx" from outer scope的警告
-
-以下是两个典型的情形\(注意: 这两段代码从语法及运行上说是完全正确的\)
-
-```python
-data = [4, 5, 6]
-def print_data(data):  # <-- Warning: "Shadows 'data' from outer scope
-    print data
-print_data(data)
-```
-
-```python
-# test1.py
-def foo(i: int):
-    print(i + 100)
-# test2.py
-from test1 import foo
-def bar(foo: int):  # <-- Warning: "Shadows 'foo' from outer scope
-    print(foo)
-bar(1)
-foo(10)
-```
-
-修改方式: 将形式参数重命名即可
-
-为何要做这种规范\([参考stackoverflow回答](https://stackoverflow.com/questions/20125172/how-bad-is-shadowing-names-defined-in-outer-scopes)\): 以第一段代码为例, 假设print\_data内部语句很多, 在开发过程中突然想将形式参数`data`重命名为`d`, 但可能会由于疏忽漏改了函数内部的某个`data`, 这样代码会出现不可预料的错误, 有时难以发现\(相对于这种情形: 假设一开始将形式参数命名为`d`, 现在希望将形式参数命名为`c`, 结果由于疏忽漏改了某个`d`, 这样程序会立刻报错\). 当然, 许多IDE对重命名做的很完善, 减少了上述错误发生的可能性.
-
-## Python语法
-
-### 1. 装饰器
-
-内置装饰器
-
-```python
-class A:
-    b = 0
-    def __init__(self):
-        self.a = 1
-    @classmethod
-    def foo(cls, a):
-        print(a)
-    @classmethod
-    def bar(cls, a):
-        cls.b += a
-        print(cls.b)
-A.bar(3)
-A.bar(2)
-```
-
-自定义装饰器
-
-```python
-from functools import wraps
-def node_func(name):
-    def decorate(func):
-        @wraps(func)
-        def wrapper(*args, **kwargs):
-            if name == "A":  # in self.nodes_df.columns:
-                return 1  # dict(self.nodes_df[name])
-            else:
-                return func(*args, **kwargs)
-        return wrapper
-    return decorate
-@node_func("A")
-def foo1(a):
-    return "a"
-
-@node_func("B")
-def bar1(a):
-    return "a"
-```
-
-### 2. 魔术方法与相应的内置函数
-
-#### 2.1 `__str__`与`__repr__`
-
-分别对应于内置方法`str`与`repr`, 一般而言, 前者遵循可读性, 后者遵循准确性. 二者在默认情况\(不重写方法的情况下\)下都会输出类似于`<Classname object at 0x000001EA748D6DC8>`的信息.
-
-```python
->>> class Test:
-...     def __init__(self):
-...         self.a = 1
-...     def __repr__(self): # 一般遵循准确性, 例如出现类似<class xxx>
-...         return "__repr__"
-...     def __str__(self): # 一般遵循可读性
-...         return "__str__"
-...
->>> test = Test()
->>> test
-__repr__
->>> print(test) # print使用__str__
-__str__
-```
-
-```python
->>> class Test1:
-...     def __str__(self):
-...             return "__str__"
-...
->>> test1 = Test1()
->>> print(test1)  # print使用__str__
-__str__
->>> test1
-<__main__.Test1 object at 0x000001EA748D6DC8>
-```
-
-备注: 在jupyter notebook中, 对`pandas`的`DataFrame`使用`print`方法, 打印出的结果不美观, 但不用`print`却很美观, 原因未知.
-
-### 3. 继承与元类
-
-### 4. with语法\(含少量contextlib包的笔记\)
-
-主要是为了理解pytorch以及tensorflow中各种with语句
-
-主要[参考链接](https://www.geeksforgeeks.org/with-statement-in-python/)
-
-#### 4.1 读写文件的例子
-
-首先厘清读写文件的一些细节
-
-```python
-# test01.py
-file = open("record.txt", "w+")
-file.write("Hello")  # 由于file没有调用close方法, 所以"Hello"未被写入
-file = open("record.txt", "w+")
-file.write("World")
-file.close()  # 这一行是否有都是一样的, 大概是解释器自动调用了close
-# 这个脚本最终只会写入"World"
-```
-
-以下三段代码中
-
-* 代码1如果在write时报错, 那么文件无法被close, 有可能引发BUG
-* 代码2保证文件会被close, 另外可以通过增加except语句, 使得可以处理各类异常
-* 代码3则相对优雅, 并且与代码2功能一致, 即使write出错, close依旧会被调用
-
-```python
-# 1) without using with statement
-file = open('file_path', 'w')
-file.write('hello world !')
-file.close()
-
-# 2) without using with statement
-file = open('file_path', 'w')
-try:
-    file.write('hello world')
-finally:
-    file.close()
-
-# 3) using with statement
-with open('file_path', 'w') as file:
-    file.write('hello world !')
-```
-
-代码3是怎么做到的呢? 其实际上基本等效于
-
-```python
-foo = open("file_path", "w")
-file = foo.__enter__()
-try:
-    file.write("hello world !")
-finally:
-    # 注意: 此处需要传递3个参数, 但一般不会是None
-    foo.__exit__(None, None, None)
-```
-
-注意到一般情况下, 此处的foo与file是不一样的对象, 参见下节中关于`__enter__`方法的返回值. 但在文件读写的情形下, foo与file是相同的对象. 另外, `__exit__`函数有三个参数, 在自定义这个函数时也应该遵循三个参数的设计\(具体可以参考[这个问答](https://www.reddit.com/r/learnprogramming/comments/duvc2r/problem_with_classes_and_with_statement_in_python/)\).
-
-#### 4.2 with语法与怎么让自定义类支持with语法
-
-> This interface of \_\_enter\_\_\(\) and \_\_exit\_\_\(\) methods which provides the support of with statement in user defined objects is called `Context Manager`.
-
-总的来说, 需要让类支持with语法, 只需要定义魔术方法`__enter__`与`__exit__`即可, 一个完整的例子如下
-
-```python
-class A():
-    def __init__(self):
-        print("create A")
-    def do_before_enter(self):
-        print("do before exit")
-        self.a = 1
-    def __enter__(self):
-        self.do_before_enter()
-        print("__enter__")
-        return self.a  # 如果使用with A() as x形式, 此处的返回值由x接收
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.do_before_exit()
-        print("__exit__")
-    def do_before_exit(self):
-        print("do before exit")
-        del self.a
-
-x = A()
-print(hasattr(x, "a"))  # False
-with x as a:
-    print(hasattr(x, "a"))  # True
-    print(x is a)  # False
-    print(f"run with block, a: {a}")
-    # 取消下一行的注释, __exit__方法依然会被调用
-    # xxx(f"run with block, a: {a}")
-print(hasattr(x, "a"))  # False
-
-# 忽略异常处理, 基本等同于如下代码段
-# x = A()
-# a = x.__enter__()
-# print(f"run with block, a: {a}")
-# x.__exit__(None, None, None)
-```
-
-#### \*4.3 使用contextlib包中的函数来使得类支持with语法
-
-按照上一节的做法, 可以使用如下写法让`MassageWriter`支持with语法
-
-```python
-class MessageWriter(object):
-    def __init__(self, file_name):
-        self.file_name = file_name
-
-    def __enter__(self):
-        self.file = open(self.file_name, 'w')
-        return self.file
-
-    def __exit__(self, exc_type, exc_value, traceback):
-        self.file.close()
-
-with MessageWriter('my_file.txt') as xfile:
-    xfile.write('hello world')
-```
-
-也可以使用`contextlib`中的一些方法不进行显式定义`__enter__`与`__exit__`使得自定义类能支持with语法, 例子如下
-
-```python
-from contextlib import contextmanager
-
-class MessageWriter(object):
-    def __init__(self, filename):
-        self.file_name = filename
-
-    # 此处需要定义为生成器而不能是函数
-    @contextmanager
-    def open_file(self):
-        try:
-            file = open(self.file_name, 'w')
-            yield file
-        finally:
-            file.close()
-
-message_writer = MessageWriter('record.txt')
-with message_writer.open_file() as my_file:
-    my_file.write('Hello world')
-```
-
-执行顺序为: 首先`open_file`函数被调用, 并且将返回值`file`传递给`my_file`, 之后执行with语句内部的`write`方法, 之后再回到open\_file方法的`yeild file`后继续执行. 可以简单理解为:
-
-* open_file函数从第一个语句直到第一个yield语句为\`\_enter_\`
-* open_file函数从第一个yield语句到最后为\`\_exit_\`
-
-#### 4.4 "复合"with语句
-
-```python
-with open(in_path) as fr, open(out_path, "w") as fw:
-    pass
-```
-
-```python
-from contextlib import ExitStack
-import csv
-def rel2logic(in_path, logic_dir):
-    """将关系表转为逻辑客关系表形式
-    Example:
-        >>> rel2logic("./python_logical/tests/all_relations.tsv", "./python_logical/tests/gen")
-    """
-    with ExitStack() as stack:
-        fr = csv.DictReader(stack.enter_context(open(in_path, encoding="utf-8")), delimiter="\t")
-        fws = {}
-        for row in fr:
-            start_type, end_type = row["start_type"], row["end_type"]
-            start_id, end_id, relation = row["start_id"], row["end_id"], row["relation"]
-            key = start_type + "-" + end_type + ".tsv"
-            if key not in fws:
-                out_path = os.path.join(logic_dir, key)
-                fw = stack.enter_context(open(out_path, "w", encoding="utf-8"))
-                fws[key] = csv.writer(fw, delimiter="\t", lineterminator="\n")
-                fws[key].writerow([start_type, end_type, "relation"])
-            fws[key].writerow([start_id, end_id, relation])
-```
-
-### 5. for else语法
-
-```python
-# 获取[1, n]中的所有素数
-for n in range(2, 10):
-    for x in range(2, n):
-        if n % x == 0:
-            print( n, 'equals', x, '*', n/x)
-            break
-    else:
-        # loop fell through without finding a factor
-        print(n, 'is a prime number')
-# 来源于Cython文档里的例子
-```
-
-### 6. python基本数据类型
-
-int: 无限精度整数
-
-float: 通常利用`C`里的`double`来实现
-
-## python最佳实践
-
-### 1. python脚本的运行方式
-
-[参考链接\(realpython.com\)](https://realpython.com/run-python-scripts/)
-
-### 2. 打包
-
-[https://realpython.com/pypi-publish-python-package/\#different-ways-of-calling-a-package](https://realpython.com/pypi-publish-python-package/#different-ways-of-calling-a-package)
 
 ## python炫技代码段
 
@@ -1301,97 +1474,13 @@ df[["E", "F"]] = df["A"].apply(lambda x: pd.Series((x, x)))
 x = dict(zip(key, value))
 ```
 
-## python模块导入\(待整理\)
+## 
 
-Note 1: 模块只会被导入一次 \(这意味着: 如果对模块进行了修改, 不能利用再次import的方式使修改后的代码生效\).
-
-```python
-# test.py文件内容如下
-print("abc")
-```
-
-```python
-# 假设test.py文件处于当前目录下
->>> import test
-abc
-# python的处理逻辑是按如下顺序去寻找test模块:
-# (1) 如果已存在于sys.modules(列表)中, 则不会再次导入
-# (2) built-in modules中是否有test, 如果有, 则将其导入, 并将test添加至sys.modules中.
-# (3) 依据sys.path(列表)中的目录查找. 注: 默认情况下, 列表的第0个元素为当前目录.
->>> import test        #不会再次导入
-```
-
-Note 2: 包是一种特殊的模块. python 3.3之后, 存在两种类型的包: 常规包与命名空间. 简单来说, 包是一个目录, 常规包的目录下有着`__init__.py`文件, 而命名空间则没有.
-
-```text
-parent/
-    __init__.py
-    one/
-        __init__.py
-    two/
-        __init__.py
-    three/
-        __init__.py
-```
-
-导入 `parent.one` 将隐式地执行 `parent/__init__.py` \(首先执行\) 和 `parent/one/__init__.py`. 后续导入 `parent.two` 或 `parent.three` 则将分别执行 `parent/two/__init__.py` 和 `parent/three/__init__.py`.
-
-Note 3:
-
-包具有属性`__path__` \(列表\) 与`__name__` \(字符串\), 模块只有`__name__`属性.
-
-Note 4:
-
-```python
-# 绝对导入能使用两种语法:
-# import <>
-# from <> import <>
-import test        #注意import的内容必须是一个模块而不能是模块内定义的函数
-from test import f    #可以import包或者函数等
-
-# 相对导入只能使用:
-# from <> import <>
-
-# 假设test1.py与test.py在同一目录下, 在test1.py中
-from .test import f
-# 注意: 假设在test.py同级目录下打开python交互解释器, 上述import语句会报错. 这是由于__main__的特殊性造成的. 具体细节还待考究, 注意__main__的特殊性.
->>> from .test import f
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-ModuleNotFoundError: No module named '__main__.test'; '__main__' is not a package
-```
-
-一个有趣的例子:
-
-```python
-# test文件内容
-print("abc")
-def f():
-    return 1
-```
-
-```python
-# 注意两点: (1)不能用这种语法引入函数; (2)执行顺序实际上是先执行test.py文件, 再导入test.f, 此时发现test不是一个包, 报错. 但注意, 虽然test.py文件被执行了, 但test模块并未被导入. 具体原因还有待研究.
->>> import test.f
-abc
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-ModuleNotFoundError: No module named 'test.f'; 'test' is not a package
-```
-
-Note 5: 两种包的区别
-
-## Ipython在终端的使用
-
-使用`ipython`启动, 如果要在一个cell中输入多行, 则可以使用`ctrl+o`快捷键, 注意不要连续使用两个`enter`或者在最后一行输入`enter`, 否则会使得当前cell被运行
-
-[一个不那么好的教程](https://www.xspdf.com/resolution/50080150.html)
-
-## Python匿名发送邮件
+## 发送邮件模块
 
 [未仔细校对过](https://blog.csdn.net/tianshishangxin1/article/details/109856352)
 
-## python解压文件
+## 压缩与解压模块
 
 ### zipfile模块
 
@@ -1409,146 +1498,11 @@ with zipfile.ZipFile(zipname) as file:
 # 打包为zip
 ```
 
-## tensorflow中卷积操作的padding参数
+## pyhanlp
 
-padding = "same"
+### 安装说明\(1.7.8版本\)
 
-$$
-out_h = ceil(\frac{in_h}{stride_h})\\
-out_w = ceil(\frac{in_w}{stride_w})\\
-\text{Note: index of h is 0, index of w is 1}
-$$
-
-padding = "valid"
-
-$$
-out_h=ceil(\frac{in_h-(filter_h-1)*dilation_h}{stride_h})\\
-out_w=ceil(\frac{in_w-(filter_w-1)*dilation_w}{stride_w})
-$$
-
-```python
-filters = tf.reshape(tf.constant([1., 1., 2.]), (3, 1, 1))
-x = tf.reshape(tf.constant([1., 1., 0., 2., 1.]), (1, 5, 1))
-tf.nn.convolution(x, filters, strides=2, padding="VALID").numpy().squeeze()
-# [2, 4]
-tf.nn.convolution(x, filters, strides=2, padding="SAME").numpy().squeeze()
-# [3, 5, 3]
-
-filters = tf.reshape(tf.constant([1., 1., 2.]), (3, 1, 1))
-x = tf.reshape(tf.constant([1., 1., 0., 2., 1., 2.]), (1, 6, 1))
-tf.nn.convolution(x, filters, strides=2, padding="VALID").numpy().squeeze()
-# [2, 4]
-tf.nn.convolution(x, filters, strides=2, padding="SAME").numpy().squeeze()
-# [2, 4, 3]
-```
-
-说明：
-
-padding = "valid"时，一定没有填补，并且将结尾多出的部分截断
-
-padding = "same"时，填补方式为对称填补，且结尾优先填补，填补总数为
-
-$$
-diation*(k-1)+1+(out-1)*stride-in
-$$
-
-附：
-
-$$
-floor(\frac{a-1}{b})+1=ceil(\frac{a}{b})
-$$
-
-转置卷积：
-
-padding = "same"
-
-padding = "valid"
-
-带output\_padding参数
-
-new\_rows = \(\(rows - 1\)  _strides\[0\] + kernel\_size\[0\] - 2_  padding\[0\] + output\_padding\[0\]\)
-
-new\_cols = \(\(cols - 1\)  _strides\[1\] + kernel\_size\[1\] - 2_  padding\[1\] + output\_padding\[1\]\)
-
-## tf1与tf2的迁移
-
-[https://blog.csdn.net/kyle1314608/article/details/100594884](https://blog.csdn.net/kyle1314608/article/details/100594884)
-
-## tensorflow中dataloader的一个小问题记录
-
-首先，tensorflow里面似乎没有pytorch里DataLoader=Dataset+Sampler的逻辑，tf关于数据处理的基类为：`tf.data.Dataset`。常见的使用方式如下：
-
-```python
-import tensorflow as tf
-tf_tensor = tf.random.normal((10, 4))
-dataset = tf.data.Dataset.from_tensor_slices(tf_tensor)  # staticmethod, 利用tensor构造
-# 利用`tf.data.Dataset`对象构造, 返回为`tf.data.Dataset`的继承类
-dataset = dataset.shuffle(5).batch(2)
-for epoch in range(2):
-    for item in dataset:
-        print(item.shape)  # 形状为(2, 4)
-```
-
-这里的细节在于上述的`dataset`是一个可迭代对象而非一个迭代器，所以每次都会重新打乱样本顺序。
-
-我要做的事情是每次随机丢弃前面若干份数据，再进行shuffle与batch，但希望使用上与上述完全一致，例如：
-
-```python
-tf_tensor = tf.random.normal((10, 4))
-dataset = MyDataset(tf_tensor, 2)  # 随机丢弃前面0个或1个或2个样本
-dataset = dataset.batch(2).shuffle(5)
-for epoch in range(2):
-    for item in dataset:  # 每次丢弃前面几个样本, 然后batch, 之后以batch为单位打乱顺序
-        print(item.shape)  # 形状为(2, 4)
-```
-
-```python
-class MyDataset(object):
-    def __init__(self, tensor, num):
-        self.data = tensor
-        self.num = num
-    def _to_tf_dataset(self):
-        begin = np.random.choice(self.num, 1)[0]
-        return tf.data.Dataset.from_tensor_slices(self.data[begin:, ...])
-    def batch(self, batch_size):
-        return self._to_df_dataset().batch(batch_size)
-    def shuffle(self, buffer_size):
-        return self._to_df_dataset().shuffle(buffer_size)
-    def __iter__(self):
-        return iter(self._to_tf_dataset())
-tf_tensor = tf.random.normal((10, 4))
-dataset = MyDataset(tf_tensor, 2)
-for epoch in range(2):
-    for item in dataset.batch(2).shuffle(5):  
-        print(item.shape)
-```
-
-```python
-class MyDataset():
-    def __init__(self, tensor, num):
-        self.data = tf.data.Dataset.from_tensor_slices(tensor)
-        self.num = num
-    def skip(self):
-        begin = np.random.choice(self.num, 1)[0]
-    def batch(self, batch_size):
-        return self.batch(batch_size)
-    def shuffle(self, buffer_size):
-        return self._to_df_dataset().shuffle(buffer_size)
-    def __iter__(self):
-        return iter(self._to_tf_dataset())
-```
-
-```python
-def get_dataset(data, preprocessing):
-    """
-        returns:
-            dataset (tf.data.Dataset): 归一化
-    """
-```
-
-## pyhanlp安装说明
-
-### step 1
+**step 1**
 
 首先安装JPype1==0.7.0\(版本号必须完全一致\)
 
@@ -1556,7 +1510,7 @@ def get_dataset(data, preprocessing):
 pip install JPype1-0.7.0-cp37-cp37m-win_amd64.whl
 ```
 
-### step 2
+**step 2**
 
 接下来安装pyhanlp\(直接去[网站](https://github.com/hankcs/pyhanlp)下载代码[pyhanlp-master.zip](https://github.com/hankcs/pyhanlp/archive/master.zip), 注意项目名为pyhanlp\)
 
@@ -1593,7 +1547,7 @@ static
 │-  __init__.py
 ```
 
-### step 3
+**step 3**
 
 修改`hanlp.properties`文件的内容
 
@@ -1601,7 +1555,7 @@ static
 root=C:/Users/54120/anaconda3/envs/hanlp_copy/Lib/site-packages/pyhanlp-0.1.66-py3.7.egg/pyhanlp/static
 ```
 
-### step 4
+**step 4**
 
 检查, 在命令行输入
 
@@ -1618,7 +1572,7 @@ config    : C:\Users\54120\anaconda3\envs\hanlp_copy\lib\site-packages\pyhanlp-0
 python -c "import pyhanlp"
 ```
 
-### 注意
+**注意**
 
 上述繁琐的过程使得环境迁移时除了拷贝envs还要修改配置文件.
 
@@ -1626,123 +1580,7 @@ python -c "import pyhanlp"
 
 ctypes的代码运行效率不如cython
 
-### 1.C/C++程序的编译\(待补充与修改\)
-
-[参考博客](https://www.cnblogs.com/alexdeblog/p/3240343.html)
-
-[GCC编译器30分钟入门教程 \(biancheng.net\)](http://c.biancheng.net/gcc/)
-
-C或C++文件编译的过程为:
-
-* 编译预处理\(注意只编译`.c`或`.cpp`文件, `.h`文件只用于预处理时的复制粘贴\), 得到object文件\(linux中是`.o`文件\), 这个过程可以有没有定义的部分\(但要有声明\).
-* 链接\(生成可执行文件或库文件, 前者需要`main`函数, 后者不需要\), 分为动态链接与静态链接, windows中的动态链接库文件为`.dll`, linux中为`.so`，它们可以被其他程序在运行时被加载进来.
-
-下面以`gcc`来介绍
-
-```cpp
-#include<iostream>
-int Double(int x){
-    return x * 2;
-}
-
-int main(){
-    std::cout << "succeed" << std::endl;
-    std::cout << Double(1) << std::endl;
-    return 0;
-}
-```
-
-默认情况下生成`a.out`文件\(可执行文件\), 可使用`-o`选项指定生成的文件名
-
-```text
-g++ add.cpp
-./a.out
-g++ add.app -o add.out
-./add.out
-```
-
-使用`-c`选项对编译过程进行控制
-
-```c
-// foo.h
-#ifndef __FOO_H__
-#define __FOO_H__
-void print_msg();
-#endif
-// foo.c
-#include <stdio.h>
-#include "foo.h"
-void print_msg(){printf("Hello\n");}
-// test.c
-#include "foo.h"
-int main(){
-    print_msg();
-    return 0;
-}
-```
-
-记住`-E`选项表示进行到编译预处理为止\(输出为文本文件, linux上以`.i`作为后缀\), `-S`选项表示进行到汇编代码为止\(输出为文本文件, linux上以`.s`作为后缀名\), `-c`选项表示到进行到目标机器码为止
-
-```bash
-gcc -c foo.c -o foo.o  # 注意不需要加.h文件, 会被自动复制粘贴, 生成文件名结尾为.o, 不是可执行文件
-gcc -c test.c -o test.o
-# 可能不是静态链接(待确认): gcc test.o foo.o -o test.out  # 静态链接生成可执行文件
-# ar rcs libmystatic.a foo.o  # linux生成静态链接接库
-# gcc -static test.o libmystatic.a  #使用静态链接的方式生成可执行文件
-./test.out  # 运行代码
-# 以上也可直接写为:
-# gcc -c foo.c test.c -o test.out
-# 或者:
-# gcc -c foo.c -o foo.o
-# gcc test.c foo.o -o test.out
-
-rm *.o *.out
-```
-
-**动态链接**
-
-备注: `shared Object`是linux上的叫法, `dynamic linked library`是windows上的叫法, 两者在概念上说是一致的.
-
-shared表示指定编译器生成shared library, -fPIC选项中PIC是Position-Independent Code的缩写, 意思是生成的机器代码不依赖于某个绝对内存地址. 因为shared library可能被多个程序使用, 若是用绝对地址的话不同的程序使用过程中很可能会产生冲突, 所以使用-fPIC选项, 使得生成的代码适合作为shared library使用. gcc/g++有不少选项是-f开头的, 这些选项常常是一些小功能的开关
-
-```bash
-gcc -shared -fPIC foo.c -o libfoo.so  # 生成shared object
-gcc test.c libfoo.so -o test.out  # 动态链接生成可执行文件
-# 此时如果将libfoo.so移动位置, test.out将不能被运行
-./test.out
-```
-
-更通用的情况
-
-test.c与foo.c和foo.h分别放在两个不同的路径中，设test.c的路径为/u/dev/test/test.c，foo.c\(h\)的路径为/u/dev/foo/foo.c\(h\)。通常库和调用库的程序是不同时写的，放在不同的地方也是最通常的情况。首先到/u/dev/foo/里面去编译libfoo.so，所用的命令同上面的一样。然后回到/u/dev/test/，来编译test。首先第一个问题就是到哪里去找foo.h？这需要用到`-I`选项，它指定了include文件的路径。于是我们可以用这个命令
-
-```bash
-# cd /u/dev/foo
-# gcc -shared -fPIC foo.c -o libfoo.so
-cd /u/dev/test
-gcc -I/u/dev/foo/ test.c /u/dev/foo/libfoo.so -o test
-```
-
-往往库文件会集中放在一个路径中，要指定所有库文件的完整路径非常费事，gcc提供了一个`-L`选项，用来指定库文件的路径，结合`-l`（小写L）来使用，指定用哪一些库文件。用在这个例子上，完整的命令就变为
-
-```bash
-# -l选项后跟的是库文件的名字，注意gcc自动把文件名的lib前缀去掉了，所以-lfoo实际上用的是libfoo.so，如果文件名是foo.so则反而找不到。若/u/dev/foo中有多个库文件需要用，那么使用-lfoo1 -lfoo2就比用完整路径简单多了。据说在某些新版本的gcc中，-l选项要放到-o选项的后面，按照依赖关系来排，不过我还暂时没有遇到这个问题
-gcc -I/u/dev/foo -L/u/dev/foo -lfoo test.c -o test.out
-```
-
-接下来运行test文件时仍然不能正常运行，这是因为找不到foo库文件的缘故。一个（可能不太好但可以用的）解决的办法是使用LD\_LIBRARY\_PATH环境变量，这个环境变量指定了shared library的路径。在运行test之前，更新这个环境变量
-
-```bash
-export LD_LIBRARY_PATH=/u/dev/foo:$LD_LIBRARY_PATH
-```
-
-然后就可以正常执行
-
-```text
-./test.out
-```
-
-在通常的开发过程中，编译好的.so文件一般放在名为lib的文件夹中，.h文件一般放在include文件夹中，linux系统本身也如此。在使用这些库的时候，编译时用-I, -L和-l选项即可。将上述环境变量的更新放在.bashrc中，便可以省去每次运行前都指定库文件目录的麻烦了
+### 1. C/C++程序的编译
 
 ### 2. 使用ctypes
 
@@ -1904,7 +1742,57 @@ An int 1234, a double 3.140000
 
 ### 4. numpy的C接口
 
-## spacy安装模型
+### 5. 关于ctypes的一个提问
+
+Should the argtypes always be specific via ctypes
+
+I want to know the mechanism of `ctypes`, I have written a simple function to do this test. The `C` source code is,
+
+```c
+// adder.c, compile it using `gcc -shared -fPIC clib.c -o clib.so`
+float float_add(float a, float b) {return a + b;}
+```
+
+the `Python` source code is,
+
+```python
+import ctypes
+from ctypes import c_float
+dll_file = "adder.so"
+clib = ctypes.CDLL(dll_file)
+clib.float_add.argtypes = [c_float, c_float]
+clib.float_add.restype = c_float
+print(clib.float_add(1., 2.))  # ok, result is 3.0
+```
+
+I guess that because of the differences of `Python` and `C`, so the data type should be convert correctly. Concretely, when I specific the `clib.float_add.argtypes`, the process of `clib.float_add(1., 2.)` is, firstly, convert `1.` to `c_float(1.)` and convert `2.` to `c_float(2.)`, which are "C compatible", and the doing computation in `C` side, then the result data of `C` side convert to `Python` data according to the `clib.float_add.restype`. Is it right?
+
+So, if I don't specific the `clib.float_add.argtypes` and always do `Python data -> C data` manually like that, is it always right? But should I always specific the `clib.float_add.restype`?
+
+```python
+# clib.float_add.argtypes = [c_float, c_float]
+clib.float_add.restype = c_float
+print(clib.float_add(c_float(1.), c_float(2.)))  # ok, result is 3.0
+```
+
+,,,
+
+Besides that, another thing confused me, the `restype`, I have written another `Python` test code
+
+```python
+import ctypes
+from ctypes import c_float
+dll_file = "clib.dll"
+clib = ctypes.CDLL(dll_file)
+clib.float_add.argtypes = [c_float, c_float]
+print(clib.float_add(1., 2.))  # returns
+```
+
+Here, I don't specific the `restype`, I know the default is `int`, when I don't specific that, I can't use `IEEE 754` float representation to explain the result. Is it implement dependent?
+
+## spacy
+
+### 下载模型
 
 解决类似如下命令因为网络原因失效的方法:
 
@@ -1922,98 +1810,7 @@ https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.0.
 pip install xxx.tar.gz
 ```
 
-## python 将代码打包
-
-### 安装依赖包
-
-**1. 获取requirements.txt**
-
-**方法一: 只获取必要的包\(推荐使用\)**
-
-```text
-pip install pipreqs
-cd project_path
-pipreqs ./ --encoding=utf8
-```
-
-**方法二: 获取当前环境下的所有包**
-
-此方案尽量避免使用, 或者在一个干净的虚拟环境下使用
-
-```text
-pip freeze > requirements.txt
-```
-
-**2. 利用requirements.txt安装依赖包**
-
-```text
-pip install -r requirements.txt
-```
-
-### 项目规范写法
-
-### 项目打包详解
-
-问题引出:
-
-* 想开发一个python包上传到PyPI
-* 在一个项目中想使用另一个项目的功能: [stackoverflow的一个问题](https://stackoverflow.com/questions/14509192/how-to-import-functions-from-other-projects-in-python)
-
-一些历史, 关于`distutils`, `distutils2`, `setuptools`等, [参考链接](https://zhuanlan.zhihu.com/p/276461821). 大体来说, `distutils`是最原始的打包工具, 是Python标准库的一部分. 而`setuptools`是一个第三方库, 在`setuptools`的变迁过程中, 曾出现过一个分支`distribute`, 现在已经合并回`setuptools`, 而`distutils2`希望充分利用前述三者:`distutils`, `setuptools`, `distribute`的优点成为标准库的一部分, 但没有成功, 并且已经不再维护了. 总之, `distutils`是标准库, `setuptools`是开发者常用的第三方库, 安装好后还额外带着一个叫`easy_install`的第三方管理工具, 而`easy_install`目前用的比较少, `pip`是其改进版. 顺带提一句: python源码安装一般是下载一个压缩包\(先解压, 再编译, 再安装\), 二进制安装一般是下载一个`.egg`或者`.whl`的二进制文件进行安装, 后者已经取代前者成为现今的通用标准. 下面仅介绍基于`setuptools`的使用, 其关键在于编写`setup.py`. 上传到PyPI的方法参考[python官方文档.](https://packaging.python.org/tutorials/packaging-projects/)
-
-**setup.py编写**
-
-首先尝鲜, 在介绍各个参数的用法\(完整列表参见[官方文档](https://setuptools.readthedocs.io/en/latest/references/keywords.html)\)
-
-```text
-funniest/
-    funniest/
-        __init__.py
-        text.py
-    setup.py
-```
-
-```python
-from setuptools import setup
-
-setup(name='funniest',  # 包的名称, 决定了用pip install xxx
-      version='0.1',  # 版本号
-      description='The funniest joke in the world',  # 项目描述
-      url='http://github.com/storborg/funniest',  # 项目链接(不重要)
-      author='Flying Circus',  # 作者名(不重要)
-      author_email='flyingcircus@example.com',  # 作者邮箱(不重要)
-      license='MIT',
-      packages=['funniest'], # 实际上是内层的funniest, 决定了import xxx
-      install_requires=[
-          'markdown',
-      ])  # 依赖项, 优于手动安装requires.txt里的包的方法
-```
-
-```text
-# 源码安装只需一行
-python setup.py install
-
-# 上传到PyPI也只需一行(实际上有三步: 注册包名, 打包, 上传)
-python setup.py register sdist upload
-# 上传后就可以直接安装了
-pip install funniest
-
-# 打包为whl格式(以后补充)
-```
-
-已经弃用的参数:
-
-| 已弃用的参数 | 替代品 | 含义 |
-| :--- | :--- | :--- |
-| `requires` | `install_requires` | 指定依赖包 |
-| `data_files` | `package_data` | 将 |
-
-将非代码文件加入到安装包中
-
-* 使用`MANIFEST.in`文件\(放在与`setup.py`同级目录下\), 并且设置`include_package_data=True`, 可以将非代码文件一起安装.
-* `package_data`参数
-
-## huggingface transformers包
+## huggingface transformers
 
 ### 基本使用
 
@@ -2053,7 +1850,7 @@ outputs = model.generate(inputs, max_length=40, num_beams=4, early_stopping=True
 print(tokenizer.decode(outputs[0]))
 ```
 
-## Python 读写excel
+## 读写excel\(xlsxwriter与pandas\)
 
 pandas与xlsxwriter均支持给输出的excel自定义格式.
 
@@ -2083,7 +1880,7 @@ worksheet.conditional_format('A1:A8', {'type': 'formula', 'criteria': '=MOD(ROW(
 writer.save()
 ```
 
-## Python re模块
+## re
 
 此部分微妙处比较多, 许多符号例如`?`有着多种含义, 需仔细校对
 
@@ -2198,7 +1995,7 @@ x = r"a\cc" + "\\"  # 表示a\cc\
 
 注意点: `*`不能匹配`/`, 所以经常会出现`a/*.pdf`这种写法
 
-## html转pdf的python包——pdfkit
+## html转pdf的\(pdfkit\)
 
 依赖于[wkhtmltopdf](https://wkhtmltopdf.org/downloads.html), 安装后\(windows上需添加至环境变量\)可以利用pdfkit包进行html到pdf的转换, 实际体验感觉对公式显示的支持不太好.
 
@@ -2208,13 +2005,7 @@ import pdfkit
 pdfkit.from_url('https://www.jianshu.com','out.pdf')
 ```
 
-## python Immutable与Hashable的区别
-
-immutable是指创建后不能修改的对象, hashable是指定义了`__hash__`函数的对象, 默认情况下, 用户自定义的数据类型是hashable的. 所有的immutable对象都是hashable的, 但反过来不一定.
-
-另外还有特殊方法`__eq__`与`__cmp__`也与这个话题相关
-
-## python black模块
+## black\(自动将代码规范化\)
 
 black模块可以自动将代码规范化\(基本按照PEP8规范\), 是一个常用工具
 
@@ -2222,52 +2013,4 @@ black模块可以自动将代码规范化\(基本按照PEP8规范\), 是一个�
 pip install black
 black dirty_code.py
 ```
-
-## 关于ctypes的一个提问
-
-Should the argtypes always be specific via ctypes
-
-I want to know the mechanism of `ctypes`, I have written a simple function to do this test. The `C` source code is,
-
-```c
-// adder.c, compile it using `gcc -shared -fPIC clib.c -o clib.so`
-float float_add(float a, float b) {return a + b;}
-```
-
-the `Python` source code is,
-
-```python
-import ctypes
-from ctypes import c_float
-dll_file = "adder.so"
-clib = ctypes.CDLL(dll_file)
-clib.float_add.argtypes = [c_float, c_float]
-clib.float_add.restype = c_float
-print(clib.float_add(1., 2.))  # ok, result is 3.0
-```
-
-I guess that because of the differences of `Python` and `C`, so the data type should be convert correctly. Concretely, when I specific the `clib.float_add.argtypes`, the process of `clib.float_add(1., 2.)` is, firstly, convert `1.` to `c_float(1.)` and convert `2.` to `c_float(2.)`, which are "C compatible", and the doing computation in `C` side, then the result data of `C` side convert to `Python` data according to the `clib.float_add.restype`. Is it right?
-
-So, if I don't specific the `clib.float_add.argtypes` and always do `Python data -> C data` manually like that, is it always right? But should I always specific the `clib.float_add.restype`?
-
-```python
-# clib.float_add.argtypes = [c_float, c_float]
-clib.float_add.restype = c_float
-print(clib.float_add(c_float(1.), c_float(2.)))  # ok, result is 3.0
-```
-
-,,,
-
-Besides that, another thing confused me, the `restype`, I have written another `Python` test code
-
-```python
-import ctypes
-from ctypes import c_float
-dll_file = "clib.dll"
-clib = ctypes.CDLL(dll_file)
-clib.float_add.argtypes = [c_float, c_float]
-print(clib.float_add(1., 2.))  # returns
-```
-
-Here, I don't specific the `restype`, I know the default is `int`, when I don't specific that, I can't use `IEEE 754` float representation to explain the result. Is it implement dependent?
 
