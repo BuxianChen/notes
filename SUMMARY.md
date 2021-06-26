@@ -12,6 +12,12 @@
 * [TensorFlow](tools/tensorflow.md)
 * [Git](tools/git.md)
 
+## Notes
+
+* [draft](notes/draft.md)
+* [GNN](notes/gnn.md)
+* [plan](notes/plan.md)
+
 ## learn
 
 * [C++primerplus\(5ed\)](learn/c++primerplus-5ed.md)
@@ -28,10 +34,4 @@
 ## C++
 
 * [cpp\_draft](c++/cpp_draft.md)
-
-## Notes
-
-* [draft](notes/draft.md)
-* [GNN](notes/gnn.md)
-* [plan](notes/plan.md)
 
