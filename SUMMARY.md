@@ -20,6 +20,7 @@
 
 ## learn
 
+* [CS课程中缺失的一课](learn/missing-semester.md)
 * [C++primerplus\(6ed\)](learn/c++primerplus-6ed.md)
 * [CSAPP](learn/csapp.md)
 * [并行设计导论](learn/c++-parallel.md)
