@@ -4,5 +4,4 @@
 
 ### New DataTypes
 
-C++ 11新增加了`long long`
-
+C++ 11新增加了`long long`直接用git仓库编辑
