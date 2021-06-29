@@ -2,9 +2,102 @@
 
 ## 第 1 课：shell 命令
 
-### 流
+注意：本节课讲的都是 bash 命令。
 
+### shell 命令的一般性介绍
 
+#### 机器上有哪些 shell 命令？
+
+当我们在输入命令时，机器会依据 `$PATH` 变量中存储的目录依次查找，直到找到对应的命令，之后执行命令。如果找不到命令，则会输出报错信息。
+
+```bash
+$ echo $PATH  # 打印出 $PATH 变量，注意到分隔符为冒号
+/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+$ which echo  # 使用的命令的具体路径
+/bin/echo
+$ /bin/echo $PATH  # 直接用命令的完整路径
+/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+```
+
+注意：当前目录一般不被包含在搜索路径中，因此需要使用类似于 `./custom_command args` 的方式运行当前路径下的命令，而不能使用 `custom_command args` 这种写法。
+
+#### echo 命令
+
+echo 命令的作用是向输出流输出东西
+
+```bash
+$ echo hello  # hello 也可以用双引号或单引号包起来，但结果都是一样的
+hello
+$ echo -e "h\nllo"  # -e 表示执行转义
+h
+llo
+$ echo "Path is $PATH"  # 使用双引号时 $PATH 会作为变量
+Path is /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+$ echo 'Path is $PATH'  # 使用单引号时 $PATH 只是普通的字符串
+Path is $PATH
+$ echo `ls`  # 执行命令
+file_1 file_2 dir_1 dir_2
+```
+
+#### 流
+
+**重定向**
+
+```bash
+$ echo "abc" > data.txt  # 清空 data.txt 内容，将输出流中的东西写入 data.txt 中
+$ echo "df" >> data.txt  # 追加至 data.txt
+```
+
+**管道**
+
+后一条命令所需的输入流为前一条命令执行后的输出流
+
+```bash
+$ cat data.txt | grep a
+ac
+```
+
+#### shell 命令的一般性说明
+
+一般而言，命令的形式为 `命令名 参数列表` 形式。某些命令还需要接收流里的数据，例如：直接执行 `grep pattern` 命令时，会要求继续输入，直至按下 `Ctrl+Z` 快捷键结束，对于这类命令，一般要使用管道，最常见的例子是：
+
+```bash
+ls | grep pattern  # 匹配符合 pattern 的文件名
+```
+
+在 bash 命令中，很多时候引号不是必须的。
+
+空格是很重要的分隔符，因此向命令传递带有空格的参数时，要用单引号或双引号将该参数包裹起来，或者使用 `\ `（反斜线空格）的形式进行转义，例如：
+
+```shell
+mkdir "my photo"
+cd my\ photo
+```
+
+再例如，在 bash 中定义变量时，等号前后不能有空格：
+
+```bash
+$ ABCD=1  # 正确
+$ ABCD = 1  # 错误，bash 会将 ABCD 看作是一个命令
+-bash: ABCD: command not found
+$ ABCD=$(ls)  # 使用命令的输出值为变量复制
+```
+
+寻求命令的帮助可以使用 `命令名 --help`，退出帮助文档的快捷键为 `q`。
+
+#### shell 基础命令
+
+```bash
+$ cd ~/data/images  # 路径切换，~ 代表当前用户的家目录，典型地，~ 将被扩展为：/home/username
+$ cd animal/dog  # bash 中以及 shell 脚本中，使用 # 来进行单行注释
+$ cd -  # 回到上一次切换的目录，即：~/data
+$ cd -  # 回到上一次切换的目录，即：~/data/images/animal/dog
+$ pwd  # 显示当前的绝对路径
+/home/username/data/images/animal/dog
+$ ls  # 列出当前目录下的文件或子目录名
+image_1.jpg
+image_2.jpg
+```
 
 ### 目录及文件的权限含义（`ls -l`）
 
@@ -34,7 +127,7 @@ drwxr-xr-x  4 root root 4096 Jun 10 14:08 downloads
 
 第七项为文件名
 
-### 杂录及补充
+### 以下为杂录及补充
 
 ### `ls data.txt 2>/dev/null 1>log.txt`
 
@@ -44,7 +137,7 @@ drwxr-xr-x  4 root root 4096 Jun 10 14:08 downloads
 
 **文件描述符**
 
-> 文件描述符是与文件输入、输出关联的整数。它们用来跟踪已打开的文件。最常见的文件描述符是stidin、stdout、和stderr。我们可以将某个文件描述符的内容重定向到另外一个文件描述符中。
+> 文件描述符是与文件输入、输出关联的整数。它们用来跟踪已打开的文件。最常见的文件描述符是stdin、stdout、和stderr。我们可以将某个文件描述符的内容重定向到另外一个文件描述符中。
 > *《linux shell脚本攻略》*
 
 具体来说，常见的文件描述符为 0、1、2 这三个，分别对应 stdin（标准输入）、stdout（标准输出）、stderr（标准错误）。在 shell 命令或脚本中常用的是 1 和 2。因此在上面的例子中，是将命令 `ls data.txt` 产生的标准输出重定向至 `log.txt` 中，将产生的标准错误信息重定向至 `/dev/null` 中。
@@ -53,7 +146,7 @@ drwxr-xr-x  4 root root 4096 Jun 10 14:08 downloads
 
 `/dev/null` 是 linux 中的一个特殊设备，作用是接受输入并丢弃。在 shell 命令中的作用一般是用来接受输出信息，避免在屏幕上显示，同时也不希望使用文件对输出进行接收。
 
-### `tee`
+### tee 命令
 
 ```bash
 $ tee a.txt b.txt  # 同时向 a.txt 和 b.txt 中写入相同的内容，输入这行命令后，需要继续输入要写入的内容，以 Ctrl+Z 结束。注意 tee 命令写入的东西同时也会打印至屏幕上。
@@ -67,11 +160,15 @@ abc  # 写入文件并同时将写入的信息输出至标准输出流
 $ echo "abc" | tee a.txt > b.txt  # 用重定向的方式同时写入两个文件，并且不显示在屏幕上
 ```
 
+### 杂录
+
+- 一般用户的命令提示符为 `$`，而 root 用户的命令提示符为 `#`。
+
 ## 第 2 课：shell 脚本
 
 
 
-## 第 3 课：VIM
+## 第 3 课：vim
 
 备注：<font color=red>按键严格区分大小写</font>
 
