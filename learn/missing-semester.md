@@ -41,11 +41,14 @@ file_1 file_2 dir_1 dir_2
 
 #### 流
 
+简单理解：文件属于流，标准输入流与标准输出流是特殊的流
+
 **重定向**
 
 ```bash
 $ echo "abc" > data.txt  # 清空 data.txt 内容，将输出流中的东西写入 data.txt 中
 $ echo "df" >> data.txt  # 追加至 data.txt
+$ cat < 1.txt  # 1.txt 的文件内容先移到输入流，输入流再作为 cat 命令的输入
 ```
 
 **管道**
@@ -59,10 +62,11 @@ ac
 
 #### shell 命令的一般性说明
 
-一般而言，命令的形式为 `命令名 参数列表` 形式。某些命令还需要接收流里的数据，例如：直接执行 `grep pattern` 命令时，会要求继续输入，直至按下 `Ctrl+Z` 快捷键结束，对于这类命令，一般要使用管道，最常见的例子是：
+一般而言，命令的形式为 `命令名 参数列表` 形式。某些命令还需要接收流或是文件里的数据，例如：直接执行 `grep pattern` 命令时，会要求继续输入，直至按下 `Ctrl+Z` 快捷键结束，对于这类命令，一般要使用管道，最常见的例子是：
 
 ```bash
 ls | grep pattern  # 匹配符合 pattern 的文件名
+grep pattern data.txt  # data.txt 中符合 pattern 的行
 ```
 
 在 bash 命令中，很多时候引号不是必须的。
@@ -99,7 +103,7 @@ image_1.jpg
 image_2.jpg
 ```
 
-### 目录及文件的权限含义（`ls -l`）
+### 目录及文件的权限含义
 
 推荐链接：[鸟哥私房菜](http://linux.vbird.org/linux_basic/0210filepermission.php#filepermission)
 
@@ -127,9 +131,13 @@ drwxr-xr-x  4 root root 4096 Jun 10 14:08 downloads
 
 第七项为文件名
 
-### 以下为杂录及补充
+### 命令例子
 
-### `ls data.txt 2>/dev/null 1>log.txt`
+#### 例 1：/dev/null、文件描述符
+
+```bash
+ls data.txt 2>/dev/null 1>log.txt
+```
 
 主要参考[知乎问答](https://www.zhihu.com/question/53295083/answer/135258024)
 
@@ -146,7 +154,61 @@ drwxr-xr-x  4 root root 4096 Jun 10 14:08 downloads
 
 `/dev/null` 是 linux 中的一个特殊设备，作用是接受输入并丢弃。在 shell 命令中的作用一般是用来接受输出信息，避免在屏幕上显示，同时也不希望使用文件对输出进行接收。
 
-### tee 命令
+#### 例 2：管道、curl、grep、cut 结合使用
+
+```bash
+$ curl --head --silent baidu.com | grep -i content-length | cut --delimiter=' ' -f2
+81
+```
+
+curl 命令用来请求 Web 服务器。其名字的含义即为客户端（client）的 URL 工具。具体用法可以参照[阮一峰博客](http://www.ruanyifeng.com/blog/2019/09/curl-reference.html)
+
+> 它的功能非常强大，命令行参数多达几十种。如果熟练的话，完全可以取代 Postman 这一类的图形界面工具。——阮一峰博客《curl 的用法指南》
+
+grep 的 `-i` 参数表示匹配时忽略大小写
+
+cut 命令用于切分字符串，有若干种用法：取出第 $$m$$ 个到第 $$n$$ 个字符；按分隔符取出第 $k$ 个字符串。此处 cut 命令之前的
+
+#### 例 3：source、export
+
+通常情况下，执行如下语句
+
+```
+./a.sh
+```
+
+实际发生的事情是：创建一个子进程，在子进程中运行 `a.sh`，然后回到当前 shell 中。注意子进程是用 fork 的方式产生的，因此子进程的环境变量与当前的 shell 是完全一致的。因此 `a.sh` 中设置的环境变量不会影响到当前的 shell。例子如下：
+
+```bash
+# a.sh的内容
+export FFFF=ffff
+echo $ABCD
+echo $FFFF
+```
+
+```bash
+$ export ABCD=abcd
+$ export -p | grep ABCD
+declare -x ABCD="abcd"
+$ ./a.sh
+abcd
+ffff
+$ echo $FFFF  # 没有输出
+```
+
+
+
+source 的作用是在当前 shell 中运行脚本内容， 使得脚本中设置的环境变量会影响到当前的 shell。例如：
+
+```bash
+source a.sh
+# 也等价于
+. a.sh
+```
+
+### 常见 shell 命令记录
+
+#### tee
 
 ```bash
 $ tee a.txt b.txt  # 同时向 a.txt 和 b.txt 中写入相同的内容，输入这行命令后，需要继续输入要写入的内容，以 Ctrl+Z 结束。注意 tee 命令写入的东西同时也会打印至屏幕上。
@@ -163,8 +225,23 @@ $ echo "abc" | tee a.txt > b.txt  # 用重定向的方式同时写入两个文�
 ### 杂录
 
 - 一般用户的命令提示符为 `$`，而 root 用户的命令提示符为 `#`。
+- `Ctrl+L` 快捷键用于清除屏幕
 
 ## 第 2 课：shell 脚本
+
+### 脚本例子
+
+#### 例 1：
+
+```bash
+file=3.txt
+if [[ ! -f $file ]];then  # 若不存在 file 时，取值为 true
+	touch $file
+	echo "new $file"
+else
+	echo "$file already exists"
+fi
+```
 
 
 
