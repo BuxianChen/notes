@@ -1,5 +1,7 @@
 # CS课程中缺失的一课
 
+课程主页：https://missing.csail.mit.edu/
+
 ## 第 1 课：shell 命令
 
 注意：本节课讲的都是 bash 命令。
@@ -60,7 +62,36 @@ $ cat data.txt | grep a
 ac
 ```
 
-#### shell 命令的一般性说明
+#### shell 命令的“返回”
+
+> Commands will often return output using `STDOUT`, errors through `STDERR`, and a Return Code to report errors in a more script-friendly manner. The return code or exit status is the way scripts/commands have to communicate how execution went. A value of 0 usually means everything went OK; anything different from 0 means an error occurred.
+> [Shell Tools and Scripting · the missing semester of your cs education (mit.edu)](https://missing.csail.mit.edu/2020/shell-tools/)
+
+shell 命令一般将输出（output）写入到标准输出流中，将错误信息（errors）写入到标准错误流中。另外，每条命令执行结束后会返回一个返回状态码（Return Code），返回状态码为 0 表示正常运行，非零表示存在错误。注意：状态码的作用是为了方便脚本与命令之间的通信，而输出与错误信息是为了方便用户。
+
+输出与错误信息可以用于重定向或者管道操作。
+
+状态码的用途举例：
+
+- 在布尔操作（例如：`&&` 和 `||`，注意它们都是短路求值的）被使用到，`false` 命令的返回状态码为 1，`true` 命令的返回状态码为 0。
+
+  ```bash
+  false || echo "Oops, fail"
+  true || echo "Will not be printed"
+  ```
+
+- 使用特殊变量 `$?` 获取上一条命令的返回状态码
+
+  ```
+  $ ls f.txt
+  ls: cannot access f.txt: No such file or directory
+  $ echo $?
+  2
+  ```
+
+#### shell 命令形式的一般性说明
+
+**命令的形式**
 
 一般而言，命令的形式为 `命令名 参数列表` 形式。某些命令还需要接收流或是文件里的数据，例如：直接执行 `grep pattern` 命令时，会要求继续输入，直至按下 `Ctrl+Z` 快捷键结束，对于这类命令，一般要使用管道，最常见的例子是：
 
@@ -69,7 +100,16 @@ ls | grep pattern  # 匹配符合 pattern 的文件名
 grep pattern data.txt  # data.txt 中符合 pattern 的行
 ```
 
-在 bash 命令中，很多时候引号不是必须的。
+**引号**
+
+在 bash 命令中，很多时候引号不是必须的。且单引号与双引号的效果是不一样的
+
+```bash
+echo "$PATH"  # $PATH 会被当作变量
+echo '$PATH'  # $PATH 会被当作普通的字符串
+```
+
+**空格**
 
 空格是很重要的分隔符，因此向命令传递带有空格的参数时，要用单引号或双引号将该参数包裹起来，或者使用 `\ `（反斜线空格）的形式进行转义，例如：
 
@@ -86,6 +126,10 @@ $ ABCD = 1  # 错误，bash 会将 ABCD 看作是一个命令
 -bash: ABCD: command not found
 $ ABCD=$(ls)  # 使用命令的输出值为变量复制
 ```
+
+备注：空格需要特别小心，很容易出错，需仔细检查。
+
+**寻求命令的帮助**
 
 寻求命令的帮助可以使用 `命令名 --help`，退出帮助文档的快捷键为 `q`。
 
@@ -131,6 +175,24 @@ drwxr-xr-x  4 root root 4096 Jun 10 14:08 downloads
 
 第七项为文件名
 
+### 环境变量
+
+变量可以分为 shell 变量与环境变量。环境变量是从父进程中继承过来的，如果当前进程产生了子进程，则子进程将会继承所有的环境变量。shell 变量只在当前进程中起作用，不会发生继承关系。
+
+列出当前 shell 的环境变量：
+
+```bash
+$ export -p
+```
+
+添加环境变量：
+
+```bash
+$ MY_ENV_VAR=xyz; export MY_ENV_VAR
+# 或者
+$ export MY_ENV_VAR=xyz
+```
+
 ### 命令例子
 
 #### 例 1：/dev/null、文件描述符
@@ -148,7 +210,13 @@ ls data.txt 2>/dev/null 1>log.txt
 > 文件描述符是与文件输入、输出关联的整数。它们用来跟踪已打开的文件。最常见的文件描述符是stdin、stdout、和stderr。我们可以将某个文件描述符的内容重定向到另外一个文件描述符中。
 > *《linux shell脚本攻略》*
 
-具体来说，常见的文件描述符为 0、1、2 这三个，分别对应 stdin（标准输入）、stdout（标准输出）、stderr（标准错误）。在 shell 命令或脚本中常用的是 1 和 2。因此在上面的例子中，是将命令 `ls data.txt` 产生的标准输出重定向至 `log.txt` 中，将产生的标准错误信息重定向至 `/dev/null` 中。
+具体来说，常见的文件描述符为 0、1、2 这三个，分别对应 stdin（标准输入）、stdout（标准输出）、stderr（标准错误）。事实上：
+
+- stdin 对应于 `/dev/stdin`
+- stdout 对应于 `/dev/stdout`
+- stderr 对应于 `/dev/stderr`
+
+在 shell 命令或脚本中常用的是 1 和 2。因此在上面的例子中，是将命令 `ls data.txt` 产生的标准输出重定向至 `log.txt` 中，将产生的标准错误信息重定向至 `/dev/null` 中。
 
 **/dev/null**
 
@@ -167,7 +235,7 @@ curl 命令用来请求 Web 服务器。其名字的含义即为客户端（clie
 
 grep 的 `-i` 参数表示匹配时忽略大小写
 
-cut 命令用于切分字符串，有若干种用法：取出第 $$m$$ 个到第 $$n$$ 个字符；按分隔符取出第 $k$ 个字符串。此处 cut 命令之前的
+cut 命令用于切分字符串，有若干种用法：取出第 $$m$$ 个到第 $$n$$ 个字符；按分隔符取出第 $$k$$ 个字符串。此处 cut 命令之前的
 
 #### 例 3：source、export
 
@@ -201,9 +269,9 @@ $ echo $FFFF  # 没有输出
 source 的作用是在当前 shell 中运行脚本内容， 使得脚本中设置的环境变量会影响到当前的 shell。例如：
 
 ```bash
-source a.sh
+$ source a.sh
 # 也等价于
-. a.sh
+$ . a.sh
 ```
 
 ### 常见 shell 命令记录
@@ -222,28 +290,270 @@ abc  # 写入文件并同时将写入的信息输出至标准输出流
 $ echo "abc" | tee a.txt > b.txt  # 用重定向的方式同时写入两个文件，并且不显示在屏幕上
 ```
 
+#### printf
+
+```bash
+$ printf "%-5s %-10s %-4.2f\n" 123 acb 1.23
+```
+
+printf 命令仿照 C 语言的 printf 函数，用于格式化输出，格式控制符 `%-5s` 表示左对齐（不加 `-` 则表示右对齐），**最少**使用 5 个字符长度，以字符串的形式输出。格式控制符 `%-4.2f` 表示最少使用 4 个字符长度，小数点后保留 2 位，以浮点数形式输出。
+
+#### !
+
+在 shell 中，! 被称为 *Event Designators*，用于方便地引用历史命令。
+
+- `!20` 表示获取 history 命令中的第 20 条指令；
+- `!-2` 表示获取 history 命令中的倒数第 2 条指令；
+- `!!` 是 `!-1 `的一个 alia；
+- `!echo` 表示最近地一条以 `echo` 开头的指令；
+- `!?data` 表示最近的一条包含 `data` 的指令
+
+#### echo、stty
+
+echo 命令可以使用 `-e` 参数使得输出字符串中的转义字符产生效果；另外，echo 命令还可以控制输出的字体颜色，详细情形不赘述。
+
+```bash
+$ echo -e "1\t2\t"
+1	2	
+$ echo -e "\e[1;31mred\e[0m" # 输出的字体颜色为红色
+```
+
+
+
+```bash
+#!/bin/bash
+# filename: password.sh
+echo -e "Enter password"
+stty -echo
+read password
+stty echo
+echo Password read
+echo "password is $password"
+```
+
+#### alias
+
+别名相当于自定义命令，可以使用 alias 命令实现，也可以定义函数实现。此处仅介绍 alias 命令。
+
+```
+$ alias myrm='rm -rf'
+$ myrm data/
+```
+
+alias 命令产生的别名只在当前 shell 有效
+
 ### 杂录
+
+#### 大杂烩
 
 - 一般用户的命令提示符为 `$`，而 root 用户的命令提示符为 `#`。
 - `Ctrl+L` 快捷键用于清除屏幕
 
-## 第 2 课：shell 脚本
+#### 特殊目录
 
-### 脚本例子
-
-#### 例 1：
+**/proc 目录**
 
 ```bash
-file=3.txt
-if [[ ! -f $file ]];then  # 若不存在 file 时，取值为 true
-	touch $file
-	echo "new $file"
-else
-	echo "$file already exists"
-fi
+$ cat /proc/23512/environ | tr "\0" "\n"
+```
+
+`/proc` 目录中按进程 id 存放着进程的相关信息，特别地，上述命令用于查看该进程运行时的环境变量。
+
+## 第 2 课：shell 脚本
+
+### 基础语法
+
+#### 怎么运行脚本
+
+假定 `script.sh` 的内容如下：
+
+```bash
+#!/bin/bash
+echo "hello"
+```
+
+**赋予执行权限**
+
+读、写、运行的权限分别为 4、2、1，`chmod` 命令的三个数字依次代表拥有者、用户组、其他人的权限，权限数字为三项权限之和。因此 `744` 代表拥有者具有读、写、运行权限，用户组具有读权限，其他人具有读权限。
+
+```
+chmod 744 script.sh
+```
+
+**运行**
+
+第一种运行方式为：`解释程序名+脚本名`，这种方式下当前用户对脚本不需要有可执行权限。
+
+```
+sh script.sh
+```
+
+第二种运行方式为：`脚本名`，这种方式下当前用户对脚本必须有可执行权限。
+
+注意使用这种运行方式时，解释程序由第一行的 `#!/bin/bash` 决定
+
+```
+./script.sh
+```
+
+因此，对于 python 脚本来说，也可以使用第二种方式运行。
+
+**调试**
+
+
+
+#### 变量
+
+注意点：
+
+- 定义变量或者给变量赋值时，等号的左右两端不能有空格
+
+  - 使用算术运算的形式为：`$[var1+var2]`
+
+  - 使用命令的执行结果为变量赋值
+
+    ```
+    a=$(CMD)
+    s=`CMD`
+    ```
+
+- 变量的值可以都是字符串
+
+- 引用变量的形式为：`$var` 或者 `${var}`，两种写法是一样的，为了避免出错，建议使用后者
+
+```bash
+a=1
+b=2
+c=$[a+b]  # c=3
+c=$a$b"34"  # c=1234，字符串拼接操作
+c=$(wc -l a.py | cut -d " " -f1)  # 计算 a.py 文件的行数并存入变量 c 中
+echo "$a+$b=${c}"
+unset c  # 删除变量 c
+```
+
+shell 脚本与其他脚本的特殊之处在于 shell 脚本中有许多特殊的预设变量
+
+- `$0`：执行脚本名（不算做脚本参数）
+- `$1` - `$9`：脚本的参数，第 1-9 个参数
+- `$@`：脚本的所有参数（不包括 `$0`）
+- `$#`：脚本的参数个数（不包括 `$0`）
+- `$?`：前一条命令的返回值（上一条命令如果正确执行了，返回值为 0，否则不为 0）
+- `$$`：当前脚本的进程号
+- `!!`：完整的上一条命令
+- `$_`：上一条命令的最后一个参数
+
+#### 数组变量
+
+数组的定义与使用的方式如下
+
+```bash
+$ arr1=(1 2 3 4 5 6)
+$ arr2[0]=a
+$ arr2[1]=b
+$ echo ${arr1[1]}
+$ echo ${arr2[1]}
+$ echo ${arr1[*]}  # 打印数组中所有元素
+```
+
+bash 4.0 以后，引入了关联数组，即：字典。
+
+```bash
+$ declare -A ass_arr  # 必须先声明为关联数组
+$ ass_arr=([a]=1 [b]=2)
+$ echo ${ass_arr[a]}
+```
+
+列出所有元素/索引
+
+```bash
+$ echo ${arr1[*]}  # 列出数组所有元素
+$ echo ${!arr1[*]}; echo ${!arr1[@]}  # 列出索引
+$ echo ${!ass_arr1[*]}; ${!ass_arr1[@]}  # 列出索引
 ```
 
 
+
+#### 条件语句
+
+**test 命令**
+
+test 的作用是检测某个条件是否成立，例如：
+
+```bash
+$ test -f a.txt  # 判断 a.txt 是否存在且为常规文件
+$ test $a -eq $b  # 判断变量 a 与变量 b 是否相等
+```
+
+需要注意的是，`test` 命令没有输出，当条件成立时，返回状态码为 0；条件不成立时，返回状态不是 0。
+
+test 命令还有一种“语法糖”的形式更为常见，<font color=red>注意左右中括号的空格是不能少的</font>：
+
+```
+$ [ -f a.txt ]
+$ [ $a -eq $b ]
+```
+
+**条件语句**
+
+```bash
+#!/bin/bash
+file=log.txt
+if [[ -f $file ]];then  # 若不存在 file 时，取值为 true
+	echo "$file already exists"
+else
+	touch $file
+	echo "new $file"
+fi
+num=10
+if (( $num < 9 )); then
+	echo '$num is less than 9'  # 注意这里用的是单引号
+else
+	echo '$num is not less than 9'
+fi
+```
+
+#### 循环语句
+
+```bash
+#!/bin/bash
+for param in $@; do
+  echo $param
+done
+```
+
+### 脚本例子
+
+#### 例子 1：定时计数
+
+```bash
+#!/bin/bash
+echo -n Count:
+tput sc  # 保存当前光标位置
+
+count=0
+while true; do
+  if [ $count -lt 15 ];then
+    let count++
+    sleep 1
+    tput rc  # 将光标返回到上一个存储位置
+    tput ed  # 清空当前光标到结尾的所有字符
+    echo -n $count;
+  else exit 0;
+  fi
+done
+```
+
+#### 例子 2：输入密码
+
+```bash
+#!/bin/bash
+echo -e "Enter password"
+stty -echo  # 抑制输出
+read password
+stty echo  # 显示输出
+echo Password read
+echo "password is $password"
+```
 
 ## 第 3 课：vim
 
@@ -340,3 +650,18 @@ abfd
 #### 可视化模式
 
 待补充
+
+## 加课：杂录
+
+```
+diff <(ls a) <(ls b)
+```
+
+上述代码采用了所谓的 *process substitution* 的模式（与之相对应的模式为 *command substitution*，即 `$(CMD)` 这种写法），其运行逻辑是：运行 `ls a`，将结果存入一个临时文件，并用临时文件名替换掉 `<(ls a)`，也就是相当于：
+
+```
+ls a > tmp1.txt
+ls b > tmp2.txt
+diff tmp1.txt tmp2.txt
+```
+
