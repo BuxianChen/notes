@@ -576,6 +576,59 @@ pip install -r requirements.txt
 
 ### 项目规范写法
 
+
+
+关于测试数据与测试代码文件：以下为个人理解，不一定为最佳实践，测试代码中读取数据时应该要获取完整的路径，可以考虑使用 `__file__` 结合相对路径以获取绝对路径。
+
+例子：
+
+项目
+
+```
+Foo/
+  foo/
+  	main.py
+  data/
+  	data.txt
+  setup.py
+```
+
+`foo/main.py`
+
+```python
+import os
+cur_dir = os.path.dirname(__file__)
+with open(os.path.join(cur_dir, "../data/data.txt")) as f:
+  print(f.readlines())
+```
+
+`data/data.txt`
+
+```
+hello
+```
+
+`setup.py`
+
+```
+from setuptools import setup, find_packages
+
+setup(
+    name="Foo",
+    version="1.0",
+    packages=find_packages(),
+    include_package_data=True,
+    package_data={"data": ["*"]}
+)
+```
+
+安装与使用
+
+```python
+# python setup.py install
+from foo import main
+```
+
 ### 项目打包详解
 
 问题引出:
