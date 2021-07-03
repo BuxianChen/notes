@@ -699,6 +699,114 @@ abfd
 
 待补充
 
+## 第 6 课：Git
+
+本节课的讲法是先大致讲清 Git 的数据模型（实现），再讲操作命令。个人认为很受用，强烈推荐。
+
+### Git 数据模型
+
+#### 例子
+
+```
+<root> (tree)
+|
++- foo (tree)
+|  |
+|  + bar.txt (blob, content = "hello world")
+|
++- baz.txt (blob, content = "git is wonderful")
+```
+
+#### blob、tree、commit、object、reference
+
+注：这些东西都可以在 `.git` 目录中探索。
+
+在 Git 中，文件被称作 blob。目录被称作 tree。commit 包含了父 commit，提交信息、作者、以及本次提交的 tree 等信息。object 则可以是前三者的任意一个。进一步，对每个 object 进行哈希，用哈希值代表每个 object。注意 object 是不可变的，而 reference 是一个映射（指针），字符串（例如 master）映射到 object 的哈希值。所以，一个仓库可以看作是一堆 object 与一堆 reference（即objects 与 references），Git 命令大多数是在操作 object 或者 reference，具体地说，是增加 object ；增加/删除/修改 reference（即改变其指向）。伪代码如下：
+
+```
+type blob = array<byte>;
+type tree = map<string, blob | tree>;
+type commit = struct {
+	parent: array<commit>
+	author: string
+	message: string
+	snapshot: tree
+}
+type object = blob | tree | commit
+objects = map<string, object> // objects[hash(object)] = object
+// 只提供用 hash 值查找 object 以及对 objects 增加的接口
+references = map<string, string> // 前一个 string 表示指针名，例如：master, 后一个 string 表示 object 的哈希值
+```
+
+#### stage（缓冲区）
+
+stage 与上述概念独立，是为了方便用户使用的一个机制，比如说开发了一个新特性，将其放入缓冲区，之后再增加了一些调试代码，那么提交时可以不提交调试代码。
+
+#### `.git` 目录
+
+依次执行
+
+```bash
+git config --global user.name "BuxianChen"
+git config --global user.email "541205605@qq.com"
+git init
+echo "abc" > a.txt
+git add .  # add_1
+git commit -m "a"  # commit_1
+mkdir b
+echo "def" > b.txt
+git add .  # add_2
+git commit -m "b"  # commit_2
+git branch dev  # branch_1
+```
+
+得到如下目录（省略了一些目录及文件）
+
+```shell
+.git
+│  HEAD  # 文件内容是 refs/heads/<分支名>
+│  index  # add_1, add_2
+│  ...
+├─logs
+│  ...
+├─objects
+│  ├─24
+│  │      c5735c3e8ce8fd18d312e9e58149a62236c01a  # blob (./b/b.txt), add_2
+│  ├─3e
+│  │      bc756fee46dfcb9410ab7f07980a8ff0e71d82  # commit, commit_2
+│  ├─43
+│  │      8e5d5f895ccf4910e1a463ff5f31e52c28df3c  # tree (./), commit_2
+│  ├─83
+│  │      edaf0d7f419929b1b0b84c8a7550f38daf97ac  # tree (./b), commit_2
+│  ├─8b
+│  │      3d54f8c5d0ebd682ea6e83386451e96a541496  # tree (./), commit_1
+│  │      aef1b4abc478178b004d62031cf7fe6db6f903  # blob (./a.txt), add_1
+│  ├─f7
+│  │      496edd08d97d10773a6a76eabd9d24d96785c2  # commit, commit_1
+└─refs
+    ├─heads
+    │      dev  # branch_1, 文件内容是某个 commit 的哈希值
+    │      master  # 文件内容是某个 commit 的哈希值
+    └─tags
+```
+
+注释项代表该条命令运行之后生成了该文件。除了 `objects` 目录以及 `index` 文件外，其余均为文本文件。为了获取 `objects` 目录及 `index` 文件的内容，可以使用以下两行命令：
+
+```bash
+git cat-file -p 24c5735c3e8ce8fd18d312e9e58149a62236c01a  # 查看 objects 目录下的文件内容
+git ls-files -s  # 查看当前缓冲区内容, 即 .git/index 中的内容
+```
+
+结论：
+
+- `git add` 命令只会生成 blob 对象
+- `git commit` 命令会同时生成 tree 和 commit 对象
+- `HEAD` 指向某个分支名，`git checkout <分支名>` 会同时修改 `HEAD` 及 `index` 的内容，并且切换分支时 `git status` 的结果必须为 `clean`，否则无法执行。
+
+### Git 命令与数据模型的对应关系
+
+
+
 ## 加课：杂录
 
 ```
