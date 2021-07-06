@@ -544,13 +544,113 @@ float: 通常利用`C`里的`double`来实现
 
 ## python代码打包
 
+### How to import package
+
 [参考realpython](https://realpython.com/pypi-publish-python-package/#different-ways-of-calling-a-package)
 
+### 项目组织形式
 
+参考 [stackoverflow](https://stackoverflow.com/questions/193161/what-is-the-best-project-structure-for-a-python-application)，推荐以类似这种形式组织，注意这些 `__init__.py` 文件是必须的，以确保
+
+```
+Project/
+|-- bin/
+|   |-- project
+|
+|-- project/
+|   |-- test/
+|   |   |-- __init__.py
+|   |   |-- test_main.py
+|   |   
+|   |-- __init__.py
+|   |-- main.py
+|
+|-- setup.py
+|-- README
+```
+
+安装方式为：
+
+```bash
+python setup.py install  # 安装在site-packages目录下
+pip install /path/to/Project  # 安装在site-packages目录下
+pip install -e /path/to/Project  # 安装在当前目录, 适用于开发阶段, 对项目的修改会直接生效, 做修改后无需重新安装包
+```
+
+<font color=red>特别说明</font>：关于测试数据与测试代码文件：以下为个人理解，不一定为最佳实践，测试代码中读取数据时应该要获取完整的路径，可以考虑使用 `__file__` 结合相对路径以获取绝对路径。关于这一点，有如下的一个源码分析案例：
+
+源码分析：参考 [scikit-image](https://github.com/scikit-image/scikit-image) 的源代码
+
+```python
+from skimage import data
+camera = data.camera()
+```
+
+其中，`data.camera` 函数的定义位于 `skimage/data/__init__.py`，它进一步调用了同文件下的 `_load("data/camera.png")`，而 `_load` 函数又调用了同文件下的 `_fetch("data/camera.png")`，而 `_fetch` 函数的关键代码如下：
+
+```python
+def _fetch(data_filename):
+    resolved_path = osp.join(data_dir, '..', data_filename)  # data_dir为该文件的全局变量, 使用了类似os.path.abspath, __file__ 的方式得到
+    return resolved_path
+```
+
+例子：
+
+项目
+
+```
+Foo/
+  foo/
+  	main.py
+  	__init__.py
+  	data/
+  	  data.txt
+  setup.py
+```
+
+`foo/main.py`
+
+```python
+import os
+cur_dir = os.path.dirname(__file__)
+with open(os.path.join(cur_dir, "./data/data.txt")) as f:
+  print(f.readlines())
+```
+
+`foo/__init__.py` 内容为空
+
+`data/data.txt`
+
+```
+hello
+```
+
+`setup.py`
+
+```python
+from setuptools import setup, find_packages
+
+setup(
+    name="Foo",
+    version="1.0",
+    author="yourname",
+    packages=find_packages(),
+    install_requires=[],
+    include_package_data=True,
+    package_data={"foo": ["data/*"]}
+)
+```
+
+安装与使用
+
+```python
+# python setup.py install path/to/Foo
+from foo import main
+```
 
 ### 安装依赖包
 
-**1. 获取requirements.txt**
+**第一步：获取requirements.txt**
 
 **方法一: 只获取必要的包\(推荐使用\)**
 
@@ -568,65 +668,10 @@ pipreqs ./ --encoding=utf8
 pip freeze > requirements.txt
 ```
 
-**2. 利用requirements.txt安装依赖包**
+**第二步：利用requirements.txt安装依赖包**
 
 ```text
 pip install -r requirements.txt
-```
-
-### 项目规范写法
-
-
-
-关于测试数据与测试代码文件：以下为个人理解，不一定为最佳实践，测试代码中读取数据时应该要获取完整的路径，可以考虑使用 `__file__` 结合相对路径以获取绝对路径。
-
-例子：
-
-项目
-
-```
-Foo/
-  foo/
-  	main.py
-  data/
-  	data.txt
-  setup.py
-```
-
-`foo/main.py`
-
-```python
-import os
-cur_dir = os.path.dirname(__file__)
-with open(os.path.join(cur_dir, "../data/data.txt")) as f:
-  print(f.readlines())
-```
-
-`data/data.txt`
-
-```
-hello
-```
-
-`setup.py`
-
-```
-from setuptools import setup, find_packages
-
-setup(
-    name="Foo",
-    version="1.0",
-    packages=find_packages(),
-    include_package_data=True,
-    package_data={"data": ["*"]}
-)
-```
-
-安装与使用
-
-```python
-# python setup.py install
-from foo import main
 ```
 
 ### 项目打包详解
@@ -683,12 +728,12 @@ pip install funniest
 | 已弃用的参数 | 替代品 | 含义 |
 | :--- | :--- | :--- |
 | `requires` | `install_requires` | 指定依赖包 |
-| `data_files` | `package_data` | 将 |
+| `data_files` | `package_data` | 指定哪些数据需要一并安装 |
 
-将非代码文件加入到安装包中
+将非代码文件加入到安装包中，注意：这些非代码文件需要放在某个包（即带有 `__init__.py` 的目录）下
 
 * 使用`MANIFEST.in`文件\(放在与`setup.py`同级目录下\), 并且设置`include_package_data=True`, 可以将非代码文件一起安装.
-* `package_data`参数
+* `package_data`参数的形式的例子为：`{"package_name":["*.txt", "*.png"]}`
 
 ## 不能实例化的类
 

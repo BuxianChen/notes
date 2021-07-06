@@ -270,8 +270,6 @@ ffff
 $ echo $FFFF  # 没有输出
 ```
 
-
-
 source 的作用是在当前 shell 中运行脚本内容， 使得脚本中设置的环境变量会影响到当前的 shell。例如：
 
 ```bash
@@ -279,6 +277,20 @@ $ source a.sh
 # 也等价于
 $ . a.sh
 ```
+
+#### 例 4：带颜色的终端输出
+
+```
+echo -e "\e[44;37;5mabcs\e[0m"
+```
+
+- `\e[<...>m` 表示 `<...>` 中的部分为设置输出格式（字体颜色，背景颜色，是否加粗，是否产生闪烁效果等），`\e` 也可以用 `\033` 代替。
+
+- `44;37;5`：`44` 表示设置背景色为蓝色，`37` 表示设置前景色（也就是字体颜色）为白色，`5` 表示字体产生闪烁效果 。
+
+  <font color=red>备注</font>：这些数字实际上被称为 SGR 参数（Select Graphic Rendition） ，这些数字的顺序是不重要的，完整的列表可以参见 [ANSI escape code - Wikipedia](https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters)，简短版的说明可以参见 [简书](https://www.jianshu.com/p/bba963125f1a)。
+
+- `\e[0m` 表示设定回终端的默认值
 
 ### 常见 shell 命令记录
 
@@ -382,7 +394,7 @@ echo "hello"
 
 读、写、运行的权限分别为 4、2、1，`chmod` 命令的三个数字依次代表拥有者、用户组、其他人的权限，权限数字为三项权限之和。因此 `744` 代表拥有者具有读、写、运行权限，用户组具有读权限，其他人具有读权限。
 
-```
+```bash
 chmod 744 script.sh
 ```
 
@@ -390,19 +402,23 @@ chmod 744 script.sh
 
 第一种运行方式为：`解释程序名+脚本名`，这种方式下当前用户对脚本不需要有可执行权限。
 
-```
+```bash
 sh script.sh
 ```
 
 第二种运行方式为：`脚本名`，这种方式下当前用户对脚本必须有可执行权限。
 
-注意使用这种运行方式时，解释程序由第一行的 `#!/bin/bash` 决定
+注意使用这种运行方式时，解释程序由第一行的 `#!/bin/bash` 决定，这一特殊行被称为 shebang 行。
 
-```
+```bash
 ./script.sh
 ```
 
-因此，对于 python 脚本来说，也可以使用第二种方式运行。
+因此，对于 python 脚本来说，也可以使用第二种方式运行。shebang 行的最佳实践写法是：
+
+```bash
+#!/bin/usr/env python
+```
 
 **调试**
 
@@ -454,6 +470,8 @@ c=$(wc -l a.py | cut -d " " -f1)  # 计算 a.py 文件的行数并存入变量 c
 echo "$a+$b=${c}"
 unset c  # 删除变量 c
 ```
+
+#### 特殊变量
 
 shell 脚本与其他脚本的特殊之处在于 shell 脚本中有许多特殊的预设变量
 
@@ -571,7 +589,7 @@ fname arg1 arg2;  # 带参数
 
 ### 脚本例子
 
-#### 例子 1：定时计数
+#### 例 1：定时计数
 
 ```bash
 #!/bin/bash
@@ -591,7 +609,7 @@ while true; do
 done
 ```
 
-#### 例子 2：输入密码
+#### 例 2：输入密码
 
 ```bash
 #!/bin/bash
@@ -699,6 +717,10 @@ abfd
 
 待补充
 
+### IDE
+
+
+
 ## 第 6 课：Git
 
 本节课的讲法是先大致讲清 Git 的数据模型（实现），再讲操作命令。个人认为很受用，强烈推荐。
@@ -738,9 +760,17 @@ objects = map<string, object> // objects[hash(object)] = object
 references = map<string, string> // 前一个 string 表示指针名，例如：master, 后一个 string 表示 object 的哈希值
 ```
 
-#### stage（缓冲区）
+#### workspace、stage、version
 
-stage 与上述概念独立，是为了方便用户使用的一个机制，比如说开发了一个新特性，将其放入缓冲区，之后再增加了一些调试代码，那么提交时可以不提交调试代码。
+以下参杂个人理解：这三者实际上都是一个版本/快照，而所谓的快照基本上等同于一个 tree/commit 对象。
+
+workspace 表示工作区，也就是 `.git` 目录以外的所有内容，workspace 可以看作是一个快照；
+
+stage 是为了方便用户使用的一个机制，比如说开发了一个新特性，将其放入缓冲区，之后再增加了一些调试代码，那么提交时可以不提交调试代码。stage 中的信息被保存在了 `.git/INDEX` 文件内，stage 可以看作是一个快照；
+
+version 则是历史提交的版本，因此实际上是若干个快照。
+
+许多命令例如：`git add`，`git diff`，`git restore` 实际上就是利用上述三者之一修改/比较另外一个或多个快照。
 
 #### `.git` 目录
 
@@ -803,9 +833,71 @@ git ls-files -s  # 查看当前缓冲区内容, 即 .git/index 中的内容
 - `git commit` 命令会同时生成 tree 和 commit 对象
 - `HEAD` 指向某个分支名，`git checkout <分支名>` 会同时修改 `HEAD` 及 `index` 的内容，并且切换分支时 `git status` 的结果必须为 `clean`，否则无法执行。
 
-### Git 命令与数据模型的对应关系
+### Git 命令
 
+- `git log --all --graph --decorate --oneline`
 
+  用于显示所有的快照
+
+- `git add <filename>`
+  - 如果 `filename` 在工作区存在，且与暂存区中的内容不一致或暂存区中没有该文件。具体执行过程为：首先为 `filename` 创建一个 object （blob）放在 `.git/objects` 下，之后将该 object 放入暂存区。
+  - 如果 `filename` 在工作区中不存在，且在暂存区中存在，那么效果等同于 `git rm <filename>`。具体执行过程为：将暂存区中相应的 object 删除
+
+- `git rebase` 原理：（大概有误！！）从合并的文件上看与 merge 效果一样，但提交历史有了改变。
+
+  假定分支情况为：
+
+  ```
+  c1 <- c2 <- c3 <- c4 <- c5  # f1分支
+           <- c6 <- c7  # dev分支
+  ```
+
+  使用 `git rebase` 的流程为：
+
+  ```bash
+  git checkout f1
+  git rebase dev
+  # 解决冲突
+  git add xxx
+  git rebase --continue
+  ```
+
+  效果是 f1 分支的提交历史变为
+
+  ```
+  c1 <- c2 <- c6 <- c7 <- c8
+  ```
+
+  也就是说 f1 分支上的 c3，c4，c5 分支都消失了。个人理解：所谓 rebase 的直观含义是将 f1 的“基” 从 c2 修改为了 dev 分支的 c7。使用变基得到的另一个好处是切换回 dev 分支后将 f1 分支进来就不用解决冲突了。
+
+### Git 合作模式
+
+模式一：
+
+master 分支只用作合并，且合并过程自动完成，无需解决冲突。dev 分支用做开发人员的公共基库，各开发人员（例如：f1，f2 分支）完成相应的开发后，在 dev 分支上完成手动解决冲突后的合并。最后将 dev 分支合并至 master 分支。
+
+```bash
+git branch dev
+git checkout dev
+git branch f1  # A: feature 1
+git branch f2  # B: feature 2
+# do some commit in f1, f2...
+git checkout dev
+git merge f1 f2
+# 手动解决冲突...
+git add .
+git merge --continue
+git checkout master
+git merge dev
+```
+
+### Git hooks
+
+hooks 通常译为“钩子”，Git hooks 本质上是位于 `.git/hooks` 下的一些脚本，它们会在特定的事件触发时（也就是某些特定的命令被执行时）被自动运行，例如：执行 `git commit` 命令时。其文件名是固定的（对应着相应的事件），git 默认为每个仓库都提供了默认的 hooks，它们的扩展名均为 `.sample`，如果需要启用 hooks，只需要将相应脚本的扩展名删除即可。hooks 的特点是在 `git clone` 时，这些脚本不会被克隆下来，另外默认 hooks 的语言为 shell 脚本，但也可以使用其他脚本语言例如 Python，只需要修改文件的 shebang 行即可。
+
+一个看起来还不错的[教程](https://www.atlassian.com/git/tutorials/git-hooks)。
+
+注意：不要为了加 hooks 而加 hooks，它只是一个工具。
 
 ## 加课：杂录
 
