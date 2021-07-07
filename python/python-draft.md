@@ -871,6 +871,16 @@ pip install numpy pandas scipy scikit-learn matplotlib seaborn scikit-image open
 # torch请查看官网说明
 ```
 
+## inspect
+
+### inspect.signature
+
+返回函数的特征标（即原型或者说是参数名列表）
+
+### inspect.stack
+
+用于返回当前的函数调用栈
+
 ## pandas
 
 ### pandas的apply系列
