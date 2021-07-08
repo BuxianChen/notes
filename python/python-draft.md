@@ -261,7 +261,7 @@ foo(10)
 
 为何要做这种规范\([参考stackoverflow回答](https://stackoverflow.com/questions/20125172/how-bad-is-shadowing-names-defined-in-outer-scopes)\): 以第一段代码为例, 假设print\_data内部语句很多, 在开发过程中突然想将形式参数`data`重命名为`d`, 但可能会由于疏忽漏改了函数内部的某个`data`, 这样代码会出现不可预料的错误, 有时难以发现\(相对于这种情形: 假设一开始将形式参数命名为`d`, 现在希望将形式参数命名为`c`, 结果由于疏忽漏改了某个`d`, 这样程序会立刻报错\). 当然, 许多IDE对重命名做的很完善, 减少了上述错误发生的可能性.
 
-## Python高阶特性
+## Python高阶
 
 ### 1. 装饰器
 
@@ -297,6 +297,7 @@ def node_func(name):
                 return func(*args, **kwargs)
         return wrapper
     return decorate
+# 等价于：foo1 = node_func("A")(foo1)
 @node_func("A")
 def foo1(a):
     return "a"
@@ -342,15 +343,148 @@ __str__
 
 备注: 在jupyter notebook中, 对`pandas`的`DataFrame`使用`print`方法, 打印出的结果不美观, 但不用`print`却很美观, 原因未知.
 
-### 3. 继承与元类
+### 3. 继承
 
-### 4. with语法\(含少量contextlib包的笔记\)
+#### MRO (Method Resolution Order) 与 C3 算法
+
+Python 在产生多继承关系时，由于子类可能有多个或多层父类，因此方法的搜索顺序（MRO, Method Resolution Order）很重要，同时，搜索顺序也涉及到类的属性。对于属性或者变量的访问，按照 MRO 的顺序依次搜索，直到找到匹配的属性或变量为止。对于每个类，可以使用如下代码来获取 MRO ：
+
+```python
+C.mro()  # C 是一个类
+# 或者：
+C.__mro__
+```
+
+本部分参考 C3 算法[官方文档](https://www.python.org/download/releases/2.3/mro/)：
+
+> unless you make strong use of multiple inheritance and you have non-trivial hierarchies, you don't need to understand the C3 algorithm, and you can easily skip this paper.
+
+**一点历史与 MRO 应满足的性质**
+
+在 Python 的历史上，曾出现了若干种 MRO 算法，自 Python 2.3 以后，使用 C3 算法，它满足两个性质（之前的算法违背了这两个性质，所以可能会引发隐蔽的 BUG）
+
+- local precedence ordering：MRO 的结果里应该保证父类列表的相对顺序不变。例如：
+
+  ```python
+  class A(B, C, D): pass
+  ```
+
+  MRO(A) 序列必须为 `[A, ..., B, ..., C, ..., D, ...]` 这种形式。
+
+- monotonicity（单调性）：如果 C 的 MRO 序列中 A 排在 B 的前面，那么对于任意继承自 C 的类 D，D 的 MRO 序列中 A 也排在 B 的前面
+
+**C3 算法**
+
+引入记号：
+
+- 用 $$B_1B_2...B_n$$ 代表 $$[B_1,B_2,...,B_n]$$。用 $$C+B_1...B_n$$ 代表 $$CB_1,...B_n$$。即类 $$C$$ 的 MRO 序列为 $$L(C)$$
+- 对于序列 $$B_1...B_n$$，$$B_1$$ 称为头，$$B_2...B_n$$ 称为尾
+
+C3 算法描述为：
+
+```
+L[C(B1,...,Bn)] = C + merge(L[B1],...,L[Bn], B1B2...Bn)
+```
+
+其中 merge 的规则为：
+
+递归调用 merge 操作：
+
+记第一个序列中的头为 $$H$$，若 $H$ 不在其余任意序列的尾中，则将 $$H$$ 添加到 MRO 序列中，并对 merge 中的所有序列中删除 $$H$$，之后对剩余序列继续 merge 操作；否则对第二个序列的头进行上述操作，直至最后一个序列。若直到最后一个序列都无法进行删除操作，那么判定为继承关系不合法。
+
+例子：
+
+```python
+O=object
+class F(O): pass
+class E(O): pass
+class D(O): pass
+class C(D, F): pass
+class B(E, D): pass
+class A(B, C): pass
+```
+
+```
+L[O] = O
+L[F(O)] = F + merge(L[O], O) = F + merge(O, O) = FO
+L[E(O)] = EO
+L[D(O)] = DO
+L[C(D, F)] = C + merge(L(D), L(F), DF) = C + merge(DO, FO, DF)
+           = CD + merge(O, FO, F)  # D 只在所有序列的头部出现
+           = CDF + merge(O, O) # O 在第二个序列的尾部出现，因此接下来对 F 进行判断
+           = CDFO
+L[B(E, D)] = B + merge(EO, DO, ED) = BEDO
+L[A(B, C)] = A + merge(BEDO, CDFO, BC)
+           = AB + merge(EDO, CDFO, C)
+           = ABE + merge(DO, CDFO, C)
+           = ABEC + merge(DO, DFO)
+           = ABECDFO
+```
+
+#### `super` 函数
+
+参考资料：[RealPython](https://realpython.com/python-super/)、《Python Cookbook (3ed)》chapter 8.7。
+
+
+
+由于方法覆盖的特性，以方法为例，如果类的 MRO 顺序中有同名方法，那么处于 MRO 靠后类的同名方法将会被隐藏。因此如果需要调用父类被隐藏的方法，需要对 MRO 顺序进行调整。这就是 `super` 方法的作用。
+
+
+
+`super` 函数有两种调用形式
+
+- 两个参数的形式：super(cls, obj)。其中第一个参数为子类，obj 为子类对象（也可以是子类的子类对象，但基本不可能会这样去用）。
+
+- 无参数形式：super()。推荐使用
+
+```python
+class A:
+    def afoo(self):
+        print("A::afoo")
+class B(A):
+    def afoo(self):x
+        super().afoo()  # 等价于 super(B, self).afoo()
+        print("B::afoo")
+class C(B):
+    def afoo(self):
+        super(B, self).afoo()
+        print("C::afoo")
+C().afoo()  # 依次调用 A.afoo, C.afoo
+B().afoo()  # 依次调用 A.afoo, B.afoo
+```
+
+### 4. 元类
+
+参考资料：[RealPython](https://realpython.com/python-metaclasses/)，[Python 官方文档](https://docs.python.org/3/reference/datamodel.html#metaclasses)，
+
+类是用来构造实例的，因此类也可以被叫做实例工厂；同样地，也有构造类的东西，被称为**元类**。实际上每个类都需要用元类来构造，默认的元类为 `type`。
+
+```python
+class A: pass
+# 等同于
+class A(object, metaclass=type): pass
+```
+
+#### `type`
+
+Python 中, type 函数是一个特殊的函数，调用形式有两种：
+
+- `type(obj)`：返回 obj 的类型
+- `type()`
+
+
+
+`__new__` 函数与 `__init__` 函数
+
+`abc` 模块
+
+### 5. with语法\(含少量contextlib包的笔记\)
 
 主要是为了理解pytorch以及tensorflow中各种with语句
 
 主要[参考链接](https://www.geeksforgeeks.org/with-statement-in-python/)
 
-#### 4.1 读写文件的例子
+#### 5.1 读写文件的例子
 
 首先厘清读写文件的一些细节
 
@@ -402,7 +536,7 @@ finally:
 
 注意到一般情况下, 此处的foo与file是不一样的对象, 参见下节中关于`__enter__`方法的返回值. 但在文件读写的情形下, foo与file是相同的对象. 另外, `__exit__`函数有三个参数, 在自定义这个函数时也应该遵循三个参数的设计\(具体可以参考[这个问答](https://www.reddit.com/r/learnprogramming/comments/duvc2r/problem_with_classes_and_with_statement_in_python/)\).
 
-#### 4.2 with语法与怎么让自定义类支持with语法
+#### 5.2 with语法与怎么让自定义类支持with语法
 
 > This interface of \_\_enter\_\_\(\) and \_\_exit\_\_\(\) methods which provides the support of with statement in user defined objects is called `Context Manager`.
 
@@ -443,7 +577,7 @@ print(hasattr(x, "a"))  # False
 # x.__exit__(None, None, None)
 ```
 
-#### \*4.3 使用contextlib包中的函数来使得类支持with语法
+#### \*5.3 使用contextlib包中的函数来使得类支持with语法
 
 按照上一节的做法, 可以使用如下写法让`MassageWriter`支持with语法
 
@@ -491,7 +625,7 @@ with message_writer.open_file() as my_file:
 * open_file函数从第一个语句直到第一个yield语句为\`\_enter_\`
 * open_file函数从第一个yield语句到最后为\`\_exit_\`
 
-#### 4.4 "复合"with语句
+#### 5.4 "复合"with语句
 
 ```python
 with open(in_path) as fr, open(out_path, "w") as fw:
@@ -521,7 +655,7 @@ def rel2logic(in_path, logic_dir):
             fws[key].writerow([start_id, end_id, relation])
 ```
 
-### 5. for else语法
+### 6. for else语法
 
 ```python
 # 获取[1, n]中的所有素数
@@ -536,7 +670,7 @@ for n in range(2, 10):
 # 来源于Cython文档里的例子
 ```
 
-### 6. python基本数据类型
+### 7. python基本数据类型
 
 int: 无限精度整数
 
