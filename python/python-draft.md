@@ -453,6 +453,23 @@ C().afoo()  # 依次调用 A.afoo, C.afoo
 B().afoo()  # 依次调用 A.afoo, B.afoo
 ```
 
+super 实际上是一个类，但注意 `super()` 返回的不是父类对象，而是一个代理对象。
+
+```python
+class Base: def __init__(self): print("Base"); super().__init__()
+class A(Base): def __init__(self): print("A"); super().__init__()
+class B(Base): def __init__(self): print("B"); super().__init__()
+class C(A, B): def __init__(self): print("C"); super().__init__()
+C()
+# 输出：
+# C
+# A
+# B
+# Base
+```
+
+上例为典型的菱形继承方式，使用 `super` 可以按照 MRO 顺序依次调用 `__init__` 函数一次。
+
 ### 4. 元类
 
 参考资料：[RealPython](https://realpython.com/python-metaclasses/)，[Python 官方文档](https://docs.python.org/3/reference/datamodel.html#metaclasses)，
@@ -675,6 +692,63 @@ for n in range(2, 10):
 int: 无限精度整数
 
 float: 通常利用`C`里的`double`来实现
+
+### 8. 函数的参数
+
+参考[知乎](https://www.zhihu.com/question/57726430/answer/818740295)
+
+**函数调用**
+
+```
+funcname(【位置实参】,【关键字实参】)
+```
+
+使用了 `a=x` 这种方式传参的即为关键字实参。
+
+两个具有一般形式的例子
+
+```python
+# 1, 2 为位置实参，
+foo(1, 2, a=3, b=4)  # 一般调用形式
+foo(1, *[0], 2, *[3, 4], a=1, **{"c": 1}, **{"d": 1})  # 特殊调用形式
+```
+
+**函数定义**
+
+```
+def funcname(【限定位置形参】,【普通形参】,【特殊形参args】,【限定关键字形参】,【特殊形参kwargs】): pass
+```
+
+<font color=red>备注：限定位置形参在 Python 3.8 才被正式引入，即 `/` 这种写法。在此之前仅有后面的四种形参</font>
+
+一个具有一般形式的例子：
+
+```python
+def foo(a, b, /, c, d=3, *args, e=5, f, **kwargs): pass
+def foo(a, b=1, /, c=2, d=3, *, e=5, f, **kwargs): pass
+```
+
+- `a` 与 `b` 为限定位置形参
+- `c` 与 `d` 为普通形参
+- `e` 与 `f` 为限定关键字形参
+
+**形实结合的具体过程**
+
+首先用位置实参依次匹配限定位置形参和普通形参，其中位置实参的个数必须大于等于限定位置形参的个数，剩余的位置实参依顺序匹配普通形参。
+
+- 若位置实参匹配完全部限定位置形参和普通形参后还有剩余，则将剩余参数放入 `args` 中
+- 若位置实参匹配不能匹配完全部普通形参，则未匹配上的普通形参留待后续处理
+
+接下来用关键字实参匹配普通形参和限定关键字形参，匹配方式按参数名匹配即可。
+
+**设定默认值的规则**
+
+为形参设定默认值的规则与前面的规则是独立的。
+
+- 限定关键字形参，带默认值与不带默认值的形参顺序随意
+- 限定位置形参和普通形参，带默认值的形参必须位于不带默认值的形参之后
+
+
 
 ## python代码打包
 
