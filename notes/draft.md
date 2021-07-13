@@ -49,6 +49,38 @@ Read the Docs可以[参考](https://blog.csdn.net/lu_embedded/article/details/10
 * ~~使用Read the Docs写代码文档或书~~\(页面结构似乎只能有两层\)
 * gitbook.com与github仓库关联\(写完整的笔记\), 持续更新\(页面结构似乎只能有两层\)
 
+## `~/.ssh` 目录
+
+目录结构
+
+```
+authorized_keys  # 将其他机器的公钥写入此文件中, 则其他机器可以ssh免密登录
+id_rsa  # 本机私钥
+id_rsa.pub  # 本机公钥
+known_hosts
+```
+
+用途
+
+- 为本机生成 `id_rsa` 与 `id_rsa.pub` 备用
+
+- 将本机的 `id_rsa.pub` 的内容追加到服务器特定用户的 `~/.ssh/authorized_keys` 文件内，可以实现本机到服务器的远程免密登录
+
+  - 本地 Shell 连接服务器无需输入密码。`ssh username@ip_addr`，例如：`ssh foo@172.16.83.43`
+  - VScode 远程连接无需输入密码
+
+- 将本机的 `id_rsa.pub` 的内容在 gitlab 或 github 上添加到 SSH Keys 中，则可以免密使用 ssh 进行仓库克隆、推送等操作，例如：
+
+  ```
+  git clone git@github.com:BuxianChen/notes.git
+  ```
+
+  但对 http 的方式无效，如果使用下面的方式进行 clone，在执行 push 的时候，会自动跳出一个弹出框，要求输入 github 的帐号及密码：
+
+  ```
+  git clone https://github.com/BuxianChen/notes.git
+  ```
+
 ## 自定义右键菜单栏
 
 备注：win10系统

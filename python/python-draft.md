@@ -856,6 +856,13 @@ setup(
 from foo import main
 ```
 
+备注：安装在 `site-packages` 目录下
+
+```
+Foo-1.0.dist-info  # Foo与setup.py中的name相对应
+foo  # python源代码
+```
+
 ### 安装依赖包
 
 **第一步：获取requirements.txt**
