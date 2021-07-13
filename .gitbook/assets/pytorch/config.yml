@@ -1,0 +1,9 @@
+use_amp: true  # 是否使用混合精度训练
+cuda: 1,2  # 若取值为空字符串则使用cpu
+save_dir: ./checkpoint  # 模型保存目录
+save_type: weight  # "weight" or "model"
+total_epoches: 10  # 总共训练多少个epoch
+train_epoches: 2  # 本次训练多少个epoch
+from_pretrain: true  # 是否从save_dir读取checkpoint
+clip_grad: true  # 是否对梯度进行clip操作
+freeze: 4  # 冻结前4层
