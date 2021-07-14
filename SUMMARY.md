@@ -21,7 +21,7 @@
 ## learn
 
 * [CS课程中缺失的一课](learn/missing-semester.md)
-* [C++primerplus\(6ed\)](learn/c++primerplus-6ed.md)
+* [C++primerplus\(6ed\)](learn/c++primerplus_6ed.md)
 
 ## Java
 

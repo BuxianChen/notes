@@ -1,20 +1,212 @@
 # Git
 
-用例子解释git命令
+## Git 命令简介
+
+所有与 Git 有关的命令最好用 git bash 打开。当然，将 git.exe 所在目录加入到了 path 环境变量后，使用普通的 shell（例如：cmd, powershell, bashrc 等）基本也都没问题。
+
+### git init
+
+```bash
+git init
+```
+
+其效果是为当前目录建立一个 `.git` 目录，正常情况下不要去修改这个文件夹下的任何内容，可以这样理解：之后的每一条以 git 开头的命令执行后，git.exe 会依据命令内容对 `.git` 目录下的文件或依据 `.git` 目录内的文件对工作区进行修改。注意：
+
+- git init 命令不一定需要在空目录
+- 若.git目录已存在, 使用git init命令的结果是：待补充
+
+### git config
+
+```bash
+git config --global user.name "John Doe"
+git config --global user.email johndoe@example.com
+```
+
+### git log
+
+以下命令用于显示所有的提交信息
+
+```bash
+git log --all --graph --decorate --oneline
+git log --pretty=format:"%h %s" --graph
+```
+
+### git reflog
+
+```bash
+# 查看历史命令, reflog译为回流
+# 注意输出的每一行前面的数字串是执行该条命令后的版本号
+# 注意输出顺序由上到下: 由最新的命令到旧命令,
+# 注意不是所有的命令都会保存, 只保留引起head发生变化的命令
+git reflog
+# 输出
+# 5ef5acd (HEAD -> master) HEAD@{0}: reset: moving to 5ef5
+# 3b34b14 HEAD@{1}: reset: moving to HEAD^
+# 5ef5acd (HEAD -> master) HEAD@{2}: commit: append GPL
+# 3b34b14 HEAD@{3}: commit: add distributed
+# 271efb4 HEAD@{4}: commit (initial): wrote a readme file
+```
+
+### git status
+
+```bash
+git status --short/-s
+# 以下为输出结果
+#  M README                    
+# MM Makefile                
+# A  lib/git.rb
+# M  lib/simplegit.rb
+# ?? LICENSE.txt
+```
+
+左边的M表示文件修改了并且放入了暂存区, 右边的M表示文件修改了但是没有放入暂存区. 此处表示`README`修改了, 但是还没有使用`git add README`放入暂存区; `lib/simplegit.rb`被修改后放入了工作区, 之后未被修改过; `Makefile`在工作区被修改后放入了暂存区, 而后工作区又做了修改. 左边的A表示`lib/git.rb`是工作区新增的文件, 并已经放入了暂存区, `??`表示`LICENSE.txt`是工作区新增的文件, 但没有放入暂存区中
+
+### git diff
+
+```bash
+git diff HEAD -- readme.txt
+```
+
+### git add
+
+```bash
+git add <filename>
+```
+
+- 如果 `filename` 在工作区存在，且与暂存区中的内容不一致或暂存区中没有该文件。具体执行过程为：首先为 `filename` 创建一个 object （blob）放在 `.git/objects` 下，之后将该 object 放入暂存区。
+- 如果 `filename` 在工作区中不存在，且在暂存区中存在，那么效果等同于 `git rm <filename>`。具体执行过程为：将暂存区中相应的 object 删除
+
+### git rm
+
+```bash
+git rm <file> # 从工作区与缓冲区中同时删除文件
+git rm -f <file> # 修改过<file>后, 使用了git add <file>, 此时希望将文件从工作区与缓冲区删除
+git rm --cached <file> # 只删除缓冲区中的<file>
+```
+
+### git commit
+
+```bash
+git commit
+git commit -m "xxx"
+```
+
+git commit 命令表示将当前的暂存区放入版本库中，前者会打开 Git 默认的文本编辑器（可以使用 git config 进行设置）供开发者添加描述信息，在公司里开发项目推荐用这种方式。后者一般用于添加简略的描述信息，适用于不那么正式的个人项目中使用。
+
+### git reset
+
+回退版本
+
+```bash
+# 注意: head是指当前分支的当前版本
+git reset --hard HEAD^  # 注意此时, 若输入git log, 就只有两个历史版本了
+git reset --hard 5ef5  # 
+git reset HEAD readme.txt  # 将暂存区的修改删除
+```
+
+### git branch
+
+```bash
+git branch <待创建的分支名>
+git branch -d <待删除的分支名>
+git branch -D <待删除的分支名>
+```
+
+### git checkout
+
+```bash
+git checkout <待切换的分支名>
+git checkout -- readme.txt # 将工作区回退到暂存区或版本库其中之一, 哪个最新就回退到哪个
+```
+
+### git restore
+
+```bash
+touch README.txt
+git add README.txt
+git commit -m "First Commit"
+```
+
+```bash
+git restore [--worktree]/[-W] README.md # 工作区文件内容发生变动, 撤销相对于暂存区的修改
+git restore --staged/-S README.md # 工作区内的文件内容不变, 但文件状态处于没有添加到暂存区的状态
+git restore -s HEAD~1 README.md # 将工作区的文件内容恢复到最近提交的上一个提交版本
+git restore -s dbv231 README.md # 将工作区恢文件内容恢复到特定提交版本
+```
+
+### git merge
+
+### git rebase
+
+**原理**
+
+从合并的文件上看与 merge 效果一样，但提交历史有了改变。
+
+假定分支情况为：
+
+```
+c1 <- c2 <- c3 <- c4 <- c5  # f1分支
+         <- c6 <- c7  # dev分支
+```
+
+使用 `git rebase` 的流程为：
+
+```bash
+git checkout f1
+git rebase dev
+# 手动解决冲突
+git add xxx
+git rebase --continue
+```
+
+效果是 f1 分支的提交历史变为
+
+```
+c1 <- c2 <- c6 <- c7 <- c3 <- c4 <- c5
+```
+
+个人理解：所谓 rebase 的直观含义是将 f1 的“基” 从 c2 修改为了 dev 分支的 c7。使用变基得到的另一个好处是切换回 dev 分支后将 f1 分支进来就不用解决冲突了。
+
+### git remote
+
+### git fetch/pull/push
+
+```bash
+git pull <远程主机名> <远程分支名>:<本地分支名>
+# 例子: git pull origin dev:release  #表示将
+git push <远程主机名> <本地分支名>:<远程分支名>
+# git push origin release:dev
+```
+
+### * git cat-file
+
+```bash
+git cat-file -p 24c5735c3e8ce8fd18d312e9e58149a62236c01a  # 查看 objects 目录下的文件内容
+```
+
+### * git ls-files
+
+```bash
+git ls-files -s  # 查看当前缓冲区内容, 即 .git/index 中的内容
+```
+
+## 详例
 
 注意, 测试2.1与2.2表示的是在测试1的基础上尝试两种做法的结果
 
-例子1（本例着重解释了`git status/diff/restore`三个命令）：
+### 例 1（待清晰化）
+
+本例着重解释了`git status/diff/restore`三个命令
 
 ```text
 测试流程，一共有4条路径
-1 --- 2.1
-  --- 2.2
-  --- 2.3 --- 2.3.1
-          --- 2.3.2
+1 -> 2.1
+1 -> 2.2
+1 -> 2.3 -> 2.3.1
+1 -> 2.3 -> 2.3.2
 ```
 
-```text
+```bash
 git init
 # 新建一个README.txt, 添加内容line one
 git add README.txt
@@ -24,9 +216,9 @@ git add README.txt
 # 在README中添加内容line three
 ```
 
-测试1
+**测试 1**
 
-```text
+```bash
 $ git status
 On branch master
 Changes to be committed:
@@ -73,23 +265,23 @@ index 017bf5c..4c00b39 100644
 
 相应地, `git diff`命令地解释如下:
 
-```text
-git diff # 显示工作区相对于暂存区地修改
+```bash
+git diff # 显示工作区相对于暂存区的修改
 git diff --staged # 显示暂存区相对最近一次提交的修改
 ```
 
-测试2
+**测试 2**
 
 总结: 接下来, 在操作之前先解释`git restore`的两种用法
 
-```text
+```bash
 git restore --staged <file> # 将<file>的暂存区记录删除, 即暂存区恢复至最近提交状态
 git restore <file> # 将工作区<file>恢复至暂存区的状态
 ```
 
-测试2.1
+**测试 2.1**
 
-```text
+```bash
 $ git restore README.txt # 此时工作区的README回到只有两行文字的状态
 $ git status
 On branch master
@@ -98,9 +290,9 @@ Changes to be committed:
         modified:   README.txt
 ```
 
-测试2.2
+**测试 2.2**
 
-```text
+```bash
 # 注意工作区文件不变, 暂存区文件回到最近提交的状态
 $ git restore --staged README.txt
 
@@ -131,11 +323,11 @@ index 017bf5c..fa58e34 100644
 $ git restore README.txt
 ```
 
-测试2.3
+**测试 2.3**
 
 总结: `git restore`还有第三种用法如下
 
-```text
+```bash
 # 将<file>恢复至版本库中的某个版本
 git restore --source/-s 7173808e <file>
 git restore --source/-s HEAD <file>
@@ -143,7 +335,7 @@ git restore --source/-s HEAD <file>
 
 测试如下:
 
-```text
+```bash
 # 执行完后工作区的README.md只有一行内容
 $ git restore --source HEAD README.txt
 
@@ -186,20 +378,20 @@ index 017bf5c..4c00b39 100644
 \ No newline at end of file
 ```
 
-测试2.3.1
+**测试 2.3.1**
 
-```text
+```bash
 $ git restore --staged README.txt
 $ git status
 On branch master
 nothing to commit, working tree clean
 ```
 
-测试2.3.2
+**测试2.3.2**
 
 根据上面的总结, 解释如下过程:
 
-```text
+```bash
 $ git restore README.txt
 
 $ git status
@@ -230,7 +422,9 @@ On branch master
 nothing to commit, working tree clean
 ```
 
-例子2（本例着重解释`git rm`命令）
+### 例 2（待补充）
+
+本例着重解释 `git rm` 命令
 
 备注: 本机已经准备好了如下环境
 
@@ -241,114 +435,7 @@ git add README.txt
 git commit -m "first commit"
 ```
 
-## git/github/gitlab使用
-
-先明确几者的关系: ${\color{red} 待补充}$
-
-### 本地git
-
-以下概念非常重要:
-
-* **工作区\(Working Directory\)**: 除`.git`文件夹以外文件
-* **版本库\(Repository\)**: `.git`文件夹之内的文件
-  * **暂存区\(stage/index\)**: `git add`命令是将**文件修改**从工作区提交到暂存区; `git commit`是把**文件修改**从暂存区提交到当前分支, 并将暂存区的文件修改清空
-  * ...
-
-简单理解: 工作区里存放着一个某个特定的版本\(注意不一定是最新版本\), 而版本库里存放着所有已经提交过的版本.
-
-```text
-# 注意: 所有与git有关的命令最好用git bash打开, 当然, 将git.exe所在目录加入到了path环境变量后
-# 使用普通的shell(例如: cmd, powershell, bashrc等基本也都没问题)
-
-# 建立身份信息
-git config --global user.name "Your Name"
-git config --global user.email "email@example.com"
-
-# 初始化git
-git init
-# 其效果是为当前目录建立一个.git目录, 正常情况下不要去修改这个文件夹下的任何内容, 可以这样理解:
-# 之后的每一条以git开头的命令执行后, git.exe会依据命令内容对.git目录下的文件进行修改
-# 注意, git init命令不一定需要在空目录, 另外若.git目录已存在, 使用git init命令的结果是:
-# ##待补充##
-
-
-git add readme.txt
-
-
-git commit -m "add readme file"
-
-# 查看仓库的状态
-git status
-
-# 
-git diff
-# ##待补充: 查看工作区与版本库中最新版本的区别[工作区--add-->暂存区--commit-->当前分支]?##
-git diff HEAD -- readme.txt
-
-# 显示历史信息
-git log
-git log  --pretty=oneline  # 单行显示历史信息
-# 注意输出顺序从上到下: 由新版本到旧版本
-# 输出:
-# 5ef5acd712370e5a8688e07576ff8f19cfe8a1cd (HEAD -> master) append GPL
-# 3b34b144575c6cac0a69e4da91e1f7a6244ee16a add distributed
-# 271efb47fac32ff15443aac275782613d6153830 wrote a readme file
-
-# 回退版本
-# 注意: head是指当前分支的当前版本
-git reset --hard HEAD^  # 注意此时, 若输入git log, 就只有两个历史版本了
-git reset --hard 5ef5  # 
-
-# 查看历史命令, reflog译为回流
-# 注意输出的每一行前面的数字串是执行该条命令后的版本号
-# 注意输出顺序由上到下: 由最新的命令到旧命令,
-# 注意不是所有的命令都会保存, 只保留引起head发生变化的命令
-git reflog
-# 输出
-# 5ef5acd (HEAD -> master) HEAD@{0}: reset: moving to 5ef5
-# 3b34b14 HEAD@{1}: reset: moving to HEAD^
-# 5ef5acd (HEAD -> master) HEAD@{2}: commit: append GPL
-# 3b34b14 HEAD@{3}: commit: add distributed
-# 271efb4 HEAD@{4}: commit (initial): wrote a readme file
-
-# 将工作区回退到暂存区或版本库其中之一, 哪个最新就回退到哪个
-git checkout -- readme.txt
-# 将暂存区的修改删除
-git reset HEAD readme.txt
-```
-
-### github使用
-
-### git远程仓库
-
-### gitlab使用
-
-### 高阶?
-
-一个文件的hash值的计算, 假定`readme.txt`文件内容为`123`, 它被`git add`的时候, `objects`目录下会增加一个以二进制序列命名的文件
-
-```text
-d8/00886d9c86731ae5c4a62b0b77c437015e00d2
-```
-
-一共40位\(加密算法为SHA-1\), 其中前两位为目录名, 后38位为文件名
-
-使用python可以用如下方式计算出来
-
-```python
-import hashlib
-# `header`+内容计算
-# `header` = 文件类型+空格+文件字节数+空字符
-hashlib.sha1(b'blob 3\0'+b'123').hexdigest() # d800886d9c86731ae5c4a62b0b77c437015e00d2
-
-hashlib.sha1(b'blob 5\0'+'12中'.encode("utf-8")).hexdigest() 
-# ec493cf5f7f9a5a205afbc80d7f56dbb34b10600
-
-# len('12中'.encode("utf-8"))
-# '12中'.encode("utf-8")
-```
-
-**例子**
+### 例 3（待删减）
 
 由于被各种命令搞晕, 于是决定干脆打开`.git`目录一探究竟, 难免会有许多错误, 待日后修改
 
@@ -446,7 +533,7 @@ git commit -m "add show_git.py 0.1.0 version"
   ```text
   # master
   0000000000000000000000000000000000000000 92628406280a94f4efbdcbf59dcb60a5b44ab124 BuxianChen <541205605@qq.com> 1599265251 +0800    commit (initial): add show_git 0.1.0 version
-
+  
   # HEAD
   0000000000000000000000000000000000000000 92628406280a94f4efbdcbf59dcb60a5b44ab124 BuxianChen <541205605@qq.com> 1599265251 +0800    commit (initial): add show_git 0.1.0 version
   ```
@@ -459,6 +546,7 @@ git commit -m "add show_git.py 0.1.0 version"
   ```
 
 * `index`目录做更新
+
 * `refs`目录下的`heads/master`文件被创建, 内容如下
 
   ```text
@@ -477,61 +565,38 @@ git commit -m "add show_git.py 0.1.0 version"
   ref: refs/heads/master
   ```
 
-## Git操作手册
+## Git 合作模式
 
-在家整理git与github部分
+模式一：
 
-```text
-git config --global user.name "John Doe"
-git config --global user.email johndoe@example.com
+master 分支只用作合并，且合并过程自动完成，无需解决冲突。dev 分支用做开发人员的公共基库，各开发人员（例如：f1，f2 分支）完成相应的开发后，在 dev 分支上完成手动解决冲突后的合并。最后将 dev 分支合并至 master 分支。
+
+```bash
+git branch dev
+git checkout dev
+git branch f1  # A: feature 1
+git branch f2  # B: feature 2
+# do some commit in f1, f2...
+git checkout dev
+git merge f1 f2
+# 手动解决冲突...
+git add .
+git merge --continue
+git checkout master
+git merge dev
 ```
 
-```text
-git pull <远程主机名> <远程分支名>:<本地分支名>
-# 例子: git pull origin dev:release  #表示将
-git push <远程主机名> <本地分支名>:<远程分支名>
-# git push origin release:dev
-```
+## Git hooks
 
-```text
-git branch <待创建的分支名>
-git checkout <待切换的分支名>
-```
+hooks 通常译为“钩子”，Git hooks 本质上是位于 `.git/hooks` 下的一些脚本，它们会在特定的事件触发时（也就是某些特定的命令被执行时）被自动运行，例如：执行 `git commit` 命令时。其文件名是固定的（对应着相应的事件），git 默认为每个仓库都提供了默认的 hooks，它们的扩展名均为 `.sample`，如果需要启用 hooks，只需要将相应脚本的扩展名删除即可。hooks 的特点是在 `git clone` 时，这些脚本不会被克隆下来，另外默认 hooks 的语言为 shell 脚本，但也可以使用其他脚本语言例如 Python，只需要修改文件的 shebang 行即可。
 
-```text
-git rm <file> # 从工作区与缓冲中删除文件
-git rm -f <file> # 修改过<file>后, 使用了git add <file>, 此时希望将文件从工作区与缓冲区删除
-git rm --cached <file> # 只删除缓冲区中的<file>
-```
+一个看起来还不错的[教程](https://www.atlassian.com/git/tutorials/git-hooks)。
 
-```text
-touch README.txt
-git add README.txt
-git commit -m "First Commit"
-```
+注意：不要为了加 hooks 而加 hooks，它只是一个工具。
 
-情况1:
+## github、gitlab
 
-```text
-git restore [--worktree]/[-W] README.md # 工作区文件内容发生变动, 撤销相对于暂存区的修改
-git restore --staged/-S README.md # 工作区内的文件内容不变, 但文件状态处于没有添加到暂存区的状态
-git restore -s HEAD~1 README.md # 将工作区的文件内容恢复到最近提交的上一个提交版本
-git restore -s dbv231 README.md # 将工作区恢文件内容恢复到特定提交版本
-```
+### 
 
-```text
-git status --short/-s
-# 以下为输出结果
-#  M README                    
-# MM Makefile                
-# A  lib/git.rb
-# M  lib/simplegit.rb
-# ?? LICENSE.txt
-```
-
-左边的M表示文件修改了并且放入了暂存区, 右边的M表示文件修改了但是没有放入暂存区. 此处表示`README`修改了, 但是还没有使用`git add README`放入暂存区; `lib/simplegit.rb`被修改后放入了工作区, 之后未被修改过; `Makefile`在工作区被修改后放入了暂存区, 而后工作区又做了修改. 左边的A表示`lib/git.rb`是工作区新增的文件, 并已经放入了暂存区, `??`表示`LICENSE.txt`是工作区新增的文件, 但没有放入暂存区中
-
-```text
-git log --pretty=format:"%h %s" --graph
-```
+### 
 

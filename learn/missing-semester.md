@@ -723,11 +723,9 @@ abfd
 
 ## 第 6 课：Git
 
-本节课的讲法是先大致讲清 Git 的数据模型（实现），再讲操作命令。个人认为很受用，强烈推荐。
+本节课的讲法是先大致讲清 Git 的数据模型（实现），再讲操作命令。个人认为很受用，强烈推荐。这里仅记录 Git 数据模型等内部相关的东西，关于 Git 的使用参见[这里](../tools/git.md)。
 
-### Git 数据模型
-
-#### 例子
+一个数据模型的例子如下：
 
 ```
 <root> (tree)
@@ -739,7 +737,7 @@ abfd
 +- baz.txt (blob, content = "git is wonderful")
 ```
 
-#### blob、tree、commit、object、reference
+### blob、tree、commit、object、reference
 
 注：这些东西都可以在 `.git` 目录中探索。
 
@@ -760,7 +758,7 @@ objects = map<string, object> // objects[hash(object)] = object
 references = map<string, string> // 前一个 string 表示指针名，例如：master, 后一个 string 表示 object 的哈希值
 ```
 
-#### workspace、stage、version
+### workspace、stage、version
 
 以下参杂个人理解：这三者实际上都是一个版本/快照，而所谓的快照基本上等同于一个 tree/commit 对象。
 
@@ -772,7 +770,7 @@ version 则是历史提交的版本，因此实际上是若干个快照。
 
 许多命令例如：`git add`，`git diff`，`git restore` 实际上就是利用上述三者之一修改/比较另外一个或多个快照。
 
-#### `.git` 目录
+### `.git` 目录
 
 依次执行
 
@@ -833,71 +831,34 @@ git ls-files -s  # 查看当前缓冲区内容, 即 .git/index 中的内容
 - `git commit` 命令会同时生成 tree 和 commit 对象
 - `HEAD` 指向某个分支名，`git checkout <分支名>` 会同时修改 `HEAD` 及 `index` 的内容，并且切换分支时 `git status` 的结果必须为 `clean`，否则无法执行。
 
-### Git 命令
+### object 的 hash 值
 
-- `git log --all --graph --decorate --oneline`
+一个 blob 对象的hash值的计算过程如下：
 
-  用于显示所有的快照
+假定 `readme.txt` 文件内容为`123`，它被 `git add` 的时候，`objects` 目录下会增加一个以二进制序列命名的文件
 
-- `git add <filename>`
-  - 如果 `filename` 在工作区存在，且与暂存区中的内容不一致或暂存区中没有该文件。具体执行过程为：首先为 `filename` 创建一个 object （blob）放在 `.git/objects` 下，之后将该 object 放入暂存区。
-  - 如果 `filename` 在工作区中不存在，且在暂存区中存在，那么效果等同于 `git rm <filename>`。具体执行过程为：将暂存区中相应的 object 删除
-
-- `git rebase` 原理：（大概有误！！）从合并的文件上看与 merge 效果一样，但提交历史有了改变。
-
-  假定分支情况为：
-
-  ```
-  c1 <- c2 <- c3 <- c4 <- c5  # f1分支
-           <- c6 <- c7  # dev分支
-  ```
-
-  使用 `git rebase` 的流程为：
-
-  ```bash
-  git checkout f1
-  git rebase dev
-  # 解决冲突
-  git add xxx
-  git rebase --continue
-  ```
-
-  效果是 f1 分支的提交历史变为
-
-  ```
-  c1 <- c2 <- c6 <- c7 <- c8
-  ```
-
-  也就是说 f1 分支上的 c3，c4，c5 分支都消失了。个人理解：所谓 rebase 的直观含义是将 f1 的“基” 从 c2 修改为了 dev 分支的 c7。使用变基得到的另一个好处是切换回 dev 分支后将 f1 分支进来就不用解决冲突了。
-
-### Git 合作模式
-
-模式一：
-
-master 分支只用作合并，且合并过程自动完成，无需解决冲突。dev 分支用做开发人员的公共基库，各开发人员（例如：f1，f2 分支）完成相应的开发后，在 dev 分支上完成手动解决冲突后的合并。最后将 dev 分支合并至 master 分支。
-
-```bash
-git branch dev
-git checkout dev
-git branch f1  # A: feature 1
-git branch f2  # B: feature 2
-# do some commit in f1, f2...
-git checkout dev
-git merge f1 f2
-# 手动解决冲突...
-git add .
-git merge --continue
-git checkout master
-git merge dev
+```text
+d8/00886d9c86731ae5c4a62b0b77c437015e00d2
 ```
 
-### Git hooks
+一共40位（加密算法为SHA-1），其中前两位为目录名，后38位为文件名
 
-hooks 通常译为“钩子”，Git hooks 本质上是位于 `.git/hooks` 下的一些脚本，它们会在特定的事件触发时（也就是某些特定的命令被执行时）被自动运行，例如：执行 `git commit` 命令时。其文件名是固定的（对应着相应的事件），git 默认为每个仓库都提供了默认的 hooks，它们的扩展名均为 `.sample`，如果需要启用 hooks，只需要将相应脚本的扩展名删除即可。hooks 的特点是在 `git clone` 时，这些脚本不会被克隆下来，另外默认 hooks 的语言为 shell 脚本，但也可以使用其他脚本语言例如 Python，只需要修改文件的 shebang 行即可。
+使用 python 可以用如下方式计算出来：
 
-一个看起来还不错的[教程](https://www.atlassian.com/git/tutorials/git-hooks)。
+```python
+import hashlib
+# `header`+内容计算
+# `header` = 文件类型+空格+文件字节数+空字符
+hashlib.sha1(b'blob 3\0'+b'123').hexdigest() # d800886d9c86731ae5c4a62b0b77c437015e00d2
 
-注意：不要为了加 hooks 而加 hooks，它只是一个工具。
+hashlib.sha1(b'blob 5\0'+'12中'.encode("utf-8")).hexdigest() 
+# ec493cf5f7f9a5a205afbc80d7f56dbb34b10600
+
+# len('12中'.encode("utf-8"))
+# '12中'.encode("utf-8")
+```
+
+
 
 ## 加课：杂录
 
