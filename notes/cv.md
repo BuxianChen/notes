@@ -1,8 +1,8 @@
-### COCO
+### COCO 标注格式
 
 [参考链接](https://www.immersivelimit.com/tutorials/create-coco-annotations-from-scratch)
 
-coco的目标检测任务的标注文件仅为一个json文件（含有所有图片的标注）
+coco的目标检测任务的标注文件仅为一个json文件（含有所有图片的标注），形式如下：
 
 ```json
 {
@@ -83,12 +83,12 @@ coco的目标检测任务的标注文件仅为一个json文件（含有所有图
 ]
 ```
 
-#### **annotations**
+**annotations**
 
 ```json
 "annotations": [
     {
-        "segmentation": [[510.66,423.01,511.72,420.03,...,510.45,423.01]],  // 多边形的
+        "segmentation": [[510.66,423.01,511.72,420.03,...,510.45,423.01]],  // 多边形的标注方式
         "area": 702.1057499999998,
         "iscrowd": 0,
         "image_id": 289343,
@@ -99,7 +99,7 @@ coco的目标检测任务的标注文件仅为一个json文件（含有所有图
     ...
     {
         "segmentation": {
-            "counts": [179,27,392,41,…,55,20],
+            "counts": [179,27,392,41,…,55,20], // RLE 的标注方式
             "size": [426,640]
         },
         "area": 220834,
@@ -148,26 +148,50 @@ annotations 是一个列表，每个列表代表一个标注（即一个物体�
   [(102, 134)->(150, 200)->(102, 200)->(102, 134)]
   ```
 
-- `iscrowd=1`：表示该实例为一群物体
+- `iscrowd=1`：表示该实例为一群物体，segmentation 字段形式如下，counts 为 RLE 格式的mask。
 
+  ```
+  {
+      "segmentation": {
+      "counts": [0,179,27,392,...,41,55,20],
+      "size": [320, 240]
+  },
+  ```
 
+  `size` 字段表示 `[height, width]`，表示图片大小（该标注对应图片大小），而 `counts` 字段表示逐像素的 mask，mask 的形状为 `[height, width]`（在这个例子中为 `[240, 320]`），mask 为 1 表示该像素值属于物体，mask 为 0 表示该像素不属于物体。`counts` 的具体含义为：将 mask 拉直后（按列的方式拉直，即先取第一列，紧接着取第二列，以此类推），依次出现了 0 个 0，179 个 1，27 个 0，392 个 1 等等。
 
-```python
-# mask可视化
-import matplotlib.pyplot as plt
-from matplotlib.patches import Polygon
-from matplotlib.collections import PatchCollection
-import numpy as np
+  备注：counts 的第一个元素一定是数有多少个 0，counts 的长度可以是奇数也可以是偶数，因此 counts 的最后一个元素可能是数有多少个 0，也可能是数有多少个 1。一个简易的转换代码如下：
 
-N = 5
-patches = []
+  ```python
+  def coco_mask2rle(mask):
+      # mask (np.array): (height, width)
+      # returns: rel (list)
+      cur, count, rle = 0, 0, []
+      for _ in mask.transpose().reshape(-1):
+          if _ != cur:
+              rle.append(count)
+              count, cur = 1, _
+          else:
+              count += 1
+      rle.append(count)
+      return rle
+  ```
 
-for i in range(1):
-    polygon = Polygon([[0, 0], [1, 0.5], [1, 1], [0.5, 1], [0.5, 0.5]], True)
-    patches.append(polygon)
-fig, ax = plt.subplots()
-p = PatchCollection(patches, alpha=0.5)
-ax.add_collection(p)
-plt.show()
+一个简易的标注可视化代码参见 [show_mask.py](../.gitbook/assets/coco/show_mask.py)。（仅供理解，不要重复造轮子:blush:）
+
+#### pycocotools
+
+**安装**
+
+linux参考[官方源码](https://github.com/cocodataset/cocoapi)的说明即可。
+
+windows 下需要安装第三方改写的包，如下：
+
 ```
+pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonAPI
+```
+
+**简介**
+
+### YOLO 标注格式
 

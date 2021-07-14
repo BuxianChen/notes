@@ -14,6 +14,8 @@ community部分没探索过
 
 **杂录**
 
+`torch.version.cuda` 变量存储了 cuda 的版本号
+
 `torch.cuda.max_memory_allocated(device=None)`函数用于输出程序从开始运行到目前为止GPU占用的最大内存
 
 `torch.cuda.reset_max_memory_allocated()`函数用于将程序从开始运行到目前为止GPU占用的最大内存设置为0

@@ -914,7 +914,7 @@ funniest/
 from setuptools import setup
 
 setup(name='funniest',  # 包的名称, 决定了用pip install xxx
-      version='0.1',  # 版本号
+      version='0.1.1',  # 版本号
       description='The funniest joke in the world',  # 项目描述
       url='http://github.com/storborg/funniest',  # 项目链接(不重要)
       author='Flying Circus',  # 作者名(不重要)
@@ -949,6 +949,32 @@ pip install funniest
 
 * 使用`MANIFEST.in`文件\(放在与`setup.py`同级目录下\), 并且设置`include_package_data=True`, 可以将非代码文件一起安装.
 * `package_data`参数的形式的例子为：`{"package_name":["*.txt", "*.png"]}`
+
+**最佳实践**
+
+目前主流的打包格式为 `whl` 格式（取代 `egg` 格式），发布到 PyPi 的包一般使用下面的命令进行安装
+
+```shell
+pip install <packagename>
+```
+
+实际过程为按照包名 `<packagename>` 在互联网上搜索相应的 .whl 文件，然后进行安装。因此对于源码安装的最佳实践也沿用上述过程，详述如下：
+
+`setup.py` 文件的 `setup` 函数的参数 `packages` 列表长度最好刚好为 1，此时 `setup.py` 文件的 `setup` 函数的参数 `name` 应与 `packages` 的唯一元素相同，且命名全部用小写与下划线，且尽量不要出现下划线。使用下面两条命令安装
+
+```
+python setup.py bdist_wheel  # 打包为一个.whl文件，位于当前文件夹的dist目录下
+pip install dist/xxx-1.7.4-py3-none-any.whl
+```
+
+在 site-packages 目录下会出现类似于如下两个目录
+
+```
+xxx-1.7.4.dist-info
+xxx
+```
+
+备注：whl 格式实际上是 zip 格式，因此可以进行解压缩查看内容
 
 ## 不能实例化的类
 
@@ -1796,8 +1822,6 @@ df[["E", "F"]] = df["A"].apply(lambda x: pd.Series((x, x)))
 # 用两个列表创建字典的较快方式(似乎快于字典推导式)
 x = dict(zip(key, value))
 ```
-
-## 
 
 ## 发送邮件模块
 

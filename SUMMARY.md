@@ -16,17 +16,12 @@
 
 * [draft](notes/draft.md)
 * [GNN](notes/gnn.md)
-* [plan](notes/plan.md)
+* [CV](notes/cv.md)
 
 ## learn
 
 * [CS课程中缺失的一课](learn/missing-semester.md)
 * [C++primerplus\(6ed\)](learn/c++primerplus-6ed.md)
-* [CSAPP](learn/csapp.md)
-* [并行设计导论](learn/c++-parallel.md)
-* [计算机组成原理-台湾科技大学CS250](learn/cs250.md)
-* [CS224W-stanford](learn/cs224w.md)
-* [C++primer\(5ed\)](learn/c++primer.md)
 
 ## Java
 
