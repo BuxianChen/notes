@@ -17,6 +17,7 @@
 * [draft](notes/draft.md)
 * [GNN](notes/gnn.md)
 * [CV](notes/cv.md)
+  * [mmlab](notes/mm/mm.md)
 
 ## learn
 
