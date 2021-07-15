@@ -1,8 +1,20 @@
 # Git
 
+参考：
+
+- https://git-scm.com/docs
+- https://missing.csail.mit.edu/
+- [pro git](https://git-scm.com/book/en/v2)
+- https://www.ruanyifeng.com/blog/2015/12/git-cheat-sheet.html
+- ...
+
+## 术语
+
+- stage/cache/index/缓冲区/暂存区都是指的同一个东西
+
 ## Git 命令简介
 
-所有与 Git 有关的命令最好用 git bash 打开。当然，将 git.exe 所在目录加入到了 path 环境变量后，使用普通的 shell（例如：cmd, powershell, bashrc 等）基本也都没问题。
+所有与 Git 有关的命令最好用 git bash 打开。当然，将 git.exe 所在目录加入到了 path 环境变量后，使用普通的 shell（例如：cmd, powershell, bashrc 等）基本也都没问题。所有的 Git 命令除了 `git init` 与 `git clone` 外，一般都要在 `.git` 的同级目录下执行。
 
 ### git init
 
@@ -12,8 +24,8 @@ git init
 
 其效果是为当前目录建立一个 `.git` 目录，正常情况下不要去修改这个文件夹下的任何内容，可以这样理解：之后的每一条以 git 开头的命令执行后，git.exe 会依据命令内容对 `.git` 目录下的文件或依据 `.git` 目录内的文件对工作区进行修改。注意：
 
-- git init 命令不一定需要在空目录
-- 若.git目录已存在, 使用git init命令的结果是：待补充
+- git init 命令不一定需要在空目录，是否在空目录下执行产生的 .git 目录内容是一样的。
+- 若 .git 目录已存在, 使用 git init 命令的结果会重新初始化，一般不会这样用
 
 ### git config
 
@@ -50,6 +62,17 @@ git reflog
 ### git status
 
 ```bash
+git status
+```
+
+输出分为两部分:
+
+* `Changes not staged for commit`: 显示工作区相对暂存区的变动记录
+* `Changes to be committed`: 显示暂存区相对最近一次提交的变动记录
+
+用下面的命令可以简化输出：
+
+```bash
 git status --short/-s
 # 以下为输出结果
 #  M README                    
@@ -59,15 +82,23 @@ git status --short/-s
 # ?? LICENSE.txt
 ```
 
-左边的M表示文件修改了并且放入了暂存区, 右边的M表示文件修改了但是没有放入暂存区. 此处表示`README`修改了, 但是还没有使用`git add README`放入暂存区; `lib/simplegit.rb`被修改后放入了工作区, 之后未被修改过; `Makefile`在工作区被修改后放入了暂存区, 而后工作区又做了修改. 左边的A表示`lib/git.rb`是工作区新增的文件, 并已经放入了暂存区, `??`表示`LICENSE.txt`是工作区新增的文件, 但没有放入暂存区中
+左边的 M 表示工作区文件修改了（相对最近一次提交）并且放入了暂存区, 右边的 M 表示工作区文件修改了但是没有放入暂存区。此处表示 `README` 修改了，但是还没有使用 `git add README` 命令将其放入暂存区；`lib/simplegit.rb` 被修改后放入了工作区，之后未被修改过；`Makefile` 在工作区被修改后放入了暂存区，而后工作区又做了修改。
+
+左边的 A 表示 `lib/git.rb` 是工作区相对最近一次提交新增的文件，并已经放入了暂存区。
+
+`??` 表示 `LICENSE.txt` 是工作区相对最近一次提交新增的文件，但没有放入暂存区中。
 
 ### git diff
 
 ```bash
 git diff HEAD -- readme.txt
+git diff # 显示工作区相对于暂存区的修改
+git diff --staged # 显示暂存区相对最近一次提交的修改
 ```
 
-### git add
+### git add/rm
+
+`git add` 的作用是为工作区产生变化的文件生成 blob，并将这些文件添加至暂存区
 
 ```bash
 git add <filename>
@@ -76,7 +107,7 @@ git add <filename>
 - 如果 `filename` 在工作区存在，且与暂存区中的内容不一致或暂存区中没有该文件。具体执行过程为：首先为 `filename` 创建一个 object （blob）放在 `.git/objects` 下，之后将该 object 放入暂存区。
 - 如果 `filename` 在工作区中不存在，且在暂存区中存在，那么效果等同于 `git rm <filename>`。具体执行过程为：将暂存区中相应的 object 删除
 
-### git rm
+`git rm` 的主要作用是在暂存区中删除文件，可以通过不同的参数选择是否也删除工作区中的文件
 
 ```bash
 git rm <file> # 从工作区与缓冲区中同时删除文件
@@ -98,43 +129,83 @@ git commit 命令表示将当前的暂存区放入版本库中，前者会打开
 回退版本
 
 ```bash
-# 注意: head是指当前分支的当前版本
-git reset --hard HEAD^  # 注意此时, 若输入git log, 就只有两个历史版本了
-git reset --hard 5ef5  # 
-git reset HEAD readme.txt  # 将暂存区的修改删除
+git reset HEAD readme.txt  # 将暂存区对于HEAD的修改
+git reset readme.txt  # 与上一条命令含义相同
 ```
 
 ### git branch
 
+显示已有分支
+
 ```bash
-git branch <待创建的分支名>
-git branch -d <待删除的分支名>
-git branch -D <待删除的分支名>
+git branch  # 显示本地分支
+git branch -r  # 显示远程分支
+git branch -a  # 显示远程与本地分支
 ```
 
-### git checkout
+创建删除分支
 
 ```bash
-git checkout <待切换的分支名>
+git branch <待创建的分支名>  # 创建分支
+git branch -d <待删除的分支名>
+git branch -D <待删除的分支名>  # 强制删除，即使被删除的分支还未被合并
+```
+
+为分支设定 upstream 分支，在 Git 中，每个分支至多只能有一个 upstream 分支。注意：这里的 upstream 与数据模型中的 parent 是不同的概念。设定后可以不加参数地使用 git pull/push/fetch。
+
+```bash
+git branch --set-upstream-to <远程仓库名>/<远程仓库分支名> <本地分支名>
+```
+
+### git checkout/switch/restore
+
+git checkout 命令用于切换分支以及文件的版本切换作用
+
+**git checkout 用于切换分支**
+
+本质上是修改 HEAD 指向的 commit_id
+
+```bash
+git checkout <branch_name/commit_id>
+git checkout --detach <branch_name/commit_id>
+```
+
+注意两条命令只有一些微妙的区别：第一条命令如果切换后 HEAD 与现有的某个分支名的指向一致，则 HEAD 的状态为非 detached 状态，否则为 detached 状态；第二条命令切换后必然处于 detached 状态。所谓 detached 状态指的是切换后相当于处于匿名分支上，如果在匿名分支上发生了提交，之后又切换到别的分支，如果还想切换回匿名分支，那么只能用 commit_id 来切换回去。
+
+**git checkout 用于文件版本切换**
+
+```bash
 git checkout -- readme.txt # 将工作区回退到暂存区或版本库其中之一, 哪个最新就回退到哪个
 ```
 
-### git restore
+较新版本的 Git 引入了两个命令将 checkout 的两大功能进行了分离。其中 git switch 用于分支切换，git restore 用于文件的版本切换。
+
+**git switch**
 
 ```bash
-touch README.txt
-git add README.txt
-git commit -m "First Commit"
+git checkout <branch_name>  # 注意：此处不能用commit_id进行切换，因此切换后必不为 detached 状态
+git checkout --detach <branch_name/commit_id>  # 切换后为 detached 状态
 ```
+
+**git restore**
 
 ```bash
 git restore [--worktree]/[-W] README.md # 工作区文件内容发生变动, 撤销相对于暂存区的修改
-git restore --staged/-S README.md # 工作区内的文件内容不变, 但文件状态处于没有添加到暂存区的状态
+git restore --staged/-S README.md # 工作区内的文件内容不变, 撤销暂存区相对最近一次提交的修改，等价于 git reset README.md
 git restore -s HEAD~1 README.md # 将工作区的文件内容恢复到最近提交的上一个提交版本
 git restore -s dbv231 README.md # 将工作区恢文件内容恢复到特定提交版本
 ```
 
 ### git merge
+
+分支合并的一般流程为：
+
+```bash
+git merge <branch_name>  # 将 branch_name 分支合并至当前分支
+# 手动解决冲突
+git add .
+git merge --continue  # 填写好提交信息后就完成了合并
+```
 
 ### git rebase
 
@@ -167,18 +238,31 @@ c1 <- c2 <- c6 <- c7 <- c3 <- c4 <- c5
 
 个人理解：所谓 rebase 的直观含义是将 f1 的“基” 从 c2 修改为了 dev 分支的 c7。使用变基得到的另一个好处是切换回 dev 分支后将 f1 分支进来就不用解决冲突了。
 
+### git clone
+
+```bash
+git clone git@github.com:username/repository_name.git
+git clone git@github.com:username/repository_name.git -b dev
+```
+
+上述两条命令内部的详细过程为：两者都会将 `.git` 中的所有内容（远程仓库的所有分支）下载到本地。下载后，第二条命令本地的默认分支 dev 由远程分支 origin/dev 产生。
+
 ### git remote
 
 ### git fetch/pull/push
 
 ```bash
 git pull <远程主机名> <远程分支名>:<本地分支名>
-# 例子: git pull origin dev:release  #表示将
+# 例子：git pull origin dev:release  #表示将
 git push <远程主机名> <本地分支名>:<远程分支名>
-# git push origin release:dev
+# 例子：git push origin release:dev
+git push -u <远程主机名> <本地分支名>:<远程分支名>
+# 之后可以直接使用 git push，不加其余参数
 ```
 
 ### * git cat-file
+
+查看 `.git/objects` 目录下的文件内容
 
 ```bash
 git cat-file -p 24c5735c3e8ce8fd18d312e9e58149a62236c01a  # 查看 objects 目录下的文件内容
@@ -187,7 +271,7 @@ git cat-file -p 24c5735c3e8ce8fd18d312e9e58149a62236c01a  # 查看 objects 目�
 ### * git ls-files
 
 ```bash
-git ls-files -s  # 查看当前缓冲区内容, 即 .git/index 中的内容
+git ls-files -s  # 查看当前缓冲区内容, 即 .git/index 文件中的内容
 ```
 
 ## 详例
