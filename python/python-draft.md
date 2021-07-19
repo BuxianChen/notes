@@ -110,7 +110,7 @@ show_channel_urls: true
 
 ### pip命令
 
-```text
+```bash
 # 查看pip缓存目录
 pip cache dir
 # 修改pip缓存目录, 配置文件位置为"C:\\Users\\用户名\\AppData\\Roaming\\pip\\pip.ini"
@@ -122,7 +122,9 @@ pip install -r requirements.txt
 
 ### 离线安装python包
 
-有网环境下载安装包
+平时用的 pip install 命令的执行逻辑是如果需要下载，则先执行 pip download，再进行安装。因此大部分情况下，将 `pip install` 替换为 `pip download -d <dirname>` 即可实现只下载安装包而不安装。
+
+**有网环境下载安装包**
 
 ```text
 # 下载单个离线包
@@ -131,7 +133,26 @@ pip download -d <your_offline_packages_dir> <package_name>
 pip download -d <your_offline_packages_dir> -r requirements.txt
 ```
 
-将文件拷贝至无网环境安装
+如果无网环境的设备与有网环境的设备平台不一致（例如外网电脑是 Windows 系统，内网电脑是 Linux Ubuntu 系统），需要增加额外参数例如 `platform`、`abi`、`python-version` 等。详情可以参考 [stackoverflow 问答](https://stackoverflow.com/questions/49672621/what-are-the-valid-values-for-platform-abi-and-implementation-for-pip-do)以及它推荐的[链接](https://www.python.org/dev/peps/pep-0425/#Use)。例如：
+
+```bash
+pip download --platform win_amd64 --abi none --python-version 37 --implementation cp --only-binary=:all: -d py-package-ubuntu/ numpy
+# platform指操作系统
+# abi不清楚，设成none应该都是ok的
+# python-version是指python版本, 37表示3.7
+# implementation是指编译python的方式，例如cp表示CPython
+# only-binary=:all: 是前四者设置的时候必须加上的
+# 一般情况下，只要注意修改platform、python-version即可
+```
+
+其中，`platform` 参数的具体值可以在无网环境下使用如下方式得到（注意：要将所有的 `.` 与 `-` 替换为 `_`。）
+
+```python
+from distutils import util
+print(util.get_platform())
+```
+
+**将文件拷贝至无网环境安装**
 
 ```text
 # 安装单个离线包
