@@ -1,5 +1,97 @@
 # draft
 
+## 常用软件
+
+7-zip、Adobe Reader、typora、notepad++、Git
+
+VSCode、XShell、Xftp、Anaconda
+
+Make、CMake、MinGW
+
+## VSCode 使用大杂烩
+
+### VSCode 离线安装扩展
+
+
+
+### VSCode 设置项
+
+VSCode设置`File->Preferences->Settings`中的`用户`优先级低于`工作区`再低于文件夹, 实际上三者的可以设置的参数名是相同的. 优先级会决定哪个发挥作用. _**也许逻辑是这样的, 用户的设置会体现在vscode安装目录下, 三者计算的结果会存在当前工作区的.vscose目录下**_. 有关于python的默认参数及含义可参见[官网链接](https://code.visualstudio.com/docs/python/settings-reference)
+
+### VSCode写C++代码\(Window MSVC\)
+
+```text
+// tasks.json 注意链接外部头文件的写法
+{
+    "version": "2.0.0",
+    "tasks": [
+      {
+        "type": "shell",
+        "label": "cl.exe build active file",
+        "command": "cl.exe",
+        "args": [
+          "/I",
+          "C:/Users/54120/Documents/code",
+          "/Zi",
+          "/EHsc",
+          "/Fe:",
+          "${fileDirname}\\${fileBasenameNoExtension}.exe",
+          "${file}"
+        ],
+        "problemMatcher": ["$msCompile"],
+        "group": {
+          "kind": "build",
+          "isDefault": true
+        }
+      }
+    ]
+  }
+// launch.json
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "cl.exe - Build and debug active file",
+            "type": "cppvsdbg",
+            "request": "launch",
+            "program": "${fileDirname}\\${fileBasenameNoExtension}.exe",
+            "args": [],
+            "stopAtEntry": true,
+            "cwd": "${workspaceFolder}",
+            "environment": [],
+            "externalConsole": false,
+            "preLaunchTask": "C/C++: cl.exe build active file"
+        }
+    ]
+}
+// c_cpp_properties.json
+{
+    "configurations": [
+        {
+            "name": "Win32",
+            "includePath": [
+                "${workspaceFolder}/**",
+                "C:/Users/54120/Documents/code"
+            ],
+            "defines": [
+                "_DEBUG",
+                "UNICODE",
+                "_UNICODE"
+            ],
+            "windowsSdkVersion": "10.0.18362.0",
+            "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe",
+            "cStandard": "c17",
+            "cppStandard": "c++17",
+            "intelliSenseMode": "msvc-x64"
+        }
+    ],
+    "version": 4
+}
+```
+
 ## 术语
 
 CLI \(command-line interface\) 命令行接口
@@ -81,6 +173,8 @@ known_hosts
   git clone https://github.com/BuxianChen/notes.git
   ```
 
+备注：要实现远程免密登陆，服务器端 `.ssh` 文件夹的权限应该为 `700`，而 `authorized_keys` 文件的权限应为 `600`
+
 ## 自定义右键菜单栏
 
 备注：win10系统
@@ -160,10 +254,6 @@ $$
 $$
 
 其中$N\(i\)$表示用户$i$的行为集合\(浏览过哪些商品\), $y\_k$代表该行为表达的隐式反馈\(猜想应该是事先定义好的规则, 例如浏览时间越长, $y\_i$越大\). 实现代码可去github上搜索即可.
-
-## VSCode小技巧
-
-VSCode设置`File->Preferences->Settings`中的`用户`优先级低于`工作区`再低于文件夹, 实际上三者的可以设置的参数名是相同的. 优先级会决定哪个发挥作用. _**也许逻辑是这样的, 用户的设置会体现在vscode安装目录下, 三者计算的结果会存在当前工作区的.vscose目录下**_. 有关于python的默认参数及含义可参见[官网链接](https://code.visualstudio.com/docs/python/settings-reference)
 
 ## graphviz安装
 
@@ -518,80 +608,6 @@ t-sne: [http://www.datakit.cn/blog/2017/02/05/t\_sne\_full.html](http://www.data
 spatial transform networks: [https://kevinzakka.github.io/2017/01/10/stn-part1/](https://kevinzakka.github.io/2017/01/10/stn-part1/)
 
 注: 简单来说, 假设某层的输入为$X\in\mathbb{R}^{H,W,C}$, STN会使用$X$得到6个参数, 使用这6个参数对$X$进行仿射变换得到$X'\in\mathbb{R}^{H',W',C}$, 其中$H’，W'$为网络超参数, 而后利用正常的卷积:$Y=f\_{conv}\(X'\)$, 其中$Y$为下一层的输入.
-
-## VSCode写C++代码\(Window MSVC\)
-
-```text
-// tasks.json 注意链接外部头文件的写法
-{
-    "version": "2.0.0",
-    "tasks": [
-      {
-        "type": "shell",
-        "label": "cl.exe build active file",
-        "command": "cl.exe",
-        "args": [
-          "/I",
-          "C:/Users/54120/Documents/code",
-          "/Zi",
-          "/EHsc",
-          "/Fe:",
-          "${fileDirname}\\${fileBasenameNoExtension}.exe",
-          "${file}"
-        ],
-        "problemMatcher": ["$msCompile"],
-        "group": {
-          "kind": "build",
-          "isDefault": true
-        }
-      }
-    ]
-  }
-// launch.json
-{
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "cl.exe - Build and debug active file",
-            "type": "cppvsdbg",
-            "request": "launch",
-            "program": "${fileDirname}\\${fileBasenameNoExtension}.exe",
-            "args": [],
-            "stopAtEntry": true,
-            "cwd": "${workspaceFolder}",
-            "environment": [],
-            "externalConsole": false,
-            "preLaunchTask": "C/C++: cl.exe build active file"
-        }
-    ]
-}
-// c_cpp_properties.json
-{
-    "configurations": [
-        {
-            "name": "Win32",
-            "includePath": [
-                "${workspaceFolder}/**",
-                "C:/Users/54120/Documents/code"
-            ],
-            "defines": [
-                "_DEBUG",
-                "UNICODE",
-                "_UNICODE"
-            ],
-            "windowsSdkVersion": "10.0.18362.0",
-            "compilerPath": "C:/Program Files (x86)/Microsoft Visual Studio/2019/Community/VC/Tools/MSVC/14.28.29333/bin/Hostx64/x64/cl.exe",
-            "cStandard": "c17",
-            "cppStandard": "c++17",
-            "intelliSenseMode": "msvc-x64"
-        }
-    ],
-    "version": 4
-}
-```
 
 ## windows设置软件快捷方式
 

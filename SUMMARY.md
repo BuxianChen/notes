@@ -15,13 +15,13 @@
 ## Notes
 
 * [draft](notes/draft.md)
-* [GNN](notes/gnn.md)
 * [CV](notes/cv.md)
   * [mmlab](notes/mm/mm.md)
 
 ## learn
 
 * [CS课程中缺失的一课](learn/missing-semester.md)
+* [鸟哥私房菜](learn/鸟哥私房菜.md)
 * [C++primerplus\(6ed\)](learn/c++primerplus_6ed.md)
 
 ## Java

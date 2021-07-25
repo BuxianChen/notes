@@ -360,6 +360,19 @@ $ myrm data/
 
 alias 命令产生的别名只在当前 shell 有效
 
+**du 与 df**
+
+linux 中，目录本身占用一个 block，其大小为 4K，用于存储一些元数据，例如权限信息、修改时间等。
+
+du 命令意为 disk usage，用于显示目录或文件的大小
+
+```bash
+du -h <dir>  # 递归地显示<dir>以及所有子目录的大小,但
+du -h <file>
+```
+
+
+
 ### 杂录
 
 #### 大杂烩
@@ -376,6 +389,36 @@ $ cat /proc/23512/environ | tr "\0" "\n"
 ```
 
 `/proc` 目录中按进程 id 存放着进程的相关信息，特别地，上述命令用于查看该进程运行时的环境变量。
+
+#### 反引号、单引号、双引号
+
+单引号的用于忽略所有特殊字符的特殊含义，双引号忽略大多数特殊字符，但不会忽略 `$`、`\`、反引号。
+
+#### 进程替换与命令替换
+
+命令替换（command substitution）的写法如下：
+
+```bash
+$ $(CMD)
+$ `CMD`
+$ 
+```
+
+其运行逻辑是
+
+进程替换（process substitution）的写法如下：
+
+```
+diff <(ls a) <(ls b)
+```
+
+其运行逻辑是：运行 `ls a`，将结果存入一个临时文件，并用临时文件名替换掉 `<(ls a)`，也就是相当于：
+
+```
+ls a > tmp1.txt
+ls b > tmp2.txt
+diff tmp1.txt tmp2.txt
+```
 
 ## 第 2 课：shell 脚本
 
@@ -879,20 +922,3 @@ hashlib.sha1(b'blob 5\0'+'12中'.encode("utf-8")).hexdigest()
 # len('12中'.encode("utf-8"))
 # '12中'.encode("utf-8")
 ```
-
-
-
-## 加课：杂录
-
-```
-diff <(ls a) <(ls b)
-```
-
-上述代码采用了所谓的 *process substitution* 的模式（与之相对应的模式为 *command substitution*，即 `$(CMD)` 这种写法），其运行逻辑是：运行 `ls a`，将结果存入一个临时文件，并用临时文件名替换掉 `<(ls a)`，也就是相当于：
-
-```
-ls a > tmp1.txt
-ls b > tmp2.txt
-diff tmp1.txt tmp2.txt
-```
-
