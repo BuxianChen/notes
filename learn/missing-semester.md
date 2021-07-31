@@ -195,7 +195,7 @@ $ MY_ENV_VAR=xyz; export MY_ENV_VAR
 $ export MY_ENV_VAR=xyz
 ```
 
-#### IFS
+#### IFS（并不是环境变量）
 
 IFS （internal field separator，内部字段分隔符）环境变量默认为空格，制表符，换行符。
 
@@ -296,7 +296,13 @@ echo -e "\e[44;37;5mabcs\e[0m"
 
 
 
-### 常见 shell 命令记录
+### shell 命令记录
+
+#### dirname
+
+```bash
+$ dirname <file|dir> # 返回文件或目录的父目录
+```
 
 #### tee
 
@@ -364,7 +370,7 @@ $ myrm data/
 
 alias 命令产生的别名只在当前 shell 有效
 
-#### du 与 df
+#### du 与 df（待补充）
 
 linux 中，目录本身占用一个 block，其大小为 4K，用于存储一些元数据，例如权限信息、修改时间等。
 
@@ -390,6 +396,13 @@ $ du -Sh --max-depth=1 <dir>  # 计算目录大小时不包括子目录大小
 ```
 
 df 命令意为 disk free
+
+#### watch
+
+```bash
+# 每秒钟执行一次nvidia-smi命令以监控GPU使用情况，按ctrl+c退出监控
+$ watch -n 1 nvidia-smi
+```
 
 ### 杂录
 

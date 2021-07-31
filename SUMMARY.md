@@ -17,6 +17,7 @@
 * [draft](notes/draft.md)
 * [CV](notes/cv.md)
   * [mmlab](notes/mm/mm.md)
+  * [opencv](notes/opencv/opencv.md)
 
 ## learn
 
