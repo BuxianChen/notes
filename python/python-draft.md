@@ -196,6 +196,14 @@ jupyter-notebook # jupyter-lab
 
 `A`: 在上方插入一个block, `B`: 在下方插入一个block
 
+## 调试
+
+pudb 调试快捷键
+
+
+
+
+
 ## PART 2 Advanced Python
 
 ## Python编程规范
@@ -1131,6 +1139,25 @@ conda install -c conda-forge jupyterlab
 pip install numpy pandas scipy scikit-learn matplotlib seaborn scikit-image opencv-python Pillow nltk virtualenv virtualenvwrapper jupyterlab
 # tensorflow请查看官网说明
 # torch请查看官网说明
+```
+
+## argparse
+
+```python
+import argparse
+# 若不传某个参数一般情况下为None, 若default被指定, 则为default的值（nargs为"?"时为const的值）
+parser = argparse.ArgumentParser()
+
+# --base 1 表示base=1，不传表示base=21
+parser.add_argument("--base", type=int, default=21)
+
+#  --op1 表示op1=2，不传表示op1=None，--op1 20 表示op1=20
+parser.add_argument("--op1", type=int, nargs="?", const=2)
+# nargs取值可以为整数/"?"/"*"/"+", 分别表示传入固定数量的参数，传入0/1个参数，传入0个或多个参数，传入1个或多个参数
+
+# --a 表示a=True，不传表示a=False
+parser.add_argument("--a", action="store_true")
+# 更一般的，可以自定义一个类继承argparse.Action类，然后将这个自定义类名传入action
 ```
 
 ## inspect

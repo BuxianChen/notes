@@ -450,8 +450,10 @@ YOLOV3(**cfg.model) # cfg.model中的键为backbone, neck, bbox_head, train_cfg,
 # mmdet/models/detectors/yolo.py: 全部代码
 @DETECTORS.register_module()
 class YOLOV3(SingleStageDetector):
-    def __init__(self,backbone,neck,bbox_head,train_cfg=None,test_cfg=None,pretrained=None,init_cfg=None):
-        super(YOLOV3, self).__init__(backbone, neck, bbox_head, train_cfg,test_cfg, pretrained, init_cfg)
+    def __init__(self,backbone,neck,bbox_head,train_cfg=None,
+                 test_cfg=None,pretrained=None,init_cfg=None):
+        super(YOLOV3, self).__init__(backbone, neck, bbox_head, train_cfg,
+                                     test_cfg, pretrained, init_cfg)
 # mmdet/models/detectors/single_stage.py:
 @DETECTORS.register_module()
 class SingleStageDetector(BaseDetector):
@@ -472,6 +474,7 @@ class BaseModule(nn.Module, metaclass=ABCMeta):
 首先，`SingleStageDetector.__init__` 函数会依次调用
 
 ```python
+super(SingleStageDetector, self).__init__(init_cfg)  #
 self.backbone = build_backbone(backbone)  # 等同于 BACKBONES.build(cfg)
 self.neck = build_neck(neck)              # 等同于 NECKS.build(cfg)
 self.bbox_head = build_head(bbox_head)    # 等同于 HEADS.build(cfg)
@@ -503,7 +506,7 @@ python tools/test.py configs/yolo/yolov3_d53_320_273e_coco.py checkpoints/yolov3
 
 ### mmcv/runner/base_module.py：BaseModule
 
-完整源代码（注释有所修改）如下，可以发现本质上只是给 `nn.Module` 增加了个 `init_weights` 方法。
+mmcv 中类似于torch.nn.Module的东西，完整源代码（注释有所修改）如下，可以发现本质上只是给 `nn.Module` 增加了个 `init_weights` 方法。
 
 ```python
 class BaseModule(nn.Module, metaclass=ABCMeta):
@@ -565,4 +568,14 @@ class BaseModule(nn.Module, metaclass=ABCMeta):
 ```
 
 
+
+
+
+
+
+```python
+class MultiScaleFlipAug:
+	def __init__(self, transforms, img_scale=None, scale_factor=None,
+                 flip=False, flip_direction='horizontal'):
+```
 

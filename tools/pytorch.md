@@ -220,3 +220,31 @@ step:        READY/UNSCALED -> STEPPED
 
 总结: update, unscale\_, step函数的顺序不能乱
 
+
+
+
+
+零碎记录
+
+摘录自yolov5
+
+```python
+# model is a instanse of torch.nn.Module
+g0, g1, g2 = [], [], []  # optimizer parameter groups
+for v in model.modules():
+    if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
+        g2.append(v.bias)
+    if isinstance(v, nn.BatchNorm2d):
+        g0.append(v.weight)
+    elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
+        g1.append(v.weight)
+
+if opt.adam:
+    optimizer = Adam(g0, lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))
+else:
+    optimizer = SGD(g0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
+
+optimizer.add_param_group({'params': g1, 'weight_decay': hyp['weight_decay']})
+optimizer.add_param_group({'params': g2})
+```
+

@@ -193,5 +193,92 @@ pip install git+https://github.com/philferriere/cocoapi.git#subdirectory=PythonA
 
 **简介**
 
+```python
+# image_id: 图像id, cat_id: 类别id, anno_id: 标注id 
+class COCO: #全部函数如下
+	def __init__(self, annotation_file=None):
+		# 大体上是读取标注文件
+        # ...
+        self.createIndex()
+    def createIndex(self):
+        # 建立索引, 无返回
+        pass
+    def info(self):
+        # 打印"info", 无返回
+        pass
+    def getAnnIds(self, imgIds=[], catIds=[], areaRng=[], iscrowd=None):
+        # imgIds为指定的图像id列表, catIds为指定的标签id列表, areaRng为最小的面积阈值, iscrowd用于指定只返回iscrowd=0或1的标注
+        # 返回满足条件的anno_id列表
+    def getCatIds(self, catNms=[], supNms=[], catIds=[]):
+        # 在json的categories字段中筛选: catNms用于指定"name"列表, supNms用于指定"supercategory"列表, catIDs用于指定"id"列表
+        # 返回满足条件的cat_id列表
+    def getImgIds(self, imgIds=[], catIds=[]):
+        # 至少有catIds中的至少一个类别的imgIds中的图片
+        # 返回满足条件的image_id列表
+    def loadAnns(self, ids=[]):
+        # ids表示anno_id列表，用于返回这些标注信息
+        # 返回例子为：
+        """
+        [{"segmentation": [...], "bbox": [...], "id": 111, area": 112.32, ...},
+        {"segmentation": [...], "bbox": [...], "id": 1123, "area": 1121.32, ...},
+        ...]
+        """
+    def loadCats(self, ids=[]):
+        # ids表示cat_id列表，用于返回类别信息
+        # 返回例子为：
+        """
+        [{"id": 1, "name": "car", "supercategory": "car"},
+        {"id": 2, "name": "cat", "supercategory": "animal"},
+        ...]
+        """
+    def loadImgs(self, ids=[]):
+        # ids表示image_id列表，用于返回图像信息
+        # 返回例子为：
+        """
+        [{"id": 1, "file_name": "000100.jpg", "height": 100, "width": 120, ...},
+        {{"id": 23, "file_name": "0001100.jpg", "height": 110, "width": 320, ...}},
+        ...]
+        """
+    def showAnns(self, anns, draw_bbox=False)
+    	"""作图: 不会读取相应的图片, 只对标注区域打阴影, 无返回值"""
+    def loadRes(self, resFile):
+        """待补充"""
+    def download(self, tarDir = None, imgIds = [] ):
+        # 下载数据
+    def loadNumpyAnnotations(self, data):
+        """
+        Convert result data from a numpy array [Nx7] where each row contains {imageID,x1,y1,w,h,score,class}
+        :param  data (numpy.ndarray)
+        :return: annotations (python nested list), 例子：
+        
+        [{
+            'image_id'  : imageID,
+            'bbox'  : [x1, y1, w, h],
+            'score' : score,
+            'category_id': class,
+        }]
+        """
+    def annToRLE(self, ann):
+        """待补充"""
+    def annToMask(self, ann):
+        """待补充"""
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ### YOLO 标注格式
 
