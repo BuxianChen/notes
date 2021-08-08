@@ -1,25 +1,28 @@
 # Center
 
-git仓库地址: [https://github.com/BuxianChen/notes](https://github.com/BuxianChen/notes)
+完整内容参见 Git 仓库地址：[https://github.com/BuxianChen/notes](https://github.com/BuxianChen/notes)
 
-## 目录
+写作规范参考：[中文文案排版指北](https://github.com/sparanoid/chinese-copywriting-guidelines)
 
-## **写作规范**
+推荐资料：
 
-## **记录例子**
+**Linux**
 
-快捷键
+- [鸟哥 Linux 私房菜](http://linux.vbird.org/linux_basic/)
 
-代码片段
+**Shell**
 
-```python
-import numpy as np
-np.array([1., 2.])
-```
+- 《Linux Shell Scripting Cookbook (3 ed)》
 
-图片
+**Git**
 
-![&#x5F15;&#x7528;&#x81EA;coursera: algorithms4 homework 0 image](.gitbook/assets/logo.png)
+- [Pro Git](https://git-scm.com/book/en/v2)
 
+**Docker**
 
+- [Docker 从入门到实践](https://yeasy.gitbook.io/docker_practice/)
+
+**C++**
+
+- 《C++ Primer Plus (6 ed)》
 
