@@ -1160,6 +1160,26 @@ parser.add_argument("--a", action="store_true")
 # 更一般的，可以自定义一个类继承argparse.Action类，然后将这个自定义类名传入action
 ```
 
+## os
+
+```python
+# 求相对路径
+os.path.relpath("./data/a/b/c.txt", "./data/a")  # b/c.txt
+os.path.splitext("a/b/c.txt")  # ('a/b/c', '.txt')
+os.path.expanduser("~/../a.txt")  # /home/username/../a.txt
+# abspath与realpath都不会处理~, realpath会返回软连接指向的位置, abspath只会返回软连接
+os.path.abspath("~/a.txt")  # /home/username/temp/~/a.txt
+os.path.abspath(os.path.expanduser("~/a.txt"))  # /home/username/a.txt
+os.path.realpath(os.path.expanduser("~/a.link"))  # /home/username/a.txt
+
+# 最为标准的用法
+os.path.abspath(os.path.realpath(os.path.expanduser("~/a.link")))
+```
+
+
+
+
+
 ## inspect
 
 ### inspect.signature

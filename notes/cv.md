@@ -264,21 +264,23 @@ class COCO: #全部函数如下
         """待补充"""
 ```
 
+## PIL
 
+```python
+from PIL import Image
+im = Image.open("./temp.jpg")
+# print(im.format, im.size, im.mode)  # im.size=(width, height)
+im_arr = np.array(im)
+im_arr.shape  # (height, width)
+im_arr.dtype  # np.uint8
+out_im = Image.fromarray(im_arr.astype(np.uint8))  # 注意必须先转为像素值在0~255之间的uint8类型才能转换为Image对象
+out_im.save("1.jpg")
+```
 
+### LFW 数据集
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-### YOLO 标注格式
-
+> ​       LFW数据集共有13233张人脸图像，每张图像均给出对应的人名，共有5749人，且绝大部分人仅有一张图片。每张图片的尺寸为250X250，绝大部分为彩色图像，但也存在少许黑白人脸图片。
+> ​       LFW数据集主要测试人脸识别的准确率，该数据库从中随机选择了6000对人脸组成了人脸辨识图片对，其中3000对属于同一个人2张人脸照片，3000对属于不同的人每人1张人脸照片。测试过程LFW给出一对照片，询问测试中的系统两张照片是不是同一个人，系统给出“是”或“否”的答案。通过6000对人脸测试结果的系统答案与真实答案的比值可以得到人脸识别准确率
+> ————————————————
+> 版权声明：本文为CSDN博主「姚路遥遥」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
+> 原文链接：https://blog.csdn.net/Roaddd/article/details/114221618

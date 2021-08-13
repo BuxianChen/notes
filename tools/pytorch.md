@@ -36,6 +36,11 @@ model.eval()
 model(torch.tensor([1., 2., 3., 4., 5.]))  # [1., 2., 3., 4., 5.]
 ```
 
+```
+x = torch.tensor([1, 2, 3])
+y = x[[0, 2], None]  # 相当于y=x[[0, 2]].view(-1, 1)
+```
+
 **finetune\(微调\)**
 
 待补充
@@ -59,9 +64,115 @@ scripted.save("yy.pt")
 torch.jit.load('yy.pt')
 ```
 
-**单机多GPU训练**
+**cuda**
 
-待补充
+术语：[参考官方文档](https://pytorch.org/docs/1.9.0/notes/cuda.html)
+
+pytorch 1.7 之后，可以通过设置这两个参数为 True 提升 32 位浮点运算的速度，默认值即为 True。设置为 True 之后，运算精度会变低许多，但速度会快很多
+
+```python
+# The flag below controls whether to allow TF32 on matmul. This flag defaults to True.
+torch.backends.cuda.matmul.allow_tf32 = True
+
+# The flag below controls whether to allow TF32 on cuDNN. This flag defaults to True.
+torch.backends.cudnn.allow_tf32 = True
+```
+
+**多GPU并行训练**
+
+有时会见到以这种方式启动训练脚本
+
+```shell
+CUDA_VISIBLE_DEVICES=0,1,2,3,4,5,6,7 python -m torch.distributed.launch --nproc_per_node=8 --nnodes=1 --node_rank=0 --master_addr 127.0.0.1 --master_port 29500 train.py
+```
+
+参数含义解释如下：
+
+local_rank一般是只每个机器内部的GPU编号
+os.environ['WORLD_SIZE']
+单机: nnodes=1, 八卡: nproc_per_node=8
+
+torch 1.6 中 `torch/distributed/launch.py` 源码（只去除了注释）如下：
+
+```python
+from __future__ import absolute_import, division, print_function, unicode_literals
+import sys
+import subprocess
+import os
+from argparse import ArgumentParser, REMAINDER
+
+def parse_args():
+    parser = ArgumentParser()
+    # Optional arguments for the launch helper
+    parser.add_argument("--nnodes", type=int, default=1)
+    parser.add_argument("--node_rank", type=int, default=0)
+    parser.add_argument("--nproc_per_node", type=int, default=1)
+    parser.add_argument("--master_addr", default="127.0.0.1")
+    parser.add_argument("--master_port", default=29500, type=int)
+    parser.add_argument("--use_env", default=False, action="store_true")
+    parser.add_argument("-m", "--module", default=False, action="store_true")
+    parser.add_argument("--no_python", default=False, action="store_true")
+    # positional
+    parser.add_argument("training_script", type=str)
+    # rest from the training program
+    parser.add_argument('training_script_args', nargs=REMAINDER)
+    return parser.parse_args()
+""" 备注: 使用下面的命令启动时
+python -m torch.distributed.launch --nproc_per_node=2 --nnodes=1 --node_rank=0 train.py --lr 0.2 --layers 34
+training_srcipt为"train.py", training_script_args为["--lr", "0.2", "--layers", "34"]
+"""
+def main():
+    args = parse_args()
+    # world size in terms of number of processes
+    dist_world_size = args.nproc_per_node * args.nnodes
+    # set PyTorch distributed related environmental variables
+    current_env = os.environ.copy()
+    current_env["MASTER_ADDR"] = args.master_addr
+    current_env["MASTER_PORT"] = str(args.master_port)
+    current_env["WORLD_SIZE"] = str(dist_world_size)
+    processes = []
+    if 'OMP_NUM_THREADS' not in os.environ and args.nproc_per_node > 1:
+        current_env["OMP_NUM_THREADS"] = str(1)
+        print("Setting OMP_NUM_THREADS environment variable for each process "
+              "to be {} in default, to avoid your system being overloaded, "
+              "please further tune the variable for optimal performance in "
+              "your application as needed. \n".format(current_env["OMP_NUM_THREADS"]))
+    for local_rank in range(0, args.nproc_per_node):
+        # each process's rank
+        dist_rank = args.nproc_per_node * args.node_rank + local_rank
+        current_env["RANK"] = str(dist_rank)
+        current_env["LOCAL_RANK"] = str(local_rank)
+        # spawn the processes
+        with_python = not args.no_python
+        cmd = []
+        if with_python:
+            cmd = [sys.executable, "-u"]  # sys.excutable由sys.argv[0]及若干个环境变量决定
+            if args.module:
+                cmd.append("-m")
+        else:
+            if not args.use_env:
+                raise ValueError("When using the '--no_python' flag, you must also set the '--use_env' flag.")
+            if args.module:
+                raise ValueError("Don't use both the '--no_python' flag and the '--module' flag at the same time.")
+        cmd.append(args.training_script)
+        if not args.use_env:
+            cmd.append("--local_rank={}".format(local_rank))
+        cmd.extend(args.training_script_args)
+        process = subprocess.Popen(cmd, env=current_env)
+        processes.append(process)
+    for process in processes:
+        process.wait()
+        if process.returncode != 0:
+            raise subprocess.CalledProcessError(returncode=process.returncode,cmd=cmd)
+if __name__ == "__main__":
+    main()
+```
+
+
+
+
+
+
 
 **模型量化**
 
@@ -248,3 +359,122 @@ optimizer.add_param_group({'params': g1, 'weight_decay': hyp['weight_decay']})
 optimizer.add_param_group({'params': g2})
 ```
 
+
+
+## mxnet
+
+### recordio
+
+mxnet 中推荐使用如下数据格式进行文件 IO，典型应用场景是原始数据为十万张图片以及相应的标签，mxnet 提供了相应的工具将所有的图片与标签压缩到一个后缀名为 `.rec` 的文件中，例如：
+
+```
+<dataname>.rec
+```
+
+`.rec` 文件的实际存储为二进制形式，（猜测）实际存储格式为：
+
+```
+<第一条数据的byte数><第一条数据的实际内容>
+<第二条数据的byte数><第二条数据的实际内容>
+...
+```
+
+其中字节数目占用 8 个字节的空间，而每条数据的实际内容所占的字节数不定长。
+
+**mx.recordio.MXRecordIO**
+
+这个类只需要一个 `.rec` 文件作为输入，只处理最基本的读写操作，如下：
+
+```python
+record = mx.recordio.MXRecordIO('tmp.rec', 'w')
+# <mxnet.recordio.MXRecordIO object at 0x10ef40ed0>
+for i in range(3):
+    record.write('record_%d'%i)
+record.close()
+record = mx.recordio.MXRecordIO('tmp.rec', 'r')
+for i in range(3):
+    item = record.read()
+    print(item)
+# record_0
+# record_1
+# record_2
+record.close()
+```
+
+注意：由于每行数据所占的字节数是不一样的，所以 `MXRecordIO` 类只支持顺序读取，而不能进行随机读取（例如直接读取第 102 条数据）。
+
+**mx.recordio.MXIndexedRecordIO**
+
+这个类的主要作用是支持随机读写，因此还需要一个映射表用于指示每条数据的起始位置。需要两个文件作为输入，例如：
+
+```
+data.idx
+data.rec
+```
+
+其中 `data.idx` 为一个文本文件，其内容大致为（分割符为制表符）：
+
+```
+1	0
+2	5768
+3	12520
+4	19304
+```
+
+每行数据的第一个数字表示下标（即之后所述的 `read_idx(idx)` 中的 `idx`），第二个数字表示该下标对应的数据的起始位置。
+
+小细节：`.rec` 文件中的字节对齐
+
+```python
+record = mx.recordio.MXRecordIO("data.rec", 'r')
+for _ in range(3):
+    x = record.read()  # x的类型为字节
+    print(len(x))  # 依次为5760, 6742, 6773
+```
+
+注意实际存储时，每行的实际数据的字节数会对齐到 8 的倍数，因此实际存储时的存储如下
+
+```
+8byte 5760byte
+8byte 6742byte 2byte(padding)
+8byte 6773byte 3byte(padding)
+```
+
+`MXIndexedRecordIO` 的实际使用例子如下：
+
+```python
+for i in range(5):
+    record.write_idx(i, 'record_%d'%i)
+record.close()
+record = mx.recordio.MXIndexedRecordIO('tmp.idx', 'tmp.rec', 'r')
+record.read_idx(3)
+record_3
+```
+
+**mx.recordio.pack/unpack/pack_img/unpack_img**
+
+mxnet 中针对图像数据的 `.rec` 文件格式做了一些约定，当 `.rec` 文件的存储满足这些约定时，可以调用四个函数进行数据处理。以下 `header` 表示一个 `IRHeader` 对象，`s` 表示字节（即调用`MXRecordIO` 的 `read` 方法得到的东西），而 `img` 表示的是一个形状为 `(H, W, 3)` BGR 格式的三维数组。
+
+```python
+pack(header, s) -> s
+unpack(s) -> header, s
+pack_img(header, img, quality=95, img_fmt='.jpg') -> s
+unpack_img(s, iscolor=-1) -> header, img
+```
+
+`IRHeader` 实际上就是一个 `namedtuple`，定义如下：
+
+```
+IRHeader = namedtuple('HEADER', ['flag', 'label', 'id', 'id2'])
+```
+
+- flag 是一个整数，可以自由根据需要设置
+- label 是一个浮点数或浮点数组，代表标签
+- id 是每条记录的唯一 id
+- id2 一般设置为 0 即可
+
+**工具**
+
+待补充
+
+`mxnet/tools/im2rec.py` 用于生成 `.rec` 格式的数据
