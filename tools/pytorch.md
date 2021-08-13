@@ -12,40 +12,13 @@ libraries部分包含torchvision等
 
 community部分没探索过
 
-**杂录**
 
-`torch.version.cuda` 变量存储了 cuda 的版本号
 
-`torch.cuda.max_memory_allocated(device=None)`函数用于输出程序从开始运行到目前为止GPU占用的最大内存
-
-`torch.cuda.reset_max_memory_allocated()`函数用于将程序从开始运行到目前为止GPU占用的最大内存设置为0
-
-`torch.nn.Module`的默认模式为**train**, 但为了保险起见, 请手动用`model.train()`与`model.eval()`进行切换.
-
-`torch.nn.Dropout(p)`的行为:
-
-* 测试阶段: 直接将输入原封不动地输出
-* 训练阶段: 以`p`的概率将输入的分量置为0, 其余分量变为`1/(1-p)`倍
-
-```python
-model = nn.Sequential(nn.Dropout(0.3))
-model.train()
-model(torch.tensor([1., 2., 3., 4., 5.]))  # [0.0000, 2.8571, 4.2857, 5.7143, 7.1429]
-
-model.eval()
-model(torch.tensor([1., 2., 3., 4., 5.]))  # [1., 2., 3., 4., 5.]
-```
-
-```
-x = torch.tensor([1, 2, 3])
-y = x[[0, 2], None]  # 相当于y=x[[0, 2]].view(-1, 1)
-```
-
-**finetune\(微调\)**
+## finetune(微调)
 
 待补充
 
-**load and save**
+## load and save
 
 ```python
 class MyModule(torch.nn.Module):
@@ -64,7 +37,112 @@ scripted.save("yy.pt")
 torch.jit.load('yy.pt')
 ```
 
-**cuda**
+## optimizer
+
+使用范例如下：（引用自[官方文档](https://pytorch.org/docs/stable/optim.html)），注意官方推荐 `zero_grad()->forward->loss.backward()->optimizer.step()` 的方式进行参数更新, 并且 `scheduler.step` 放在整个 epoch 的最后进行更新
+
+```python
+model = [Parameter(torch.randn(2, 2, requires_grad=True))]
+optimizer = SGD(model, 0.1)
+scheduler = ExponentialLR(optimizer, gamma=0.9)
+for epoch in range(20):
+    for input, target in dataset:
+        optimizer.zero_grad()
+        output = model(input)
+        loss = loss_fn(output, target)
+        loss.backward()
+        optimizer.step()
+    scheduler.step()
+```
+
+**torch.optim**
+
+```
+optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
+optimizer = optim.Adam([var1, var2], lr=0.0001)
+```
+
+如果模型的各个参数需要使用不同的学习率, 则可以使用如下两种方式
+
+```python
+optim.SGD([{'params': model.base.parameters()},
+	{'params': model.classifier.parameters(), 'lr': 1e-3}],
+	lr=1e-2, momentum=0.9)  # 即设定默认的lr为1e-2, 默认的momentum为0.9
+```
+
+```python
+# model is a instanse of torch.nn.Module
+g0, g1, g2 = [], [], []  # optimizer parameter groups
+for v in model.modules():
+    if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
+        g2.append(v.bias)
+    if isinstance(v, nn.BatchNorm2d):
+        g0.append(v.weight)
+    elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
+        g1.append(v.weight)
+optimizer = SGD(g0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
+optimizer.add_param_group({'params': g1, 'weight_decay': hyp['weight_decay']})
+optimizer.add_param_group({'params': g2})
+```
+
+**torch.optim.lr_scheduler**
+
+使用自定义的学习率调整策略可以使用 `LambdaLR` 类
+
+```python
+import torch
+from torch.optim import SGD
+from torch.optim.lr_scheduler import LambdaLR
+
+x = torch.tensor([1., 2.], requires_grad=True)
+optimizer = SGD([x], 0.1)
+scheduler = LambdaLR(optimizer, lambda x: (x+1)**2)
+# 没有调用 scheduler.step() 之前, 学习率为 0.1 * (0 + 1)**2 = 0.1
+for i in range(3):
+    optimizer.zero_grad()
+    y = torch.sum(x)
+    y.backward()
+    print(f"before optimizer.step(), x.grad: {x.grad}, x: {x}")
+    optimizer.step()
+    print(f"after optimizer.step(): x.grad, {x.grad}, x: {x}")
+    scheduler.step()
+    print(scheduler.get_lr())  # 获取当前的学习率, 注意返回的是列表, 依次为每个参数组的学习率
+# 简化版的输出结果:
+# before optimizer.step(), x.grad: [1., 1.], x: [1., 2.]
+# before optimizer.step(): x.grad, [1., 1.], x: [0.9000, 1.9000]
+# [0.4]
+# before optimizer.step(), x.grad: [1., 1.], x: [0.9000, 1.9000]
+# before optimizer.step(): x.grad, [1., 1.], x: [0.5000, 1.5000]
+# [0.9]
+# before optimizer.step(), x.grad: [1., 1.], x: [0.5000, 1.5000]
+# before optimizer.step(): x.grad, [1., 1.], x: [-0.4000,  0.6000]
+# [1.6]
+```
+
+对不同的参数设置了不同的学习率及学习率调整策略时, `get_lr` 会返回不同参数组的当前学习率
+
+```python
+x = torch.tensor([1., 2.], requires_grad=True)
+z = torch.tensor(3., requires_grad=True)
+optimizer = SGD([{'params': [x], 'lr': 1}, {'params': [z], 'lr': 2}])
+scheduler = LambdaLR(optimizer, [lambda x: (x+1)**2, lambda x: x+1])
+print(scheduler.get_lr())
+for i in range(2):
+    optimizer.zero_grad()
+    y = torch.sum(x) + z
+    y.backward()
+    optimizer.step()
+    scheduler.step()
+    print(scheduler.get_lr())
+# 简化版的输出:
+# [1, 2]
+# [4, 4]
+# [9, 6]
+```
+
+
+
+## cuda
 
 术语：[参考官方文档](https://pytorch.org/docs/1.9.0/notes/cuda.html)
 
@@ -78,7 +156,7 @@ torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 ```
 
-**多GPU并行训练**
+### 多GPU并行训练
 
 有时会见到以这种方式启动训练脚本
 
@@ -168,17 +246,46 @@ if __name__ == "__main__":
     main()
 ```
 
+**原理**
 
+```
+import torch
+from torch.optim import SGD
+from torch.optim.lr_scheduler import ExponentialLR, LambdaLR
+def step1(x):
+    return torch.matmul(w, x)
 
+def step2(x):
+    return torch.sum(x)
 
+def end2end(x):
+    return step2(step1(x))
+```
 
+```
+w = torch.tensor([1., 2.], requires_grad=True)
+x = torch.tensor([3., 4.])
+z = end2end(x)
+z.backward()
+w.grad
+```
 
+```
+w = torch.tensor([1., 2.], requires_grad=True)
+x = torch.tensor([3., 4.])
+y = step1(x)
+y1 = y.clone().detach().requires_grad_(True)
+z = step2(y1)
+z.backward()
+y.backward(y1.grad)
+w.grad
+```
 
-**模型量化**
+## 模型量化
 
 待补充
 
-**torchscript**
+## torchscript
 
 大致理解: torchscript将python脚本里写的模型\(即自定义的`torch.nn.Module`子类\)转换为一个中间表示，将这个中间表示保存后，可以使用其他语言或者环境对中间表示进行解析。
 
@@ -250,7 +357,7 @@ loaded = torch.jit.load('wrapped_rnn.pt')
 * 一种方案是使用C++ API进行完整的训练与模型保存\(torchscript中定义的格式\)
 * 另一种方案是使用Python训练并保存\(必须使用torchscript定义的格式保存\), 然后使用C++ API进行导入
 
-**自动混合精度训练\(Automatic Mixed Precision\)**
+## 自动混合精度训练\(Automatic Mixed Precision\)
 
 docs-&gt;[torch.cuda.amp](https://pytorch.org/docs/stable/amp.html?highlight=torch%20cuda%20amp#module-torch.cuda.amp)
 
@@ -331,35 +438,34 @@ step:        READY/UNSCALED -> STEPPED
 
 总结: update, unscale\_, step函数的顺序不能乱
 
+## 零碎记录
 
+`torch.version.cuda` 变量存储了 cuda 的版本号
 
+`torch.cuda.max_memory_allocated(device=None)`函数用于输出程序从开始运行到目前为止GPU占用的最大内存
 
+`torch.cuda.reset_max_memory_allocated()`函数用于将程序从开始运行到目前为止GPU占用的最大内存设置为0
 
-零碎记录
+`torch.nn.Module`的默认模式为**train**, 但为了保险起见, 请手动用`model.train()`与`model.eval()`进行切换.
 
-摘录自yolov5
+`torch.nn.Dropout(p)`的行为:
+
+* 测试阶段: 直接将输入原封不动地输出
+* 训练阶段: 以`p`的概率将输入的分量置为0, 其余分量变为`1/(1-p)`倍
 
 ```python
-# model is a instanse of torch.nn.Module
-g0, g1, g2 = [], [], []  # optimizer parameter groups
-for v in model.modules():
-    if hasattr(v, 'bias') and isinstance(v.bias, nn.Parameter):
-        g2.append(v.bias)
-    if isinstance(v, nn.BatchNorm2d):
-        g0.append(v.weight)
-    elif hasattr(v, 'weight') and isinstance(v.weight, nn.Parameter):
-        g1.append(v.weight)
+model = nn.Sequential(nn.Dropout(0.3))
+model.train()
+model(torch.tensor([1., 2., 3., 4., 5.]))  # [0.0000, 2.8571, 4.2857, 5.7143, 7.1429]
 
-if opt.adam:
-    optimizer = Adam(g0, lr=hyp['lr0'], betas=(hyp['momentum'], 0.999))
-else:
-    optimizer = SGD(g0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
-
-optimizer.add_param_group({'params': g1, 'weight_decay': hyp['weight_decay']})
-optimizer.add_param_group({'params': g2})
+model.eval()
+model(torch.tensor([1., 2., 3., 4., 5.]))  # [1., 2., 3., 4., 5.]
 ```
 
-
+```
+x = torch.tensor([1, 2, 3])
+y = x[[0, 2], None]  # 相当于y=x[[0, 2]].view(-1, 1)
+```
 
 ## mxnet
 
@@ -478,3 +584,4 @@ IRHeader = namedtuple('HEADER', ['flag', 'label', 'id', 'id2'])
 待补充
 
 `mxnet/tools/im2rec.py` 用于生成 `.rec` 格式的数据
+
