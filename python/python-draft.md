@@ -240,6 +240,8 @@ a = ["a", "b"]
 
 [python PEP 484](https://www.python.org/dev/peps/pep-0484/)
 
+注意 Python 解释器不会真的按照注解来检查输入输出，这些信息只是为了方便程序员理解代码、代码文档自动生成以及 IDE 的自动提示。
+
 ```python
 def f(a: int = 1, b: "string" = "") -> str:
     a: int = 1
@@ -249,7 +251,37 @@ a: int = 1
 f.__annotations__
 ```
 
-顺带介绍个骚东西\(上述链接中也有用到\)
+如果不使用这种方式进行注解，还可以利用 `.pyi` 文件。这种 `.pyi` 文件被称为存根文件（stub fiile），类似与 C 语言中的函数声明，详情可参考 [stackoverflow](https://stackoverflow.com/questions/59051631/what-is-the-use-of-stub-files-pyi-in-python) 问答，例如：
+
+```python
+# pkg.py文件内容
+def foo(x, y):
+    return x + y
+# pkg.pyi文件内容，注意省略号是语法的一部分
+def foo(x: int, y: int) -> int: ...
+```
+
+这种 `.pyi` 文件除了用于注释普通 `.py` 文件外，通常也用来注释 Python 包中引入的 C 代码。例如在 Pytorch 1.9.0 中，在 `torch/_C` 目录下就有许多 `.pyi` 文件，但注意这并不是 stub file，例如 `torch/_C/__init__.pyi` 文件关于 `torch.version` 的注解如下：
+
+```python
+# Defined in torch/csrc/Device.cpp
+class device:
+    type: str  # THPDevice_type
+    index: _int  # THPDevice_index
+
+    def __get__(self, instance, owner=None) -> device: ...
+
+    # THPDevice_pynew
+    @overload
+    def __init__(self, device: Union[_device, _int, str]) -> None: ...
+
+    @overload
+    def __init__(self, type: str, index: _int) -> None: ...
+
+    def __reduce__(self) -> Tuple[Any, ...]: ...  # THPDevice_reduce
+```
+
+关于注解的模块主要是 typing
 
 ```python
 # Iterable等也在这里

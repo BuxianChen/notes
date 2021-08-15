@@ -140,11 +140,47 @@ for i in range(2):
 # [9, 6]
 ```
 
+## 自定义算子
+
+参考：[pytorch 官方文档](https://pytorch.org/tutorials/intermediate/custom_function_conv_bn_tutorial.html)
+
+例子1：自己实现二维卷积
+
+```python
+import torch
+from torch.autograd.function import once_differentiable
+import torch.nn.functional as F
+
+def convolution_backward(grad_out, X, weight):
+    grad_input = F.conv2d(X.transpose(0, 1), grad_out.transpose(0, 1)).transpose(0, 1)
+    grad_X = F.conv_transpose2d(grad_out, weight)
+    return grad_X, grad_input
+
+class Conv2D(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, X, weight):
+        ctx.save_for_backward(X, weight)  # 这是torch.autograd.Function的方法, 保存数据供反向求导使用
+        return F.conv2d(X, weight)
+
+    # Use @once_differentiable by default unless we intend to double backward
+    @staticmethod
+    @once_differentiable
+    def backward(ctx, grad_out):
+        X, weight = ctx.saved_tensors
+        return convolution_backward(grad_out, X, weight)
+
+weight = torch.rand(5, 3, 3, 3, requires_grad=True, dtype=torch.double)
+X = torch.rand(10, 3, 7, 7, requires_grad=True, dtype=torch.double)
+torch.autograd.gradcheck(Conv2D.apply, (X, weight))  # 梯度检查
+```
+
 
 
 ## cuda
 
-术语：[参考官方文档](https://pytorch.org/docs/1.9.0/notes/cuda.html)
+### 术语释义
+
+[参考官方文档](https://pytorch.org/docs/1.9.0/notes/cuda.html)
 
 pytorch 1.7 之后，可以通过设置这两个参数为 True 提升 32 位浮点运算的速度，默认值即为 True。设置为 True 之后，运算精度会变低许多，但速度会快很多
 
@@ -156,7 +192,63 @@ torch.backends.cuda.matmul.allow_tf32 = True
 torch.backends.cudnn.allow_tf32 = True
 ```
 
-### 多GPU并行训练
+### 简介
+
+[参考官方文档](https://pytorch.org/tutorials/beginner/dist_overview.html)
+
+
+
+### torch.nn.DataParallel
+
+#### 使用
+
+```python
+import torch
+import torch.nn as nn
+from torch.utils.data import Dataset, DataLoader
+class RandomDataset(Dataset):
+    def __init__(self, size, length):
+        self.len = length
+        self.data = torch.randn(length, size)
+    def __getitem__(self, index):
+        return self.data[index]
+    def __len__(self):
+        return self.len
+rand_loader = DataLoader(dataset=RandomDataset(100, 5), batch_size=30, shuffle=True)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+model = Model(input_size, output_size)
+if torch.cuda.device_count() > 1:
+	print("Let's use", torch.cuda.device_count(), "GPUs!")
+    # dim = 0 [30, xxx] -> [10, ...], [10, ...], [10, ...] on 3 GPUs
+    model = nn.DataParallel(model)
+model.to(device)  # 注意此处是设定主GPU
+for data in rand_loader:
+    input = data.to(device) # 直接将数据放到主GPU上即可
+    output = model(input)
+    print("Outside: input size", input.size(), "output_size", output.size())
+```
+
+从代码上看，实际上只需要增加一行即可
+
+```
+model = nn.DataParallel(model)
+```
+
+#### 原理
+
+torch 1.9.0 版本关于 DataParallel 的函数原型为：
+
+```python
+class torch.nn.DataParallel(module, device_ids=None, output_device=None, dim=0)
+```
+
+其中 `dim` 表示输入的数据将会在这一维度被平均分配到各个 GPU 中。
+
+> The parallelized `module` must have its parameters and buffers on `device_ids[0]` before running this [`DataParallel`](https://pytorch.org/docs/master/generated/torch.nn.DataParallel.html#torch.nn.DataParallel) module
+
+### torch.nn.parallel.DistributedDataParallel
+
+#### torch/distributed/launch.py
 
 有时会见到以这种方式启动训练脚本
 
@@ -280,6 +372,16 @@ z.backward()
 y.backward(y1.grad)
 w.grad
 ```
+
+### TorchElastic
+
+### RPC
+
+DataParallel、DistributedDataParallel、TorchElastic 均属于 DataPallel，RPC 为模型并行
+
+### c10d
+
+c10d 是两大类并行方法的共同底层依赖（通信机制）
 
 ## 模型量化
 
