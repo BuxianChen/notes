@@ -502,11 +502,15 @@ python tools/test.py configs/yolo/yolov3_d53_320_273e_coco.py checkpoints/yolov3
 
 
 
+mmdet.
+
+
+
 ## 一些相对独立的底层代码
 
 ### mmcv/runner/base_module.py：BaseModule
 
-mmcv 中类似于torch.nn.Module的东西，完整源代码（注释有所修改）如下，可以发现本质上只是给 `nn.Module` 增加了个 `init_weights` 方法。
+mmcv 中类似于 torch.nn.Module 的东西，完整源代码（注释有所修改）如下，可以发现本质上只是给 `nn.Module` 增加了个 `init_weights` 方法。
 
 ```python
 class BaseModule(nn.Module, metaclass=ABCMeta):
@@ -567,15 +571,12 @@ class BaseModule(nn.Module, metaclass=ABCMeta):
         return s
 ```
 
+以下是一些继承 `mmcv/runner/base_
 
+#### mmdet/models/detectors/base.py：BaseDetector
 
-
-
-
-
-```python
-class MultiScaleFlipAug:
-	def __init__(self, transforms, img_scale=None, scale_factor=None,
-                 flip=False, flip_direction='horizontal'):
 ```
+```
+
+
 
