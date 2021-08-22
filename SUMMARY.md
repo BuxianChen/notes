@@ -2,34 +2,25 @@
 
 * [Center](README.md)
 
-## python
+## Popular
 
-* [python-draft](python/python-draft.md)
+* [python:draft](language/python_draft.md)
+* [CS课程中缺失的一课](learn/missing_semester.md)
+* [Pytorch](tool/pytorch.md)
+* [Objective C:draft](language/objective_c_draft.md)
 
-## Tools
+## Tool
 
-* [Pytorch](tools/pytorch.md)
-* [TensorFlow](tools/tensorflow.md)
-* [Git](tools/git.md)
+* [Git](tool/git.md)
 
-## Notes
+## Note
 
-* [draft](notes/draft.md)
-* [CV](notes/cv.md)
-  * [mmlab](notes/mm/mm.md)
-  * [opencv](notes/opencv/opencv.md)
+* [draft](note/draft.md)
+* [CV](note/cv.md)
+  * [mmlab](note/mm/mm.md)
+  * [opencv](note/opencv/opencv.md)
 
-## learn
+## Language
 
-* [CS课程中缺失的一课](learn/missing-semester.md)
-* [鸟哥私房菜](learn/鸟哥私房菜.md)
-* [C++primerplus\(6ed\)](learn/c++primerplus_6ed.md)
-
-## Java
-
-* [javase](java/javase.md)
-
-## C++
-
-* [cpp\_draft](c++/cpp_draft.md)
+- [C++:draft](language/cpp_draft.md)
 
