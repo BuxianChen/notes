@@ -105,7 +105,22 @@ nvidia-smi  # CUDA Drive Version
 nvcc -V  # CUDA Runtime Version
 ```
 
-软件运行时调用的是Runtime Version
+CUDA 提供了两套 API，一套是 CUDA Driver API，另一套是 CUDA Runtime API，其中 Driver API 更为底层。
+
+```
+import torch
+torch.version.cuda()  # Runtime version
+```
+
+一般而言，只需要关注 Runtime API 即可，例如在 Linux 系统中的 `~/.bashrc` 中添加这几行（添加到 PATH 与 LD_LIBRARY_PATH 尤为重要）指的是 Runtime API 相关的路径。
+
+```
+export CUDA_HOME=/usr/local/cuda-10.0
+export PATH=$PATH:$CUDA_HOME/bin
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib:$CUDA_HOME/lib64
+```
+
+
 
 ## gitbook/gitbook.com/github page/Read the Docs
 

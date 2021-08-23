@@ -650,6 +650,19 @@ long long w = (1 << 32) - 1;
 long long w = (1LL << 32) - 1;
 ```
 
+**静态成员变量**
+
+```c++
+class A{
+public:
+    static int a; //注意：此处只是声明，并未分配空间
+};
+int A::a; // 此处为静态成员变量的定义，即分配空间
+// 也可以使用 int A::a=1; 表示定义并同时初始化。
+```
+
+
+
 ## 2. C++标准库
 
 [https://blog.csdn.net/lyh03601/column/info/geek-stl](https://blog.csdn.net/lyh03601/column/info/geek-stl)
