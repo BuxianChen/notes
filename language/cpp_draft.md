@@ -650,7 +650,7 @@ long long w = (1 << 32) - 1;
 long long w = (1LL << 32) - 1;
 ```
 
-**静态成员变量**
+#### 静态成员变量
 
 ```c++
 class A{
@@ -659,6 +659,15 @@ public:
 };
 int A::a; // 此处为静态成员变量的定义，即分配空间
 // 也可以使用 int A::a=1; 表示定义并同时初始化。
+```
+
+#### typedef 与 using
+
+两者都用于为类取别名，C++ 11 推荐使用 using
+
+```c++
+typedef unsigned char PixelType;
+using PixelType = unsigned char;
 ```
 
 
