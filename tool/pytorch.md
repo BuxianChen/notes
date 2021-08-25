@@ -540,7 +540,7 @@ step:        READY/UNSCALED -> STEPPED
 
 总结: update, unscale\_, step函数的顺序不能乱
 
-## 零碎记录
+## 常用函数
 
 `torch.version.cuda` 变量存储了 cuda 的版本号
 
@@ -568,6 +568,27 @@ model(torch.tensor([1., 2., 3., 4., 5.]))  # [1., 2., 3., 4., 5.]
 x = torch.tensor([1, 2, 3])
 y = x[[0, 2], None]  # 相当于y=x[[0, 2]].view(-1, 1)
 ```
+
+`torch.nn.functional.normalize`
+
+```python
+torch.nn.functional.normalize(input, p=2.0, dim=1, eps=1e-12,out=None)
+```
+
+默认对第 1 维进行归一化，例如：
+
+```python
+normalize(torch.tensor([[6, 8]])) # [[0.6, 0.8]]
+```
+
+pytorch 复制 tensor 的推荐姿势
+
+```python
+target = source.clone().detach()
+target = source.clone().detach().to("cuda:1").requires_grad_(True)
+```
+
+
 
 ## mxnet
 

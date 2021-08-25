@@ -284,3 +284,23 @@ out_im.save("1.jpg")
 > ————————————————
 > 版权声明：本文为CSDN博主「姚路遥遥」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
 > 原文链接：https://blog.csdn.net/Roaddd/article/details/114221618
+
+#### 人脸关键点
+
+参考链接：[CSDN](https://blog.csdn.net/u013841196/article/details/85720897)
+
+![](../.gitbook/assets/cv/face_keypoint_68.jpg)
+
+68 个关键点如上图所示，转换为 5 个关键点的方式为
+
+```python
+landmark5[0] = (landmark68[36] + landmark68[39]) / 2  # 右眼
+landmark5[1] = (landmark68[42] + landmark68[45]) / 2  # 左眼
+landmark5[2] = landmark68[30] # 鼻子
+landmark5[3] = landmark68[48] # 右嘴角
+landmark5[4] = landmark69[54] # 左嘴角
+```
+
+### insightface
+
+`recognition/_tools_/mask_renderer.py`：自动生成口罩遮挡的人脸
