@@ -304,3 +304,55 @@ landmark5[4] = landmark69[54] # 左嘴角
 ### insightface
 
 `recognition/_tools_/mask_renderer.py`：自动生成口罩遮挡的人脸
+
+训练/验证数据集：
+
+例如：faces_umd.zip
+
+```
+agedb_30.bin  # 1:1的验证数据（训练时使用）
+cfp_fp.bin
+lfw.bin
+property  # 类别数, 112, 112
+train.idx  # 索引,train.rec中哪些byte是一个图片
+train.rec  # mxnet二进制文件,包含图片及类别
+```
+
+
+
+测试数据集
+
+例如：IJBC
+
+```
+IJBC 
+    - loose_crop
+        - xxx.jpg  # 1.jpg~469375.jpg
+    - meta
+        - ijbc_face_tid_mid.txt  # 469375行
+        - ijbc_name_5pts_score.txt  # 469375行
+        - ijbc_template_pair_label.txt  # 15658489行
+```
+
+ijbc_face_tid_mid.txt 文件内容解释：第一项为图片名，第二项表示该图片是哪个人，第三个数字是视频 ID。注意：同一个人可能有多个ID，例如
+
+```
+1.jpg 1 69544
+2.jpg 1 3720
+...
+469375.jpg 187955 111105
+```
+
+ijbc_name_5pts_score.txt 文件内容解释：第一项为文件名，后面连续 10 个浮点数两个一组分别为 5 个关键点的 $$(x,y)$$ 绝对像素位置坐标，最后一个数字是一个接近 1 的分数（该图片是人脸的置信度）
+
+ijbc_template_pair_label.txt 文件内容解释：前两个为人物 ID，如前面所述，两个 ID 可能对应的是同一个人，由第三个数字指示。
+
+```
+1 11065 1
+1 11066 1
+...
+171707 185794 0
+```
+
+不同的人物 ID 数有 23124 个，但不同的 ID 有可能对应到同一个人。并且人物 ID 与视频 ID 都**不是**从 1 开始连续编号。
+
