@@ -285,6 +285,12 @@ out_im.save("1.jpg")
 > 版权声明：本文为CSDN博主「姚路遥遥」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
 > 原文链接：https://blog.csdn.net/Roaddd/article/details/114221618
 
+### Megaface 数据集
+
+**测试方法**
+
+Cumulative Match Characteristics (CMC) curve：将待
+
 #### 人脸关键点
 
 参考链接：[CSDN](https://blog.csdn.net/u013841196/article/details/85720897)
@@ -356,3 +362,13 @@ ijbc_template_pair_label.txt 文件内容解释：前两个为人物 ID，如前
 
 不同的人物 ID 数有 23124 个，但不同的 ID 有可能对应到同一个人。并且人物 ID 与视频 ID 都**不是**从 1 开始连续编号。
 
+#### IJBC 测试数据集
+
+每个 ID 对应多张图片，每个人物对应多个 ID。测试时判断两个 ID 是否是同一个人。测试标签例子如下：
+
+```
+person_id_1	person_id_2	1  // 表示这两个ID是同一人
+person_id_3	person_id_4	0  // 表示这两个ID不是同一人
+```
+
+范式如下：训练一个网络，输入是人脸图片，输出是一个 512 维的特征。测试时，将所有属于同一个 person_id 的图片的输出特征取平均。对于每一条测试数据，求两个 person_id 对应特征的余弦距离，设定一个阈值来判断这两个 person_id 是否为同一个人。
