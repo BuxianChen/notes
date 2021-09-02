@@ -27,9 +27,13 @@ class MyModule(torch.nn.Module):
         self.linear = torch.nn.Linear(3, 3)
     def forward(self, x):
         return self.linear(x)
+# 只保存模型参数
 my_model = MyModule()
 torch.save(my_model.state_dict(), "xxx.pth")  # save
 my_model.load_state_dict(torch.load("xxx.pth"))  # load
+# 保存模型参数及定义
+torch.save(my_model, "model.pth")
+my_model = torch.load("model.pth")
 
 # torchscript
 scripted = torch.jit.script(my_model)
@@ -464,6 +468,8 @@ loaded = torch.jit.load('wrapped_rnn.pt')
 docs-&gt;[torch.cuda.amp](https://pytorch.org/docs/stable/amp.html?highlight=torch%20cuda%20amp#module-torch.cuda.amp)
 
 混合精度训练只能在gpu上进行, 因为底层是使用Nvidia为自家gpu提供的`Float16`高效数值运算能力. 平时使用一般只需要用`torch.cuda.amp.GradScaler`以及`torch.cuda.amp.autocast`即可, 并且可以设置`enabled`参数, 当它为`True`时, 则启用amp训练, 否则等价于通常的训练方式. 实际体验上: amp训练计算速度与内存消耗未必快...
+
+混合精度训练时，模型的参数是 float32 类型的？
 
 **torch.cuda.amp.GradScaler**
 
