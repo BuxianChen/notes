@@ -287,6 +287,15 @@ pytorch 默认的图像格式（网络输入）为 RGB，形状为 (B, 3, H, W)
 
 tensoflow 默认的图像格式（网络输入）为 RGB，形状为 (B, H, W, 3)
 
+```python
+# 例如有如下错误:
+from PIL import Image
+import cv2
+img_cv2 = cv2.imread("./images/unmasked.jpg")  # img_cv2(np.array): (H,W,3), BGR
+img_pil = Image.fromarray(img_cv2)  # img_pil(Image), 默认认为img_cv2的RGB存储的
+img_pil.save("pil.jpg")  # 保存的图片与原始图片颜色通道不一样
+```
+
 ### LFW 数据集
 
 > ​       LFW数据集共有13233张人脸图像，每张图像均给出对应的人名，共有5749人，且绝大部分人仅有一张图片。每张图片的尺寸为250X250，绝大部分为彩色图像，但也存在少许黑白人脸图片。

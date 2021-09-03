@@ -2461,3 +2461,17 @@ pip install black
 black dirty_code.py
 ```
 
+## easydict/addict/dotmap
+
+这几个包均是对 python 字典这一基本数据类型的封装，使得字典的属性可以使用点来访问，具体用法及区别待补充：
+
+```python
+a.b # a["b"]
+```
+
+一些开源项目对这些包的使用情况：
+
+- addict：mmcv
+- easydict：
+- dotmap：[MaskTheFace](https://github.com/aqeelanwar/MaskTheFace/blob/master/utils/read_cfg.py)
+

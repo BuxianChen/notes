@@ -1,5 +1,7 @@
 cv2 包里函数参数 size 一般为 (width, height)，但图像的表示形式上，使用 numpy 数组来表示，例如：`arr` 为 3 维 dtype = np.uint8，shape = (height, width, 3)，颜色通道依次为 BGR 。
 
+cv2 图像读写操作
+
 cv2 在路径中存在中文字符时会无法读写文件
 
 ```python
@@ -8,6 +10,34 @@ cv2.imencode(".jpg", image)[1].tofile(path)  # image: (H, W, 3) np.ndarray, uint
 # 读文件
 image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), -1)  # image: (H, W, 3) np.ndarray, uint8, BGR format
 ```
+
+备注：imdecode 中的第二个参数 -1 实际上是 cv2.IMREAD_UNCHANGED。对于 imread 函数来说，原型如下：
+
+```python
+cv2.imread(filename, flags=cv2.IMREAD_COLOR)
+```
+
+- cv2.IMREAD_COLOR：1：(H, W, 3)：BGR
+- cv2.IMREAD_GRAYSCALE：0：(H, W)
+- cv2.IMREAD_UNCHANGED：-1：(H, W, 4)：BGRA
+
+imwrite 函数原型如下，对第三个参数稍加解释：
+
+参考：[CSDN](https://www.cnblogs.com/wal1317-59/p/13469451.html)
+
+```python
+cv2.imwrite(file, img[, num])
+```
+
+第三个参数可选，含义如下：
+
+```python
+cv2.imwrite("x.jpg", img, (cv2.IMWRITE_JPEG_QUALITY， 95))
+cv2.imwrite("x.png", img, (cv2.IMWRITE_PNG_COMPRESSION, 3))
+```
+
+- cv2.IMWRITE_JPEG_QUALITY=1：JPEG 格式，0-100 的整数，表示图像质量，默认为 95。
+- cv.IMWRITE_PNG_COMPRESSION=16：PNG 格式，0-9表示压缩级别，级别越高图像越小，默认值为 3。
 
 RGB 与 BGR 转换（cv2 默认使用 BGR 格式）
 
@@ -75,7 +105,15 @@ b_0&a_0&b_1\\
 src_x\\src_y\\0
 \end{bmatrix}
 $$
-cv2 图像旋转
+cv2 图像旋转（待补充）
+
+添加文字（非英文会乱码）
+
+```python
+cv2.putText(image, text, org, font, fontScale, color[, thickness[, lineType[, bottomLeftOrigin]]])
+# org是左下角坐标, font是字体, fontScale是字体
+cv2.putText(image, "mark", (100, 200), cv2.FONT_HERSHEY_COMPLEX, 5, (0, 0, 255), 6)
+```
 
 
 
