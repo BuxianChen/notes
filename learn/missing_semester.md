@@ -399,6 +399,10 @@ $ du -Sh --max-depth=1 <dir>  # 计算目录大小时不包括子目录大小
 
 df 命令意为 disk free
 
+```bash
+$ df -h  # 查看挂载信息
+```
+
 #### watch
 
 ```bash
@@ -414,23 +418,28 @@ $ docker images | sort -n -k 7
 
 sort 命令的作用是以行为单位进行排序。`-n` 选项表示把字符当作数字进行排序，`-k 7` 选项表示选择第 7 列进行排序。可以使用 `-t :` 来指定列的分割符为 `:`，可以使用 `-r` 选项进行降序排列（默认是升序排列）
 
-**history**
+#### history（待补充）
 
 history 命令用于显示历史命令。经过测试发现它的行为与 `~/.bash_history` 文件有关，一个可以解释的逻辑如下，系统保留有一份历史命令的记录文件，进入一个终端后，执行任意一条指令都会在 `.bash_history` 文件末尾追加一条记录（不同终端有着独立的记录，互不影响），退出终端时，
 
 打开两个终端，分别输入（各条命令的实际）：
 
-```
+```bash
 $ echo dosome1
 $ echo dosome3
 ```
 
-```
+```bash
 $ echo dosome2
 $ echo dosome4
 ```
 
+#### mount/umount
 
+```bash
+$ mount -t nfs <device> <dir>  # 将设备/目录device挂载到目录dir(称为挂载点)上, -t参数表示指定档案系统型态, 通常无需指定
+$ umount <device/dir>  # 取消挂载, 用挂载点或者设备名均可
+```
 
 ### 杂录
 
@@ -1037,15 +1046,15 @@ hashlib.sha1(b'blob 5\0'+'12中'.encode("utf-8")).hexdigest()
 # '12中'.encode("utf-8")
 ```
 
-## 补充：Docker
+## 补充 1：Docker
 
 参考链接：https://yeasy.gitbook.io/docker_practice/
 
-**基本概念：镜像、容器、仓库**
+### 基本概念：镜像、容器、仓库
 
 待补充
 
-**针对镜像的操作命令：**
+### 针对镜像的操作命令：
 
 **docker image ls**
 
@@ -1097,7 +1106,21 @@ $ docker login
 $ docker push username/ubuntu:18.04
 ```
 
-**针对容器的操作命令**
+**docker login**
+
+```bash
+$ docker login  # 登录以获取拉取/推送镜像的权限
+```
+
+**docker push**
+
+```bash
+$ docker push 镜像ID
+```
+
+将镜像推送至远端 Docker Registry。
+
+### 针对容器的操作命令
 
 **docker run**
 
@@ -1191,7 +1214,37 @@ root@69d137adef7a:/#
 
 注意：使用 `docker exec` 时，该容器不会因为终端的退出而终止。
 
-**使用 Dockerfile 制作镜像**
+**docker stats**
+
+以下命令用于查看容器的内存占用等情况
+
+```bash
+$ docker stats 容器ID
+```
+
+**docker commit**
+
+```bash
+$ docker commit -a "author_name" -m "description" 容器ID 镜像名
+$ # docker commit 172.22.24.223/username/softwarename:v1
+```
+
+将容器的当前状态提交为一个新的镜像，注意挂载目录不会被提交到新镜像内。使用 docker commit 得到镜像的工作流程为：
+
+```bash
+$ docker run -it -v 本地目录绝对路径:挂载至容器内的目录 镜像ID --name 自定义容器名字 /bin/bash
+$ # 在容器内修改文件, 安装相关的包等
+```
+
+修改完毕后，新打开一个终端（也许可以直接退出容器，直接在当前终端操作）
+
+```bash
+$ docker commit 自定义容器名字 镜像名
+```
+
+**注意：不推荐使用 docker commit 的方式得到镜像，应尽量使用 Dockerfile 制作镜像。**
+
+### 使用 Dockerfile 制作镜像
 
 **例子**
 

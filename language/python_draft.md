@@ -2,6 +2,23 @@
 
 ## PART 1 环境配置
 
+## Ubuntu 源码安装 Python
+
+综合参考[博客](https://linuxize.com/post/how-to-install-python-3-7-on-ubuntu-18-04/)以及[csdn博客](https://blog.csdn.net/xietansheng/article/details/84791703)源码安装 Python：
+
+```bash
+sudo apt update
+sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-dev libssl-dev libsqlite3-dev libreadline-dev libffi-dev wget libbz2-dev
+wget https://www.python.org/ftp/python/3.7.4/Python-3.7.4.tgz
+tar -xf Python-3.7.4.tgz
+cd Python-3.7.4
+./configure --enable-optimizations --prefix=/usr/python3.7
+make -j 8
+sudo make altinstall
+ln -s /usr/python3.8/bin/python3.8 /usr/bin/python3.7
+ln -s /usr/python3.8/bin/pip3.8 /usr/local/bin/pip3.7
+```
+
 ## Python程序的运行方式\(待补充\)
 
 [参考链接\(realpython.com\)](https://realpython.com/run-python-scripts/)

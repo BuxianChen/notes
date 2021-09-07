@@ -1,4 +1,4 @@
-# linux
+# linux_and_shell
 
 ```bash
 sudo useradd -m -N -s /bin/bash someone

@@ -115,5 +115,6 @@ cv2.putText(image, text, org, font, fontScale, color[, thickness[, lineType[, bo
 cv2.putText(image, "mark", (100, 200), cv2.FONT_HERSHEY_COMPLEX, 5, (0, 0, 255), 6)
 ```
 
+图像修复
 
-
+cv2.inpaint
