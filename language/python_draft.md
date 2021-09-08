@@ -560,7 +560,7 @@ class A: pass
 class A(object, metaclass=type): pass
 ```
 
-#### `type`
+#### `type` 函数
 
 Python 中, type 函数是一个特殊的函数，调用形式有两种：
 
@@ -569,9 +569,52 @@ Python 中, type 函数是一个特殊的函数，调用形式有两种：
 
 
 
-`__new__` 函数与 `__init__` 函数
+#### `__new__` 函数与 `__init__` 函数（待补充）
 
-`abc` 模块
+#### `abc` 模块
+
+`abc` 模块最常见是搭配使用 `ABCMeta` 与 `abstractmethod`。其作用是让子类必须重写父类用 `abstractmethod` 装饰的方法，否则在创建子类对象时就会报错。[参考](https://riptutorial.com/python/example/23083/why-how-to-use-abcmeta-and--abstractmethod)
+
+用法如下：
+
+```python
+from abc import ABCMeta, abstractmethod
+class Base(metaclass=ABCMeta):
+    @abstractmethod
+    def foo(self):
+        print("foo")
+    @abstractmethod
+    def bar(self):
+        pass
+class A(Base):
+    def foo(self):
+        print("A foo")
+    def bar(self):
+        print("A bar")
+a = A()
+super(A, a).foo()
+a.foo()
+a.bar()
+```
+
+注意：不设定 `metaclass=ABCMeta` 时，`abstractmethod` 不起作用，即不会强制子类继承。
+
+使用 `ABCMeta` 与 `abstractmethod` 优于这种写法：
+
+```python
+class Base(metaclass=ABCMeta):
+    def foo(self):
+        print("a foo")
+    def bar(self):
+        raise NotImplementedError()
+class A(Base):
+    def foo(self):
+        print("A foo")
+a = A()
+super(A, a).foo()
+a.foo()
+a.bar()  # 此时才会抛出异常
+```
 
 ### 5. with语法\(含少量contextlib包的笔记\)
 
