@@ -421,6 +421,20 @@ __str__
 
 备注: 在jupyter notebook中, 对`pandas`的`DataFrame`使用`print`方法, 打印出的结果不美观, 但不用`print`却很美观, 原因未知.
 
+#### 2.2 `__dict__` 、`vars`、`__slots__`、Descriptor、`__get__`、`__set__`、`__del__`
+
+一般情况下，Python 中的对象都有 `__dict__` 属性。而 `vars(obj)` 的作用就是获取对象 `obj` 的 `__dict__` 属性。关于 `vars` 函数的解释可以参考[官方文档](https://docs.python.org/3/library/functions.html#vars)，如下：
+
+> Return the `__dict__` attribute for a **module, class, instance, or any other object with a `__dict__` attribute**.
+>
+> Objects such as modules and instances have an updateable `__dict__` attribute; however, other objects may have write restrictions on their `__dict__` attributes (for example, classes use a [`types.MappingProxyType`](https://docs.python.org/3/library/types.html#types.MappingProxyType) to prevent direct dictionary updates).
+>
+> Without an argument, `vars()` acts like [`locals()`](https://docs.python.org/3/library/functions.html#locals). Note, the locals dictionary is only useful for reads since updates to the locals dictionary are ignored.
+>
+> A `TypeError` exception is raised if an object is specified but it doesn’t have a `__dict__` attribute (for example, if its class defines the [`__slots__`](https://docs.python.org/3/reference/datamodel.html#object.__slots__) attribute).
+
+
+
 ### 3. 继承
 
 #### MRO (Method Resolution Order) 与 C3 算法

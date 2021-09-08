@@ -12,7 +12,6 @@
 ## Tool
 
 * [Git](tool/git.md)
-* [Linux and Shell](./tool/linux_and_shell.md)
 
 ## Note
 
@@ -24,4 +23,3 @@
 ## Language
 
 - [C++:draft](language/cpp_draft.md)
-

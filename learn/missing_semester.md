@@ -199,105 +199,6 @@ $ export MY_ENV_VAR=xyz
 
 IFS （internal field separator，内部字段分隔符）环境变量默认为空格，制表符，换行符。
 
-### 命令例子
-
-#### 例 1：/dev/null、文件描述符
-
-```bash
-ls data.txt 2>/dev/null 1>log.txt
-```
-
-主要参考[知乎问答](https://www.zhihu.com/question/53295083/answer/135258024)
-
-此命令的作用是将命令 `ls data.txt` 运行过程中产生的标准错误信息忽略，而将产生的标准输出信息重定向（写入）至 `log.txt` 中。具体解释如下：
-
-**文件描述符**
-
-> 文件描述符是与文件输入、输出关联的整数。它们用来跟踪已打开的文件。最常见的文件描述符是stdin、stdout、和stderr。我们可以将某个文件描述符的内容重定向到另外一个文件描述符中。
-> *《linux shell脚本攻略》*
-
-具体来说，常见的文件描述符为 0、1、2 这三个，分别对应 stdin（标准输入）、stdout（标准输出）、stderr（标准错误）。事实上：
-
-- stdin 对应于 `/dev/stdin`
-- stdout 对应于 `/dev/stdout`
-- stderr 对应于 `/dev/stderr`
-
-在 shell 命令或脚本中常用的是 1 和 2。因此在上面的例子中，是将命令 `ls data.txt` 产生的标准输出重定向至 `log.txt` 中，将产生的标准错误信息重定向至 `/dev/null` 中。
-
-**/dev/null**
-
-`/dev/null` 是 linux 中的一个特殊设备，作用是接受输入并丢弃。在 shell 命令中的作用一般是用来接受输出信息，避免在屏幕上显示，同时也不希望使用文件对输出进行接收。
-
-#### 例 2：管道、curl、grep、cut 结合使用
-
-```bash
-$ curl --head --silent baidu.com | grep -i content-length | cut --delimiter=' ' -f2
-81
-```
-
-curl 命令用来请求 Web 服务器。其名字的含义即为客户端（client）的 URL 工具。具体用法可以参照[阮一峰博客](http://www.ruanyifeng.com/blog/2019/09/curl-reference.html)
-
-> 它的功能非常强大，命令行参数多达几十种。如果熟练的话，完全可以取代 Postman 这一类的图形界面工具。——阮一峰博客《curl 的用法指南》
-
-grep 的 `-i` 参数表示匹配时忽略大小写
-
-cut 命令用于切分字符串，有若干种用法：取出第 $$m$$ 个到第 $$n$$ 个字符；按分隔符取出第 $$k$$ 个字符串。此处 cut 命令之前的
-
-#### 例 3：source、export
-
-通常情况下，执行如下语句
-
-```
-./a.sh
-```
-
-实际发生的事情是：创建一个子进程，在子进程中运行 `a.sh`，然后回到当前 shell 中。注意子进程是用 fork 的方式产生的，因此子进程的环境变量与当前的 shell 是完全一致的。因此 `a.sh` 中设置的环境变量不会影响到当前的 shell。例子如下：
-
-```bash
-# a.sh的内容
-export FFFF=ffff
-echo $ABCD
-echo $FFFF
-```
-
-```bash
-$ export ABCD=abcd
-$ export -p | grep ABCD
-declare -x ABCD="abcd"
-$ ./a.sh
-abcd
-ffff
-$ echo $FFFF  # 没有输出
-```
-
-source 的作用是在当前 shell 中运行脚本内容， 使得脚本中设置的环境变量会影响到当前的 shell。例如：
-
-```bash
-$ source a.sh
-# 也等价于
-$ . a.sh
-```
-
-#### 例 4：带颜色的终端输出
-
-```
-echo -e "\e[44;37;5mabcs\e[0m"
-```
-
-- `\e[<...>m` 表示 `<...>` 中的部分为设置输出格式（字体颜色，背景颜色，是否加粗，是否产生闪烁效果等），`\e` 也可以用 `\033` 代替。
-
-- `44;37;5`：`44` 表示设置背景色为蓝色，`37` 表示设置前景色（也就是字体颜色）为白色，`5` 表示字体产生闪烁效果 。
-
-  <font color=red>备注</font>：这些数字实际上被称为 SGR 参数（Select Graphic Rendition） ，这些数字的顺序是不重要的，完整的列表可以参见 [ANSI escape code - Wikipedia](https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters)，简短版的说明可以参见 [简书](https://www.jianshu.com/p/bba963125f1a)。
-
-- `\e[0m` 表示设定回终端的默认值
-
-#### 例 5：排除某些子目录的复制
-
-#### 例 6：grep
-
-
-
 ### shell 命令记录
 
 #### dirname
@@ -440,6 +341,105 @@ $ echo dosome4
 $ mount -t nfs <device> <dir>  # 将设备/目录device挂载到目录dir(称为挂载点)上, -t参数表示指定档案系统型态, 通常无需指定
 $ umount <device/dir>  # 取消挂载, 用挂载点或者设备名均可
 ```
+
+### 命令例子
+
+#### 例 1：/dev/null、文件描述符
+
+```bash
+ls data.txt 2>/dev/null 1>log.txt
+```
+
+主要参考[知乎问答](https://www.zhihu.com/question/53295083/answer/135258024)
+
+此命令的作用是将命令 `ls data.txt` 运行过程中产生的标准错误信息忽略，而将产生的标准输出信息重定向（写入）至 `log.txt` 中。具体解释如下：
+
+**文件描述符**
+
+> 文件描述符是与文件输入、输出关联的整数。它们用来跟踪已打开的文件。最常见的文件描述符是stdin、stdout、和stderr。我们可以将某个文件描述符的内容重定向到另外一个文件描述符中。
+> *《linux shell脚本攻略》*
+
+具体来说，常见的文件描述符为 0、1、2 这三个，分别对应 stdin（标准输入）、stdout（标准输出）、stderr（标准错误）。事实上：
+
+- stdin 对应于 `/dev/stdin`
+- stdout 对应于 `/dev/stdout`
+- stderr 对应于 `/dev/stderr`
+
+在 shell 命令或脚本中常用的是 1 和 2。因此在上面的例子中，是将命令 `ls data.txt` 产生的标准输出重定向至 `log.txt` 中，将产生的标准错误信息重定向至 `/dev/null` 中。
+
+**/dev/null**
+
+`/dev/null` 是 linux 中的一个特殊设备，作用是接受输入并丢弃。在 shell 命令中的作用一般是用来接受输出信息，避免在屏幕上显示，同时也不希望使用文件对输出进行接收。
+
+#### 例 2：管道、curl、grep、cut 结合使用
+
+```bash
+$ curl --head --silent baidu.com | grep -i content-length | cut --delimiter=' ' -f2
+81
+```
+
+curl 命令用来请求 Web 服务器。其名字的含义即为客户端（client）的 URL 工具。具体用法可以参照[阮一峰博客](http://www.ruanyifeng.com/blog/2019/09/curl-reference.html)
+
+> 它的功能非常强大，命令行参数多达几十种。如果熟练的话，完全可以取代 Postman 这一类的图形界面工具。——阮一峰博客《curl 的用法指南》
+
+grep 的 `-i` 参数表示匹配时忽略大小写
+
+cut 命令用于切分字符串，有若干种用法：取出第 $$m$$ 个到第 $$n$$ 个字符；按分隔符取出第 $$k$$ 个字符串。此处 cut 命令之前的
+
+#### 例 3：source、export
+
+通常情况下，执行如下语句
+
+```
+./a.sh
+```
+
+实际发生的事情是：创建一个子进程，在子进程中运行 `a.sh`，然后回到当前 shell 中。注意子进程是用 fork 的方式产生的，因此子进程的环境变量与当前的 shell 是完全一致的。因此 `a.sh` 中设置的环境变量不会影响到当前的 shell。例子如下：
+
+```bash
+# a.sh的内容
+export FFFF=ffff
+echo $ABCD
+echo $FFFF
+```
+
+```bash
+$ export ABCD=abcd
+$ export -p | grep ABCD
+declare -x ABCD="abcd"
+$ ./a.sh
+abcd
+ffff
+$ echo $FFFF  # 没有输出
+```
+
+source 的作用是在当前 shell 中运行脚本内容， 使得脚本中设置的环境变量会影响到当前的 shell。例如：
+
+```bash
+$ source a.sh
+# 也等价于
+$ . a.sh
+```
+
+#### 例 4：带颜色的终端输出
+
+```
+echo -e "\e[44;37;5mabcs\e[0m"
+```
+
+- `\e[<...>m` 表示 `<...>` 中的部分为设置输出格式（字体颜色，背景颜色，是否加粗，是否产生闪烁效果等），`\e` 也可以用 `\033` 代替。
+
+- `44;37;5`：`44` 表示设置背景色为蓝色，`37` 表示设置前景色（也就是字体颜色）为白色，`5` 表示字体产生闪烁效果 。
+
+  <font color=red>备注</font>：这些数字实际上被称为 SGR 参数（Select Graphic Rendition） ，这些数字的顺序是不重要的，完整的列表可以参见 [ANSI escape code - Wikipedia](https://en.wikipedia.org/wiki/ANSI_escape_code#SGR_(Select_Graphic_Rendition)_parameters)，简短版的说明可以参见 [简书](https://www.jianshu.com/p/bba963125f1a)。
+
+- `\e[0m` 表示设定回终端的默认值
+
+#### 例 5：排除某些子目录的复制
+
+#### 例 6：grep
+
+
 
 ### 杂录
 
@@ -1290,3 +1290,17 @@ $ docker run --name web3 -d -p 81:80 nginx:v3
 这样可以使用浏览器访问 `<宿主机IP地址>/81`。
 
 备注：`docker run` 实际等效于 `docker start` 加上 `docker exec` 两条命令
+
+## 补充 2：Linux
+
+### 用户相关
+
+```bash
+$ sudo useradd -m -N -s /bin/bash someone
+# -m: 自动建立用户的登入目录，默认为/home/someone
+# -N：不创建同名群组
+# -s：指定shell，如安装了zsh，可指定为/bin/zsh
+$ sudo useradd -d /d/ -m -N -s /bin/bash someone
+$ passwd someone  # 设定用户密码
+```
+
