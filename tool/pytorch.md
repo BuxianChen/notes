@@ -31,14 +31,19 @@ class MyModule(torch.nn.Module):
 my_model = MyModule()
 torch.save(my_model.state_dict(), "xxx.pth")  # save
 my_model.load_state_dict(torch.load("xxx.pth"))  # load
-# 保存模型参数及定义
-torch.save(my_model, "model.pth")
-my_model = torch.load("model.pth")
 
 # torchscript
 scripted = torch.jit.script(my_model)
 scripted.save("yy.pt")
 torch.jit.load('yy.pt')
+```
+
+注记：不推荐使用如下方式保存模型，会出现无法 `load` 的情况，具体原因尚不明确。参见[问答](https://discuss.pytorch.org/t/modulenotfounderror-no-module-named-network/71721)
+
+```python
+# 保存模型参数及定义
+torch.save(my_model, "model.pth")
+my_model = torch.load("model.pth")
 ```
 
 ## optimizer
@@ -546,6 +551,45 @@ step:        READY/UNSCALED -> STEPPED
 
 总结: update, unscale\_, step函数的顺序不能乱
 
+## inplace = True
+
+pytorch 中某些函数允许使用 inplace=True，但前提条件是这个 tensor 在反向求导时是不需要的：
+
+例如，对于 relu 函数，`y=relu(x)`，`y` 对于 `x` 的局部导数可以直接通过 `dy_dx=(y>0)` 得到，而无需知道 `x` 的值。因此可以使用：
+
+```python
+x = torch.nn.functional.relu(x, inplace=True)
+```
+
+另一个例子
+
+准确理解这个问题跟计算图相关，尤其是 backward 与 forward 之间的关系。参考[关于自定义算子的官方文档](https://pytorch.org/tutorials/intermediate/custom_function_double_backward_tutorial.html)。
+
+```python
+import torch
+
+class Square(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, x):
+        # Because we are saving one of the inputs use `save_for_backward`
+        # Save non-tensors and non-inputs/non-outputs directly on ctx
+        ctx.save_for_backward(x)
+        return x**2
+
+    @staticmethod
+    def backward(ctx, grad_out):
+        # A function support double backward automatically if autograd
+        # is able to record the computations performed in backward
+        x, = ctx.saved_tensors
+        return grad_out * 2 * x
+
+# Use double precision because finite differencing method magnifies errors
+x = torch.rand(3, 3, requires_grad=True, dtype=torch.double)
+torch.autograd.gradcheck(Square.apply, x)
+# Use gradcheck to verify second-order derivatives
+torch.autograd.gradgradcheck(Square.apply, x)
+```
+
 ## 常用函数
 
 `torch.version.cuda` 变量存储了 cuda 的版本号
@@ -714,3 +758,32 @@ IRHeader = namedtuple('HEADER', ['flag', 'label', 'id', 'id2'])
 
 `mxnet/tools/im2rec.py` 用于生成 `.rec` 格式的数据
 
+
+
+mxnet 与 pytorch 一样，对于卷积算法，默认情况下会开启自动搜索最快算法的功能。如果需要关闭此功能，需要进行如下操作（参考 [github-issue](https://github.com/apache/incubator-mxnet/issues/8132)）：
+
+- 首先将模型保存文件 `*.json` 中的如下键值对修改：
+
+  ```
+  "cudnn_tune": "limited_workspace"
+  修改为
+  "cudnn_tune": "none"
+  ```
+
+  备注：mxnet 模型保存形式为两个文件：`*.json` 与 `*.params`。
+
+- 运行时需修改环境变量
+
+  方案一：
+
+  ```bash
+  $ export MXNET_CUDNN_AUTOTUNE_DEFAULT=0
+  ```
+
+  方案二：在 python 代码中添加
+
+  ```python
+  os.environ["MXNET_CUDNN_AUTOTUNE_DEFAULT"] = "0"
+  ```
+
+  

@@ -883,6 +883,67 @@ def foo(a, b=1, /, c=2, d=3, *, e=5, f, **kwargs): pass
 - 限定关键字形参，带默认值与不带默认值的形参顺序随意
 - 限定位置形参和普通形参，带默认值的形参必须位于不带默认值的形参之后
 
+### 9. 导包规则
+
+参考 [RealPython](https://realpython.com/python-import/)
+
+Python 导包的常用方法有：import 语句、`__import__` 内置函数、`importlib` 模块。本质上讲，第一种方法实际上会调用第二种方法，而第三种方法会绕过第二种方法，一般而言不推荐直接使用第二种方法。
+
+import 语句与 `__import__` 内置函数的对应关系可以参见[官方文档](https://docs.python.org/zh-cn/3/library/functions.html#__import__)。
+
+怎样完全一个已经被导入的包，似乎做不到，参考[链接](https://izziswift.com/unload-a-module-in-python/)
+
+怎样实现自动检测包被修改过或未被导入过，自动进行 reload 操作：待研究
+
+问题：
+
+```
+pkg1
+- inference.py  # Detect
+pkg2
+- inference.py  # Alignment
+```
+
+想获得两个包中的模型实例，将两个模型串联进行推断
+
+```python
+# 第三个参数是为了防止模型用torch.save(model)的方式保存, 需要额外引入一些包
+def get_model_instance(extern_paths, module_cls_pair, extern_import_modules=None, *args, **kwargs):
+    sys.path = extern_paths + sys.path
+    extern_import_modules = extern_import_modules if extern_import_modules else []
+    extern_list = [importlib.import_module(extern_name) for extern_name in extern_import_modules]
+    modname, clsname = module_cls_pair
+    mod = importlib.import_module(modname)
+    instance = getattr(mod, clsname)(*args, **kwargs)
+    # 对sys.modules操作可能不够, 未必能删干净
+    for extern in extern_import_modules:
+        sys.modules.pop(extern)
+    sys.modules.pop(modname)
+    sys.path = sys.path[len(extern_paths):]
+    return instance
+```
+
+```
+detector = get_model_instance(["pkg1"], ("inference", "Detect"), [])
+detector = get_model_instance(["pkg2"], ("inference", "Alignment"), [])
+```
+
+```python
+detector = get_model_instance(["./detect/facexzoo"], ("inference", "Detect"), ["models"])
+```
+
+用于替代
+
+```python
+sys.path = ["./detect/facexzoo"] + sys.path
+from inference import Detect
+import models
+sys.path = sys.path[1:]
+detector = Detect()
+sys.modules.pop("models")
+sys.modules.pop("Detect")
+```
+
 
 
 ## python代码打包
@@ -890,6 +951,8 @@ def foo(a, b=1, /, c=2, d=3, *, e=5, f, **kwargs): pass
 ### How to import package
 
 [参考realpython](https://realpython.com/pypi-publish-python-package/#different-ways-of-calling-a-package)
+
+
 
 ### 项目组织形式
 

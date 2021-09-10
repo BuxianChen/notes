@@ -98,6 +98,16 @@ CLI \(command-line interface\) 命令行接口
 
 wildcards 通配符
 
+## 配置文件格式（待补充）
+
+### json
+
+### yaml
+
+### xml
+
+### ini
+
 ## cuda版本问题
 
 ```text
