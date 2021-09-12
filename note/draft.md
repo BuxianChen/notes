@@ -801,6 +801,7 @@ dc:date="2006-02-25T20:52:32+08:00" />
 | 4. dash\(plotly\) | python模块, 可以生成交互式数据可视化Web应用, 基于 Flask \(Python\) + React 的 web 框架, 其中dash基于plotly | 2021-5-7 |
 | 5. pyecharts |  | 2021-5-7 |
 | 6. [http://www.ruanyifeng.com/blog/developer/](http://www.ruanyifeng.com/blog/developer/) | 阮一峰的博客 | 2021-6-2 |
+| 7. [骏马金龙 (junmajinlong.com)](https://www.junmajinlong.com/) | 博客（包含Python、Linux等系列博客）、博客园排名前两百 | 2021-9-12 |
 
 ## Linux操作手册
 

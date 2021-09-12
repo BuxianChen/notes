@@ -178,6 +178,28 @@ pip install --no-index --find-links=<your_offline_packages_dir> <package_name>
 pip install --no-index --find-links=<your_offline_packages_dir> -r requirements.txt
 ```
 
+## conda 使用
+
+创建环境
+
+```bash
+conda create --name <env_name> python=<version>
+# 例子：conda create --name temp python=3.8
+```
+
+删除环境
+
+```bash
+conda env remove --name <env_name>
+# 例子：conda env remove --name temp
+```
+
+查看所有环境
+
+```bash
+conda env list
+```
+
 ## jupyter使用
 
 ### kernel添加与删除
@@ -385,11 +407,93 @@ def bar1(a):
     return "a"
 ```
 
-### 2. 魔术方法与相应的内置函数
+**`property` 装饰器**
 
-#### 2.1 `__str__`与`__repr__`
+例子来源于 [Python 官方文档](https://docs.python.org/3/library/functions.html#property)。
 
-分别对应于内置方法`str`与`repr`, 一般而言, 前者遵循可读性, 后者遵循准确性. 二者在默认情况\(不重写方法的情况下\)下都会输出类似于`<Classname object at 0x000001EA748D6DC8>`的信息.
+```python
+class C:
+    def __init__(self):
+        self._x = None
+
+    @property
+    def x(self):
+        """I'm the 'x' property."""
+        return self._x
+
+    @x.setter
+    def x(self, value):
+        self._x = value
+
+    @x.deleter
+    def x(self):
+        del self._x
+```
+
+根据前面所述，装饰器只是一个语法糖。property 函数的特征标（signature）如下：
+
+```
+property(fget=None, fset=None, fdel=None, doc=None) -> object
+```
+
+前一段代码等价于这种直接使用 `property` 函数的做法：
+
+```python
+class C:
+    def __init__(self):
+        self._x = None
+
+    def getx(self):
+        return self._x
+
+    def setx(self, value):
+        self._x = value
+
+    def delx(self):
+        del self._x
+
+    x = property(getx, setx, delx, "I'm the 'x' property.")
+```
+
+备注：property 本质上是一个 Descriptor，参见后面。
+
+### 2. 魔术方法与内置函数
+
+#### 2.0 Python 官方文档
+
+- 官方文档主目录：https://docs.python.org/3/
+- 对 Python 语言的一般性描述：https://docs.python.org/3/reference/index.html
+  - 数据模型：https://docs.python.org/3/reference/datamodel.html
+- Python 标准库：https://docs.python.org/3/library/index.html
+  - build-in functions（官方建议优先阅读此章节）：https://docs.python.org/3/library/functions.html
+  - build-in types：https://docs.python.org/3/library/stdtypes.html
+- Python HOWTOs（深入介绍一些主题，可以认为是官方博客）：https://docs.python.org/3/howto/index.html
+  - Descriptor HowTo Guide：https://docs.python.org/3/howto/descriptor.html
+
+#### 2.1 object 类
+
+```python
+>>> dir(object())
+['__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__str__', '__subclasshook__']
+```
+
+```python
+class Basic:
+    pass
+basic = Basic()
+set(dir(basic)) - set(dir(object))
+# {'__dict__', '__module__', '__weakref__'}
+```
+
+**`__module__`**
+
+**`__weakref__`**
+
+#### 2.2 `__str__`、`__repr__` 特殊方法，str、repr 内置函数
+
+**从设计理念上说：两者都是将对象输出，一般而言，`__str__` 遵循可读性原则，`__repr__` 遵循准确性原则。**
+
+分别对应于内置方法 `str` 与 `repr`，二者在默认情况（不重写方法的情况下）下都会输出类似于 `<Classname object at 0x000001EA748D6DC8>` 的信息.
 
 ```python
 >>> class Test:
@@ -410,7 +514,7 @@ __str__
 ```python
 >>> class Test1:
 ...     def __str__(self):
-...             return "__str__"
+...         return "__str__"
 ...
 >>> test1 = Test1()
 >>> print(test1)  # print使用__str__
@@ -419,11 +523,13 @@ __str__
 <__main__.Test1 object at 0x000001EA748D6DC8>
 ```
 
-备注: 在jupyter notebook中, 对`pandas`的`DataFrame`使用`print`方法, 打印出的结果不美观, 但不用`print`却很美观, 原因未知.
+备注: 在 jupyter notebook 中, 对 `pandas` 的 `DataFrame` 使用 `print` 方法，打印出的结果不美观，但不用 `print` 却很美观，原因未知。
 
-#### 2.2 `__dict__` 、`vars`、`__slots__`、Descriptor、`__get__`、`__set__`、`__del__`
+#### 2.3 内置函数 vars 与 `__dict__` 属性
 
-一般情况下，Python 中的对象都有 `__dict__` 属性。而 `vars(obj)` 的作用就是获取对象 `obj` 的 `__dict__` 属性。关于 `vars` 函数的解释可以参考[官方文档](https://docs.python.org/3/library/functions.html#vars)，如下：
+**从设计理念上说，`vars` 函数的作用是返回对象的属性名（不会包含方法及特殊属性）。`__dict__` 属性里保存着对象的属性名（不会包含方法以及特殊属性）。这里的特殊属性指的是 `__xxx__`。**
+
+一般情况下，Python 中的对象都有默认的 `__dict__` 属性。而 `vars(obj)` 的作用就是获取对象 `obj` 的 `__dict__` 属性。关于 `vars` 函数的解释可以参考[官方文档](https://docs.python.org/3/library/functions.html#vars)，如下：
 
 > Return the `__dict__` attribute for a **module, class, instance, or any other object with a `__dict__` attribute**.
 >
@@ -433,7 +539,360 @@ __str__
 >
 > A `TypeError` exception is raised if an object is specified but it doesn’t have a `__dict__` attribute (for example, if its class defines the [`__slots__`](https://docs.python.org/3/reference/datamodel.html#object.__slots__) attribute).
 
+```python
+# vars(x)
+x.__dict__  # 必须定义为一个字典
+```
 
+备注：object 类没有 `__dict__` 属性，但继承自 object 子类的对象会有一个默认的 `__dict__` 属性（有一个例外是当该类定义了类属性 `__slots__` 时，该类的对象就不会有 `__dict__` 属性）。
+
+**`__dict__` 属性与 Python 的查找顺序（lookup chain）息息相关，详情见 Descriptor**。
+
+#### 2.4 `__slots__`属性
+
+**从设计理念上说，`__slots__` 属性的作用是规定一个类只能有那些属性，防止类的实例随意地动态添加属性。**
+
+可以定义类属性 `__slots__`（一个属性名列表），确保该类的实例不会添加 `__slots__` 以外的属性。一个副作用是定义了 `__slots__` 属性的类，其实例将不会拥有 `__dict__` 属性。具体用法如下：
+
+```python
+class A:
+    __slots__ = ["a", "b"]
+a = A()
+a.a = 2
+a.c = 3  # 报错
+```
+
+注意：假设类 `B` 继承自定义了 `__slots__` 的类 `A`，那么子类 `B` 的实例不会受到父类 `__slots__` 的限制。
+
+#### 2.5 内置函数 dir 与 `__dir__` 方法
+
+**从设计理念上说：不同于 vars 与 `__dict__`，dir 方法倾向于给出全部信息：包括特殊方法名**
+
+`dir` 函数返回的是一个标识符名列表，逻辑是：首先寻找 `__dir__` 函数的定义（object 类中有着默认的实现），若存在 `__dir__` 函数，则返回 `list(x.__dir__())`。备注：`__dir__` 函数必须定义为一个可迭代对象。
+
+若该类没有自定义 `__dir__` 函数，则使用 object 类的实现逻辑，大略如下：
+
+> If the object does not provide [`__dir__()`](https://docs.python.org/3/reference/datamodel.html#object.__dir__), the function tries its best to gather information from the object’s [`__dict__`](https://docs.python.org/3/library/stdtypes.html#object.__dict__) attribute, if defined, and from its type object. The resulting list is not necessarily complete, and may be inaccurate when the object has a custom [`__getattr__()`](https://docs.python.org/3/reference/datamodel.html#object.__getattr__).
+>
+> The default [`dir()`](https://docs.python.org/3/library/functions.html?highlight=dir#dir) mechanism behaves differently with different types of objects, as it attempts to produce the most relevant, rather than complete, information:
+>
+> - If the object is a module object, the list contains the names of the module’s attributes.
+> - If the object is a type or class object, the list contains the names of its attributes, and recursively of the attributes of its bases.
+> - Otherwise, the list contains the object’s attributes’ names, the names of its class’s attributes, and recursively of the attributes of its class’s base classes.
+>
+> ——https://docs.python.org/3/library/functions.html
+
+备注：官方文档对默认的 `dir` 函数的实现逻辑有些含糊不清，只能简单理解为默认实现会去寻找 `__dict__` 属性，故暂不予以深究。这里留一个测试例子待后续研究：
+
+例子
+
+```python
+class Test:
+    __slots__ = ["a", "b", "c"]
+    def __init__(self):
+        self.a = 3
+        self.b = 1
+        # self._c = 2
+        # self.__d = 3
+        # self.__dict__ = {"a": 1}
+
+    def __dir__(self):
+        # return "abc"
+        # return {"a": "dir_a"}
+        print("Test: __dir__")
+        return super().__dir__()
+    
+    def __getattribute__(self, name: str):
+        print(f"Test: __getattribute__, args: {name}")
+        return super().__getattribute__(name)
+    
+    def __getattr__(self, name):
+        print(f"Test: __gatattr__, args: {name}")
+        return "default"
+        # return super().__getattr__(name) # object没有__getattr__方法
+test = Test()
+print(dir(test))
+```
+
+输出结果为：（`__getattribute__` 与 `__getattr__` 见下一部分，大体上是寻找了 `__dict__` 属性与 `__class__` 属性）
+
+```
+Test: __dir__
+Test: __getattribute__, args: __dict__
+Test: __gatattr__, args: __dict__
+Test: __getattribute__, args: __class__
+['__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattr__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__slots__', '__str__', '__subclasshook__', 'a', 'b', 'c']
+```
+
+#### 2.6 `__getattr__`、`__getattribute__` 特殊方法，`getattr` 内置函数
+
+**从设计理念上说，这三者的作用是使用属性名获取属性值，也适用于方法**
+
+**作用：`__getattribute__` 会拦截所有对属性的获取。**
+
+首先内置函数 `getattr(object, name[, default])` 的功能等同于 `object.name`，例如：`getattr(a, "name")` 等价于 `a.name`。实现细节上，内置函数 `getattr` 会首先调用 `__getattribute__`，如果找不到该属性，则去调用 `__getattr__` 函数。
+
+备注：object 类只有 `__getattribute__` 的定义，而没有 `__getattr__`。
+
+备注：对于以双下划线开头的变量，编译时会对其名称进行修改：
+
+```python
+class A:
+	class A:
+    def __init__(self):
+        self.__a = 1
+a = A()
+dir(a)  # 会显示 "_A__a"
+vars(a)  # 会显示 "_A__a"
+a._A__a  # ok
+getattr(a, "_A__a")  # ok
+```
+
+备注：如果要自定义 `__getattribute__` 函数，最好在其内部调用 `object.__getattribute__(self, name)`。
+
+#### 2.7 `delattr` 内置方法、`__delattr__` 特殊方法、del 语句
+
+**作用：`__delattr__` 会拦截所有对属性的删除。**
+
+#### 2.8 `setattr` 内置方法、`__setattr__` 特殊方法
+
+**作用：`__setattr__` 会拦截所有对属性的赋值。**
+
+#### 2.9 Descriptor、`__get__`、`__set__`、`__del__`
+
+参考： 
+
+- [RealPython (Python-descriptors)](https://realpython.com/python-descriptors/)
+- [Python 官方文档 (Howto-descriptor)](https://docs.python.org/3/howto/descriptor.html)
+- [Python 官方文档 (library-build-in-functions)](https://docs.python.org/3/library/functions.html)
+- [Python 官方文档 (reference-data-model)](https://docs.python.org/3/reference/datamodel.html)
+
+**注：大多数情况下，无须使用 Descriptor**
+
+##### 概念
+
+按照如下要求实现了 `__get__`、`__set__`、`__delete__` 其中之一的类即满足 Descriptor 协议，称这样的类为 Descriptor（描述符） 。若没有实现 `__set__` 及 `__delete__` 方法，称为 **data descriptor**，否则称为 **non-data descriptor**。
+
+```python
+__get__(self, obj, type=None) -> object
+__set__(self, obj, value) -> None
+__delete__(self, obj) -> None
+__set_name__(self, owner, name)
+```
+
+##### Descriptor 的作用
+
+在 Python 的底层，`staticmethod()`、`property()`、`classmethod()`、`__slots__` 都是借助 Descriptor 实现的。
+
+
+
+`def foo(self, *args)` 可以使用 `obj.foo(*args)` 进行调用也是使用 Descriptor 实现的。
+
+> The starting point for descriptor invocation is a binding, `a.x`. How the arguments are assembled depends on `a`:
+>
+> - Direct Call
+>
+>   The simplest and least common call is when user code directly invokes a descriptor method: `x.__get__(a)`.
+>
+> - Instance Binding
+>
+>   If binding to an object instance, `a.x` is transformed into the call: `type(a).__dict__['x'].__get__(a, type(a))`.
+>
+> - Class Binding
+>
+>   If binding to a class, `A.x` is transformed into the call: `A.__dict__['x'].__get__(None, A)`.
+>
+> - Super Binding
+>
+>   If `a` is an instance of [`super`](https://docs.python.org/3/library/functions.html#super), then the binding `super(B, obj).m()` searches `obj.__class__.__mro__` for the base class `A` immediately preceding `B` and then invokes the descriptor with the call: `A.__dict__['m'].__get__(obj, obj.__class__)`.
+>
+> —— https://docs.python.org/3/reference/datamodel.html#invoking-descriptors
+
+##### 查找顺序
+
+完整的顺序如下，对于 `obj.x`，获得其值的查找顺序为：
+
+- 首先寻找命名为 `x` 的 **data descriptor**。即如果在 `obj` 的类 `Obj` 定义里有如下形式：
+
+  ```
+  class Obj:
+  	x = DescriptorTemplate()
+  ```
+
+  其中 `DescriptorTemplate` 中定义了 `__set__` 或 `__del__` 方法。
+
+- 若上一条失败，在对象 `obj` 的 `__dict__` 属性中查找 `"x"`。
+
+- 若上一条失败，寻找命名为 `x` 的 **non-data descriptor**。即如果在 `obj` 的类 `Obj` 定义里有如下形式：
+
+  ```
+  class Obj:
+  	x = DescriptorTemplate()
+  ```
+
+  其中 `DescriptorTemplate` 中定义了 `__get__` 但没有定义 `__set__` 及 `__del__` 方法。
+
+- 若上一条失败，则在 `obj` 类型的 `__dict__` 属性中查找，即 `type(obj).__dict__`。
+
+- 若上一条失败，则在其父类中查找，即 `type(obj).__base__.__dict__`。
+
+- 若上一条失败，则按照父类搜索顺序 `type(obj).__mro__`，对类祖先的 `__dict__` 属性依次查找。
+
+- 若上一条失败，则得到 `AttributeError` 异常。
+
+例子：
+
+如果类没有定义 `__slot__` 属性及 `__getattr__` 方法，且 `__getattribute__`、`__delattr__`、`__setattr__` 这些方法都直接继承自 object 类，那么 `__dict__` 的构建将会是如下默认的方式：
+
+```python
+class Vehicle():
+    can_fly = False
+    number_of_weels = 0
+
+class Car(Vehicle):
+    number_of_weels = 4
+
+    def __init__(self, color):
+        self.color = color
+
+def foo(self):
+    print("foo")
+
+my_car = Car("red")
+print(my_car.__dict__)
+print(type(my_car).__dict__)
+my_car.bar = foo  # 注意这种情况下my_car.bar是一个unbound fuction, 关于这一点参见Descriptor
+print(my_car.__dict__)
+print(type(my_car).__dict__)
+my_car.bar(my_car)
+```
+
+```python
+{'color': 'red'}
+{'__module__': '__main__', 'number_of_weels': 4, '__init__': <function Car.__init__ at 0x000001A3C7857040>, '__doc__': None}
+{'color': 'red', 'bar': <function foo at 0x000001A3C76ED160>}
+{'__module__': '__main__', 'number_of_weels': 4, '__init__': <function Car.__init__ at 0x000001A3C7857040>, '__doc__': None}
+foo
+```
+
+查找顺序
+
+```python
+my_car = Car("red")
+print(my_car.__dict__['color'])  # 等价于 mycar.color
+print(type(my_car).__dict__['number_of_weels'])  # 等价于 mycar.number_of_wheels
+print(type(my_car).__base__.__dict__['can_fly'])  # 等价于 mycar.can_fly
+```
+
+##### 使用 Descriptor
+
+需实现下列函数，实现 `__get__`、`__set__`、`__delete__` 其中之一即可，`__set_name__` 为 Python 3.6 引入的新特性，可选。参照例子解释：
+
+```python
+__get__(self, obj, type=None) -> object
+# self指的是Descriptor对象实例number, obj是self所依附的对象my_foo_object, type是Foo
+__set__(self, obj, value) -> None
+# self指的是Descriptor对象实例number, obj是self所依附的对象my_foo_object, value是3
+__delete__(self, obj) -> None
+# self指的是Descriptor对象实例number, obj是self所依附的对象my_foo_object
+__set_name__(self, owner, name)
+# self指的是Descriptor对象实例number, owner是Foo, name是"number"
+```
+
+例子
+
+```python
+class OneDigitNumericValue():
+    def __set_name__(self, owner, name):
+        # owner is Foo, name is number
+        self.name = name
+
+    def __get__(self, obj, type=None) -> object:
+        return obj.__dict__.get(self.name) or 0
+
+    def __set__(self, obj, value) -> None:
+        obj.__dict__[self.name] = value
+
+class Foo():
+    number = OneDigitNumericValue()
+
+my_foo_object = Foo()
+my_second_foo_object = Foo()
+
+my_foo_object.number = 3
+print(my_foo_object.number)
+print(my_second_foo_object.number)
+
+my_third_foo_object = Foo()
+print(my_third_foo_object.number)
+```
+
+##### 实用例子
+
+**避免重复使用 `property`**
+
+```python
+class Values:
+    def __init__(self):
+        self._value1 = 0
+        self._value2 = 0
+        self._value3 = 0
+
+    @property
+    def value1(self):
+        return self._value1
+
+    @value1.setter
+    def value1(self, value):
+        self._value1 = value if value % 2 == 0 else 0
+
+    @property
+    def value2(self):
+        return self._value2
+
+    @value2.setter
+    def value2(self, value):
+        self._value2 = value if value % 2 == 0 else 0
+
+    @property
+    def value3(self):
+        return self._value3
+
+    @value3.setter
+    def value3(self, value):
+        self._value3 = value if value % 2 == 0 else 0
+
+my_values = Values()
+my_values.value1 = 1
+my_values.value2 = 4
+print(my_values.value1)
+print(my_values.value2)
+```
+
+可以使用如下方法实现
+
+```python
+class EvenNumber:
+    def __set_name__(self, owner, name):
+        self.name = name
+
+    def __get__(self, obj, type=None) -> object:
+        return obj.__dict__.get(self.name) or 0
+
+    def __set__(self, obj, value) -> None:
+        obj.__dict__[self.name] = (value if value % 2 == 0 else 0)
+
+class Values:
+    value1 = EvenNumber()
+    value2 = EvenNumber()
+    value3 = EvenNumber()
+    
+my_values = Values()
+my_values.value1 = 1
+my_values.value2 = 4
+print(my_values.value1)
+print(my_values.value2)
+```
 
 ### 3. 继承
 
@@ -561,6 +1020,8 @@ C()
 ```
 
 上例为典型的菱形继承方式，使用 `super` 可以按照 MRO 顺序依次调用 `__init__` 函数一次。
+
+备注：`super` 函数还有单参数的调用形式，参见 [stckoverflow](https://stackoverflow.com/questions/30190185/how-to-use-super-with-one-argument)（理解需要有许多前置知识）。
 
 ### 4. 元类
 
@@ -944,7 +1405,57 @@ sys.modules.pop("models")
 sys.modules.pop("Detect")
 ```
 
+### 10. Python buid-in fuction and operation
 
+参考资料：[Python 标准库官方文档](https://docs.python.org/3/library/functions.html)
+
+**Truth Value Testing**
+
+任何对象都可以进行 Truth Value Testing（真值测试），即用于 `bool(x)` 或 `if` 或 `while` 语句，具体测试流程为，首先查找该对象是否有 `__bool__` 方法，若存在，则返回 `bool(x)` 的结果。然后再查找是否有 `__len__` 方法，若存在，则返回 `len(x)!=0` 的结果。若上述两个方法都不存在，则返回 `True`。
+
+备注：`__bool__` 方法应返回 `True` 或者 `False`，`__len__` 方法应返回大于等于 0 的整数。若不遵循这些约定，那么在使用 `bool(x)` 与 `len(x)` 时会报错。相当于：
+
+```python
+def len(x):
+	length = x.__len__()
+	check_non_negative_int(length)  # 非负整数检验
+	return length
+def bool(x):
+    if check_bool_exist(x):  # 检查__bool__是否存在
+        temp = x.__bool__()
+        check_valid_bool(temp)  # bool值检验
+        return temp
+    if check_len_exist(x):  # 检查__len__是否存在
+        return len(x) != 0
+    return True
+```
+
+备注：`__len__` 只有被定义了之后，`len` 方法才可以使用，否则会报错
+
+**boolean operation: or, and, not**
+
+运算优先级：`非bool运算 > not > and > or`，所以 `not a == b ` 等价于 `not (a == b)`
+
+注意这三个运算符的准确含义如下：
+
+```python
+not bool(a)  # not a
+a and b  # a if bool(a)==False else b
+a or b  # a if bool(a)==True else b
+```
+
+```python
+12 and 13  # 13
+23 or False  # 23
+```
+
+**delattr function and del operation**
+
+```python
+delattr(x, "foo")  # 等价于 del x.foo
+```
+
+### 11. Python 内存管理与垃圾回收（待补充）
 
 ## python代码打包
 
