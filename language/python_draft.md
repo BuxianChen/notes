@@ -1821,6 +1821,19 @@ pip install numpy pandas scipy scikit-learn matplotlib seaborn scikit-image open
 # torch请查看官网说明
 ```
 
+## numpy
+
+```python
+idx = np.argpartition(x, k, axis=1) # (m, n) -> (m, n)
+x[np.range(x.shape[0]), idx[:, k]]  # (m,) 每行的第k大元素值
+```
+
+```python
+# numpy保存
+np.save("xx.npy", arr)
+np.load(open("xx.npy"))
+```
+
 ## argparse
 
 ```python
