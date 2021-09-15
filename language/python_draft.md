@@ -1346,7 +1346,47 @@ def foo(a, b=1, /, c=2, d=3, *, e=5, f, **kwargs): pass
 
 ### 9. 导包规则
 
-参考 [RealPython](https://realpython.com/python-import/)
+参考：
+
+- [RealPython: python-import](https://realpython.com/python-import/)
+- [RealPython: modules-packages-introduction](https://realpython.com/python-modules-packages)
+- [Real Python: Namespaces and Scope in Python](https://realpython.com/python-namespaces-scope/)
+
+namespace
+
+- built-in namespace (运行脚本里的变量)
+- global namespace
+- enclosing namespace (带有内层函数的函数)
+- local namespace (函数最里面的一层)
+
+```python
+>>> globals()  # 返回global namespace
+'__name__': '__main__', '__doc__': None, '__package__': None, '__loader__': <class '_frozen_importlib.BuiltinImporter'>, '__spec__': None, '__annotations__': {}, '__builtins__': <module 
+'builtins' (built-in)>
+>>> locals()  # 返回local/enclosing namespace, 当位于运行脚本时, 与globals结果一样
+```
+
+```python
+global x, y  # 声明当前作用域下引用的是全局变量x, y
+nonlocal x, y  # 声明当前作用域下引用的是上一层作用域的x, y
+```
+
+```python
+from xx import yy
+# 将yy引入当前作用域, sys.modules中会有xx模块
+
+import xx.yy  # xx必须是一个包, yy可以是一个包或模块
+# sys.modules会显示xx是一个namespace, xx.yy是一个模块
+# globals() 只包含xx, 不包含yy及xx.yy
+
+import .xx  # 不允许
+```
+
+
+
+
+
+
 
 Python 导包的常用方法有：import 语句、`__import__` 内置函数、`importlib` 模块。本质上讲，第一种方法实际上会调用第二种方法，而第三种方法会绕过第二种方法，一般而言不推荐直接使用第二种方法。
 
