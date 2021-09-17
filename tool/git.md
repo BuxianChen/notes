@@ -274,6 +274,19 @@ git cat-file -p 24c5735c3e8ce8fd18d312e9e58149a62236c01a  # 查看 objects 目�
 git ls-files -s  # 查看当前缓冲区内容, 即 .git/index 文件中的内容
 ```
 
+## 疑难杂症
+
+```bash
+# 忽略权限修改
+git config core.filemode false
+# 查看git配置
+cat .git/
+# 忽略某些文件的修改, gitignore只能忽略untracked的文件
+git update-index --assume-unchanged [<file> ...]
+# 取消忽略
+git update-index --no-assume-unchanged [<file> ...]
+```
+
 ## 详例
 
 注意, 测试2.1与2.2表示的是在测试1的基础上尝试两种做法的结果

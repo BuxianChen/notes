@@ -3176,3 +3176,6 @@ a.b # a["b"]
 - easydict：
 - dotmap：[MaskTheFace](https://github.com/aqeelanwar/MaskTheFace/blob/master/utils/read_cfg.py)
 
+## albumentations（待补充）
+
+基于opencv的数据增强包

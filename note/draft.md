@@ -104,6 +104,72 @@ wildcards 通配符
 
 ### yaml
 
+```python
+import yaml
+with open('test.yaml', 'r') as f:
+    config = yaml.load(f, Loader=yaml.SafeLoader)
+```
+
+**特殊语法**
+
+```yaml
+name: &NAME abc
+book: *NAME
+```
+
+`&NAME` 表示后面的内容 `abc` 为“变量” `NAME`，而 `*NAME` 表示引用变量 `NAME` 的值。
+
+```
+name: abc
+book: abc
+```
+
+一个[例子](https://github.com/VITA-Group/DeblurGANv2/blob/master/config/config.yaml)（节选）：
+
+```yaml
+---
+project: deblur_gan
+experiment_desc: fpn
+
+train:
+  files_a: &FILES_A /datasets/my_dataset/**/*.jpg
+  files_b: *FILES_A
+  size: &SIZE 256
+  crop: random
+  preload: &PRELOAD false
+  preload_size: &PRELOAD_SIZE 0
+  bounds: [0, .9]
+  scope: geometric
+  corrupt: &CORRUPT
+    - name: cutout
+      prob: 0.5
+      num_holes: 3
+      max_h_size: 25
+      max_w_size: 25
+    - name: jpeg
+      quality_lower: 70
+      quality_upper: 90
+    - name: motion_blur
+    - name: median_blur
+    - name: gamma
+    - name: rgb_shift
+    - name: hsv_shift
+    - name: sharpen
+
+val:
+  files_a: *FILES_A
+  files_b: *FILES_A
+  size: *SIZE
+  scope: geometric
+  crop: center
+  preload: *PRELOAD
+  preload_size: *PRELOAD_SIZE
+  bounds: [.9, 1]
+  corrupt: *CORRUPT
+```
+
+
+
 ### xml
 
 ### ini
