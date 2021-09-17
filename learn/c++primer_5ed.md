@@ -2,15 +2,15 @@
 
 基于C++11标准
 
-备注: c++11标准虽然不是最新的, 但是后续的重要基础, c++14对c++11做了少数修补, c++17与c++20不清楚改动多大. 由于此书交叉引用过多, 所以计划先初步做笔记, 多看几遍后再补充完整
+备注: c++11标准虽然不是最新的, 但是后续的重要基础, c++14对c++11做了少数修补, c++17与c++20不清楚改动多大. 由于此书交叉引用过多, 所以计划先初步做笔记, 多看几遍后再补充完整。目录完全照搬原书，但所记内容不一定。
 
-#### chapter 1
+## chapter 1
 
 `main`函数的返回值必须为`int`
 
-#### chapter 2
+## chapter 2
 
-2.1 Primitive Build-in Types\(原生内置类型\)
+### 2.1 Primitive Build-in Types（原生内置类型）
 
 bool/char/wchar\_t/char16\_t/char32\_t/short/int/long/long long/float/double/long double/void
 
@@ -41,7 +41,7 @@ a + c;  // (long long)(a) + c
 
 整数/浮点数/字符/字符串/布尔/指针\(void\). 注意`"abc"`的类型是`const char[]`
 
-2.2 变量
+### 2.2 Variables（变量）
 
 **变量初始化写法**
 
@@ -79,7 +79,7 @@ int main() {int __as = 1, as__ = 1, _B = 2; return 0;}
 
 备注: C++中可以使用`and`, `or`等
 
-2.3 Compound Types\(复合类型\)
+### 2.3 Compound Types（复合类型）
 
 复合类型: 引用与指针
 
@@ -87,7 +87,7 @@ int main() {int __as = 1, as__ = 1, _B = 2; return 0;}
 
 例如: `int i = 0; &a = i; *p = &i`, `base type`为`int`, 后面的都叫`declarators`, 引用不是一个变量, 但指针是一个变量. 指针的值可以是: 一个对象的地址; 一个对象的下一个地址; 空指针字面量\(nullptr\); 无效地址
 
-**2.4 const Qualifier\(常量限定符\)**
+### 2.4 const Qualifier（常量限定符）
 
 ```text
 const int a = 0, *p = &a;//可以将const int合在一起视为base type
@@ -116,3 +116,6 @@ top-level const指变量本身不可变, low-level const指与之相关的变量
 decltype(f()) sum = x;//利用f函数的返回类型得到类型
 ```
 
+### 2.5 Dealing with Types（类型处理）
+
+### 2.6 Defining Our Own Data Structures（自定义数据结构）
