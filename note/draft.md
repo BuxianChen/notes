@@ -1,5 +1,55 @@
 # draft
 
+## Latex/Markdown
+
+### 0.记号约定
+
+以下参考《统计推断》--George Casella，《几何与代数》--胡国权，《神经网络与深度学习 》--邱锡鹏
+
+markdown语法仅用到{\bf X}。字体仅用到大小写字母斜体与大小写字母正粗体。
+
+**概率统计**
+
+|                                  |                     |
+| -------------------------------- | ------------------- |
+| $X$                              | 随机变量            |
+| $x$                              | 样本/随机变量的取值 |
+| ${\bf X}=(X_1,X_2,\ldots,X_p)^T$ | 随机向量            |
+| ${\bf x}=(x_1,x_2,\ldots,x_p)^T$ | 样本/随机向量的取值 |
+|                                  |                     |
+
+$L(\theta,{\bf x})$
+
+$P(X=x),P({\bf X}={\bf x})$
+
+$f_X(x),f_{\bf X}({\bf x})$
+
+**线性代数**
+
+|          |      |
+| -------- | ---- |
+| $A$      | 矩阵 |
+| $\bf{x}$ | 向量 |
+| $x$      | 标量 |
+| $\bf{A}$ | 张量 |
+|          |      |
+
+**机器学习**
+
+遵从线性代数的记号（矩阵向量标量张量）（仅用于暗示维度，其他不做任何约定）
+
+例如：样本矩阵记作$A\in\mathbb{R}^{n\times p}$或者$A\in\mathbb{R}^{p\times n}$
+彩色图片记作${\bf A}\in\mathbb{R}^{a\times b\times c}$
+彩色图片集合记作${\bf A}\in\mathbb{R}^{a\times b\times c\times n}$
+
+注意到维数较高的张量的记号还是会引起混淆，故可仅使用${\bf A}$表示三维张量，更高维可换其他记号。
+
+注记：上述记号约定中大写字母的记号有冲突，但不至于引起混淆，所用的符号类型仅有4种，便于临时约定其他符号。
+
+### 1.代码与对应的效果
+
+$xy,\boldsymbol{xy},{\bf xy},XY,{\bf XY},\boldsymbol{XY}$
+
 ## 常用软件
 
 7-zip、Adobe Reader、typora、notepad++、Git
@@ -283,6 +333,18 @@ known_hosts
 ![](../.gitbook/assets/kong-bai-chu-you-jian-cai-dan-lan-.png)
 
 [Windows Terminal](https://github.com/microsoft/terminal/blob/master/doc/user-docs/UsingCommandlineArguments.md)
+
+## subderivative/subgradient
+
+https://en.wikipedia.org/wiki/Subderivative
+
+对于一个定义在开凸集上的凸函数$f:\mathbb{R}^n\to\mathbb{R},dom(f)=U$，设$x_0$是$U$的内点（因为$U$是开集，所以这里的内点相对于$U$或$\mathbb{R}^n$两者含义相同），$f$在$x_0$处的次导数（subgradient）是满足下述条件的向量$v$集合:
+$$
+f(x)-f(x_0)\ge v^T(x-x_0)\quad\forall x\in U
+$$
+注记：在$x_0$处可微时，上述集合是单点集，即为普通的梯度。注意区分上述定义与凸函数的定义。这个定义的一个用途是找极值点。
+
+一般函数（不必是凸的）的定义：待补充
 
 ## 回归问题中$R^2$的定义
 
