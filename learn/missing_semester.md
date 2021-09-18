@@ -439,7 +439,12 @@ echo -e "\e[44;37;5mabcs\e[0m"
 
 #### 例 6：grep
 
+#### 例 7：修改屏幕亮度
 
+```bash
+$ echo 5000 | sudo tee /sys/class/backlight/intel_backlight/brightness
+# 不能使用 sudo echo 5000 > /sys/class/backlight/intel_backlight/brightness
+```
 
 ### 杂录
 
@@ -809,6 +814,7 @@ echo "password is $password"
 - 使用 `hjkl` 分别代表左、下、上、右移动光标，当然也可以使用方向键；
 
 - 词：`w` 表示移动到下一个词首，`b` 表示移动到当前词的词首，`e` 表示移动到当前词的词尾；
+  
   - 备注（不重要的细节）：如果当前光标停在词尾，那么 `e` 键将会移动到下一个词的词尾；`b` 键同理。
   
 - 行：`0` （数字零）表示移动到行首，`^` 键移动到该行第一个非空格位置，`$` 键移动改行的行尾；

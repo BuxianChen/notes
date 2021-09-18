@@ -205,6 +205,26 @@ torch.backends.cudnn.allow_tf32 = True
 
 [参考官方文档](https://pytorch.org/tutorials/beginner/dist_overview.html)
 
+### 环境变量
+
+```python
+# 最佳实践需设定这一项
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'
+```
+
+设定使用的 GPU，PCI_BUS_ID 是表示 `0,1` 代表的是物理 GPU ID 为 `0,1` 的两块 GPU。[参考](https://www.jianshu.com/p/d10bfee104cc)
+
+
+
+```python
+import os
+import torch
+# 这两行顺序不能乱，否则后一行的结果会不正确
+os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'
+torch.cuda.device_count()  # 2
+```
+
 
 
 ### torch.nn.DataParallel
