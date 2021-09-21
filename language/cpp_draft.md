@@ -670,6 +670,14 @@ typedef unsigned char PixelType;
 using PixelType = unsigned char;
 ```
 
+using 作用于命名空间，相当于对命名空间里的所有标识符取别名（待确认）
+
+```c++
+using namespace std;
+// 既可以用std::cout, 也可以直接使用endl。
+std::cout << "abc" << endl;
+```
+
 
 
 ## 2. C++标准库

@@ -1,5 +1,23 @@
 # C++primerplus\(6ed\)
 
+## chapter 9: Memory Models and Namespaces
+
+### 9.1 Separate Compilation
+
+C++ 代码文件的推荐组织形式
+
+- 头文件（.h）：声明
+- 源文件（.cpp）：定义
+- 源文件（.cpp）：调用代码
+
+其中头文件里应该存放：
+
+- 函数原型
+- 使用 `#define` 或 `const` 定义的常量
+- 结构体声明、类声明
+- 模板
+- 内联函数
+
 ## chapter 18: C++ 11 New Features
 
 本章笔记将对原书进行扩充，主要体现在：

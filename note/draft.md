@@ -766,6 +766,12 @@ spatial transform networks: [https://kevinzakka.github.io/2017/01/10/stn-part1/]
 
 右键启动软件的图标，选择属性-&gt;快捷方式`ctrl+alt+C`
 
+## windows快捷键
+
+`Win + Tab`：切换应用窗口。用`方向键`选择，`Enter`确定。（会显示历史窗口）
+
+`Alt + Tab`：切换应用窗口。按住`Alt`键，用`Tab`选择，松开`Alt`键确定。
+
 ## windows terminal使用
 
 增加shell: [参考](https://dev.to/azure/easily-add-anaconda-prompt-in-windows-terminal-to-make-life-better-3p6j)

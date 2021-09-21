@@ -1,6 +1,20 @@
+# OpenCV
+
+## opencv-python
+
+### 图像格式
+
 cv2 包里函数参数 size 一般为 (width, height)，但图像的表示形式上，使用 numpy 数组来表示，例如：`arr` 为 3 维 dtype = np.uint8，shape = (height, width, 3)，颜色通道依次为 BGR 。
 
-cv2 图像读写操作
+cv2 对 numpy 数组进行操作时往往需要 numpy 数组的内部存储是 C 连续的，numpy 中对数组的某些操作会使得数组变的不是 C 连续的，例如：
+
+- np.transpose
+
+```python
+arr = np.ascontiguousarray(arr)
+```
+
+### cv2 图像读写操作
 
 cv2 在路径中存在中文字符时会无法读写文件
 
@@ -39,14 +53,16 @@ cv2.imwrite("x.png", img, (cv2.IMWRITE_PNG_COMPRESSION, 3))
 - cv2.IMWRITE_JPEG_QUALITY=1：JPEG 格式，0-100 的整数，表示图像质量，默认为 95。
 - cv.IMWRITE_PNG_COMPRESSION=16：PNG 格式，0-9表示压缩级别，级别越高图像越小，默认值为 3。
 
-RGB 与 BGR 转换（cv2 默认使用 BGR 格式）
+### RGB 与 BGR 转换（cv2 默认使用 BGR 格式）
 
 ```
 # 将srcBGR: uint8数组(H, W, 3)转换为destRGB: uint8数组(H, W, 3)
 destRGB = cv2.cvtColor(srcBGR, cv2.COLOR_BGR2RGB)
 ```
 
-cv2 在图像上画点（实际上是在画圈）
+### 在图像上绘制
+
+#### 画点（实际上是在画圈）
 
 ```python
 # (x, y)为圆心的坐标, 需为整数
@@ -54,15 +70,17 @@ cv2 在图像上画点（实际上是在画圈）
 cv2.circle(img, (x, y), 2, (0, 0, 255), thickness=2)
 ```
 
-cv2 对 numpy 数组进行操作时往往需要 numpy 数组的内部存储是 C 连续的，numpy 中对数组的某些操作会使得数组变的不是 C 连续的，例如：
-
-- np.transpose
+#### 添加文字（非英文会乱码）
 
 ```python
-arr = np.ascontiguousarray(arr)
+cv2.putText(image, text, org, font, fontScale, color[, thickness[, lineType[, bottomLeftOrigin]]])
+# org是左下角坐标, font是字体, fontScale是字体
+cv2.putText(image, "mark", (100, 200), cv2.FONT_HERSHEY_COMPLEX, 5, (0, 0, 255), 6)
 ```
 
-坐标变换
+
+
+### 图像变换
 
 ```python
 import sklearn.transform as trans
@@ -105,16 +123,14 @@ b_0&a_0&b_1\\
 src_x\\src_y\\0
 \end{bmatrix}
 $$
-cv2 图像旋转（待补充）
+#### cv2 图像旋转（待补充）
 
-添加文字（非英文会乱码）
-
-```python
-cv2.putText(image, text, org, font, fontScale, color[, thickness[, lineType[, bottomLeftOrigin]]])
-# org是左下角坐标, font是字体, fontScale是字体
-cv2.putText(image, "mark", (100, 200), cv2.FONT_HERSHEY_COMPLEX, 5, (0, 0, 255), 6)
-```
-
-图像修复
+### 图像修复
 
 cv2.inpaint
+
+## OpenCV C++ API
+
+### windows VS2017 + OpenCV C++
+
+https://sevenold.github.io/2019/01/opencv-setup/

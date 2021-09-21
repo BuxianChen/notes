@@ -89,11 +89,27 @@ int main() {int __as = 1, as__ = 1, _B = 2; return 0;}
 
 ### 2.4 const Qualifier（常量限定符）
 
+用 `const` 修饰的变量不能被重新赋值，声明时必须初始化。
+
+```c++
+const int a = get_size();  // initialized at run time
+const int b = 1;  // initialized at compile time
+const int c;  // error!
+```
+
+
+
 ```text
 const int a = 0, *p = &a;//可以将const int合在一起视为base type
 ```
 
-在默认情况下, const限定的标识符只在本文件中有效, 即假设`a.cpp`中与`b.cpp`中同时用`const int i = 1;`进行了定义, `gcc a.cpp b.cpp -o out`命令编译时不会报错. 但假如没有用`const`限定, 则会出现重定义的错误. 为了使得一个常量被多个文件使用, 建议按如下方式:
+**const 与 extern**
+
+在默认情况下，const 限定的标识符只在本文件中有效，即假设 `a.cpp` 中与 `b.cpp` 中同时用 `const int i = 1;` 进行了定义，`gcc a.cpp b.cpp -o out` 命令编译时不会报错。但假如没有用 `const` 限定，则会出现重定义的错误。
+
+备注：`extern` 关键字的作用是**声明**标识符有全局作用域
+
+为了使得一个常量被多个文件使用，建议按如下方式:
 
 ```text
 extern const int a = foo(); // test.cpp
