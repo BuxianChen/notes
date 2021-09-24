@@ -437,6 +437,25 @@ echo -e "\e[44;37;5mabcs\e[0m"
 
 #### 例 5：排除某些子目录的复制
 
+```bash
+$ ls ./src | grep -v 'logs\|images' | xargs -i cp -r ./src/{} ./dst
+```
+
+排除 `logs` 与 `images` 子目录从 `src` 复制文件至 `dst`
+
+```
+ROOT
+  - src
+    - logs/
+    - images/
+    - models/
+    - main.py
+  - dst
+```
+
+- `grep -v` 表示排除，`'logs\|images'` 表示或的关系
+- `xargs -i` 表示将前一步的结果放在 `./src/{}` 的 `{}` 处。
+
 #### 例 6：grep
 
 #### 例 7：修改屏幕亮度

@@ -239,7 +239,30 @@ jupyter-notebook # jupyter-lab
 
 pudb 调试快捷键
 
+pdb 调试
 
+使用 VSCode 调试 Python 代码的 launch.json 文件模板
+
+```json
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: load_detr.py",
+            "type": "python",
+            "request": "launch",
+            "program": "load_detr.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "args": []
+        }
+    ]
+}
+```
 
 
 
@@ -1444,6 +1467,79 @@ detector = Detect()
 sys.modules.pop("models")
 sys.modules.pop("Detect")
 ```
+
+
+
+**一个 BUG**
+
+假定目录结构为：
+
+```
+ROOT
+  - models.py
+  - load_detr.py
+```
+
+文件内容如下：
+
+```python
+# models.py
+a = 1
+
+# load_detr.py
+import torch
+model = torch.hub.load('facebookresearch/detr:main', 'detr_resnet50', pretrained=False)
+from models import a
+print(a)
+```
+
+运行：
+
+```bash
+python load_detr.py
+```
+
+报错：
+
+```
+ImportError: cannot import name 'a' from 'models'
+```
+
+原因在于 `torch.hub.load` 的内部逻辑为：
+
+- 按照 `facebookresearch/detr:main` 去 GitHub 下载原始仓库（https://github.com/facebookresearch/detr）的代码至 `~/.cache/torch/hub` 下。
+
+  备注：此处的 `main` 代表 `main` 分支，代码下载解压完毕后，`~/.cache/torch/hub` 目录下会生成子目录 `facebookresearch_detr_main` 存放当前分支下的代码
+
+  备注：如果原始 GitHub 仓库进行了更新，而本地之前已经下载了之前版本的仓库，可以使用如下方法重新下载
+
+  ```python
+  model = torch.hub.load('facebookresearch/detr:main', 'detr_resnet50', pretrained=False, force_reload=True)
+  ```
+
+- 接下来使用动态 import 的方式，增加了 `~/.cache/torch/hub/facebookresearch_detr_main` 到 sys.path 并使用 importlib 中的相关函数导入代码仓库顶级目录中的 `hubconf.py` 文件里的 `detr_resnet50` 函数，构建模型并下载权重。随后在 sys.path 中移除了 `~/.cache/torch/hub/facebookresearch_detr_main` 路径。 
+
+问题出现在上述仓库的 `hubconf.py` 文件里有这种 import 语句：
+
+```python
+from models.backbone import Backbone, Joiner
+from models.detr import DETR, PostProcess
+def detr_resnet50(...)
+```
+
+导致当前目录下的 models 无法被重新导入
+
+修改策略（未必万无一失）：
+
+```python
+import torch
+model = torch.hub.load('facebookresearch/detr:main', 'detr_resnet50', pretrained=False)
+import sys
+sys.modules.pop("models")
+from models import a
+```
+
+
 
 ### 10. Python buid-in fuction and operation
 
@@ -3189,3 +3285,6 @@ sorted_x = natsorted(x)
 # sorted_x: ["1.png", "2.png", "10.png"]
 ```
 
+## yacs
+
+作者为 faster rcnn 的作者 Ross Girshick，用于解析 yaml 文件
