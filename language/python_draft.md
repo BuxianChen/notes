@@ -1375,7 +1375,30 @@ def foo(a, b=1, /, c=2, d=3, *, e=5, f, **kwargs): pass
 - [RealPython: modules-packages-introduction](https://realpython.com/python-modules-packages)
 - [Real Python: Namespaces and Scope in Python](https://realpython.com/python-namespaces-scope/)
 
-namespace
+首先，需要厘清几个概念：
+
+- namespace
+
+  ```
+  import a
+  print(a.xxx)
+  ```
+
+  这里的 `a` 是一个 `namespace`
+
+- module
+
+  单个 `.py` 文件是一个 `module`
+
+- package
+
+  目录，且目录下有 `__init__.py` 文件
+
+- namespace package
+
+  目录，且目录下没有 `__init__.py` 文件
+
+#### 9.1 namespace
 
 - built-in namespace (运行脚本里的变量)
 - global namespace
@@ -1405,9 +1428,200 @@ import xx.yy  # xx必须是一个包, yy可以是一个包或模块
 import .xx  # 不允许
 ```
 
+global namespace 需要额外进行说明，与 import 相关。
 
+#### 9.2 import 语法详解
 
+**绝对导入与相对导入**
 
+```python
+# 绝对导入
+from aa import bb
+from aa.bb import C
+import aa.bb  # aa.bb 必须为一个module/namespace package/package
+
+# 相对导入：必须以点开头，且只有from ... import ...这一种写法
+from . import aa
+from ..aa.bb import cc
+# import .aa  # 无此语法
+```
+
+**`from ... import ...` 语法详解**
+
+下面分别对上述导入语句作解析：
+
+```
+from aa import bb
+```
+
+导入成功只能为三种情况
+
+- `aa` 是一个不带 `__init__.py` 的文件夹（namespace package）。
+
+  - `bb` 是一个 `bb.py` 文件。则可以直接使用 `bb`，但不能使用 `aa` 以及 `aa.bb`。注意，此时
+
+  ```python
+  sys.modules["aa"]  # 显示为namespace
+  sys.modules["aa.bb"]  # 显示为module
+  sys.modules["bb"]  # 报错
+  ```
+
+  - `bb` 是一个带或者不带 `__init__.py` 的文件夹，情况类似，唯一的区别是此时 `bb` 会显示为一个 module 或者是 namespace。
+
+- `aa` 是一个带有 `__init__.py` 的文件夹（package），则上述导入成功的条件为 `bb` 在 `aa/__init__.py` 中是一个标识符，或者 `bb` 是 `aa` 的子目录，或者 `bb.py` 在文件夹 `aa` 下。无论是哪种情况，`aa/__init__.py` 均会被执行，且 `aa` 与 `aa.bb` 不可直接使用。下面是一个例子：
+
+  目录结构为
+
+  ```
+  aa
+    - __init__.py
+    - bb.py
+  ```
+
+  文件内容为
+
+  ```python
+  
+  # aa/__init__.py
+  c = 1
+  print(c)
+  # bb.py
+  # 无内容
+  ```
+
+  使用
+
+  ```python
+  >>> from aa import bb  # 注意此时已经将c打印了
+  1
+  >>> bb
+  <module 'aa.bb' from 'aa/bb.py'>
+  >>> # aa.cc, aa, aa.bb # 三者均不可使用
+  >>> import aa  # 注意aa/__init__.py不会再次被执行
+  >>> aa.bb
+  <module 'aa.bb' from 'aa/bb.py'>
+  >>> aa.c
+  1
+  >>> aa
+  <module 'aa.bb' from 'aa/__init__.py'>
+  ```
+
+- `aa` 是一个 `aa.py` 文件，则上述导入成功的条件为 `aa.py` 中可以使用 `bb` 这一标识符。
+
+```
+from aa.bb import C
+```
+
+结论：对于这种形式的导入
+
+```
+from xx import yy
+from xx.yy import zz
+```
+
+`xx.py` 或 `xx/__init__.py` 只要有就会被执行。并且 `xx` 与 `yy` 是 namespace package 还是 package 不影响导入，最终只有 import 后面的东西可以直接使用。
+
+**`import ...` 语法详解**
+
+```python
+import aa.bb.cc
+```
+
+导入成功只能为一种情况 `aa/bb/cc.py` 或着 `aa/bb/cc` 存在，作用是依次执行 `aa/__init__.py`，`aa/bb/__init__.py`，`aa/bb/cc.__init__.py` （若它们都是package）。无论 `aa` 与 `bb` 是 package/namespace package，以下标识符均可以直接使用：
+
+```
+aa
+aa.bb
+aa.bb.cc
+aa.foo  # foo 在 aa/__init__.py 中
+aa.bb.bar  # bar 在 bb/__init__.py 中
+```
+
+以下不可使用
+
+```
+aa.zz  # aa/zz.py文件, 且aa/__init__.py中没有from . import zz
+```
+
+备注：无论是 `from ... import ...` 还是 `import ...`，相关包的 `__init__.py` 及 `xx.py` 模块均会被执行一次。后续若再次 import，无论文件是否发生变动，均不会再次运行 `__init__.py` 或 `xx.py` 文件。只是标识符是否可用发生变化。
+
+**彻底理解import**
+
+**step1：官方文档搜索记录**
+
+平时惯用的 import 语法是 `importlib.__import__` 函数的语法糖：
+
+> The [`__import__()`](https://docs.python.org/3/library/importlib.html?highlight=import#importlib.__import__) function
+>
+> ​		The [`import`](https://docs.python.org/3/reference/simple_stmts.html#import) statement is syntactic sugar for this function
+> ——https://docs.python.org/3/library/importlib.html
+
+其函数定义为（[链接](https://docs.python.org/3/library/importlib.html?highlight=import#importlib.__import__)）：
+
+```python
+importlib.__import__(name, globals=None, locals=None, fromlist=(), level=0)
+```
+
+官方对此函数的解释为：
+
+> An implementation of the built-in [`__import__()`](https://docs.python.org/3/library/functions.html#__import__) function.
+>
+> Note: Programmatic importing of modules should use [`import_module()`](https://docs.python.org/3/library/importlib.html?highlight=import#importlib.import_module) instead of this function.
+
+即：`importlib.__import__` 是内置函数的一种实现。备注：此处官方的超链接疑似有误，似乎应该是：**平时惯用的 import 语法是内置函数 `__import__` 函数的语法糖**
+
+而内置函数 `__import__` 的定义为（[链接](https://docs.python.org/3/library/functions.html#__import__)）：
+
+```python
+__import__(name, globals=None, locals=None, fromlist=(), level=0)
+```
+
+官方对此函数有如下注解：
+
+> This function is invoked by the [`import`](https://docs.python.org/3/reference/simple_stmts.html#import) statement.  It can be replaced (by importing the [`builtins`](https://docs.python.org/3/library/builtins.html#module-builtins) module and assigning to `builtins.__import__`) in order to change semantics of the `import` statement, but doing so is **strongly** discouraged as it is usually simpler to use import hooks (see [**PEP 302**](https://www.python.org/dev/peps/pep-0302)) to attain the same goals and does not cause issues with code which assumes the default import implementation is in use.  Direct use of [`__import__()`](https://docs.python.org/3/library/functions.html#__import__) is also discouraged in favor of [`importlib.import_module()`](https://docs.python.org/3/library/importlib.html#importlib.import_module).
+
+可以看到，`importlib.__import__` 与内置函数 `__import__` 的定义完全相同。
+
+总结：平时所用的 import 语句仅仅是 `importlib.__import__` 函数（也许是内置函数 `__import__`）的语法糖。而 `importlib.__import__` 是内置函数 `__import__` 的一种实现，建议不要直接使用 `importlib.__import__` 与内置的 `__import__` 函数。
+
+整理一下官方说明链接：
+
+- `import` 语法：[链接1](https://docs.python.org/3/reference/simple_stmts.html#import)
+- `importlib.__import__` 函数：[链接2](https://docs.python.org/3/library/importlib.html#importlib.__import__)
+- `__importlib__` 内置函数：[链接3](https://docs.python.org/3/library/functions.html#__import__)
+
+由于 `importlib.__import__` 函数几乎没有任何说明，因此主要看链接 1 与 3。
+
+**step 2：官方文档理解**
+
+首先，回顾内置函数 `__import__` 的定义：
+
+```
+__import__(name, globals=None, locals=None, fromlist=(), level=0)
+```
+
+在标准实现中，locals 参数被忽略。import 语法糖与 `__import__` 内置函数的对应关系为：
+
+官方文档的三个例子
+
+```python
+import spam
+spam = __import__('spam', globals(), locals(), [], 0)
+```
+
+```python
+import spam.ham
+spam = __import__('spam.ham', globals(), locals(), [], 0)
+```
+
+```python
+from spam.ham import eggs, sausage as saus
+_temp = __import__('spam.ham', globals(), locals(), ['eggs', 'sausage'], 0)
+eggs = _temp.eggs
+saus = _temp.sausage
+```
+
+晦涩难懂，之后再补充。
 
 
 
@@ -1415,11 +1629,13 @@ Python 导包的常用方法有：import 语句、`__import__` 内置函数、`i
 
 import 语句与 `__import__` 内置函数的对应关系可以参见[官方文档](https://docs.python.org/zh-cn/3/library/functions.html#__import__)。
 
-怎样完全一个已经被导入的包，似乎做不到，参考[链接](https://izziswift.com/unload-a-module-in-python/)
+怎样完全删除一个已经被导入的包，似乎做不到，参考[链接](https://izziswift.com/unload-a-module-in-python/)
 
 怎样实现自动检测包被修改过或未被导入过，自动进行 reload 操作：待研究
 
-问题：
+一些疑难杂症：
+
+**实例1：**
 
 ```
 pkg1
@@ -1468,9 +1684,7 @@ sys.modules.pop("models")
 sys.modules.pop("Detect")
 ```
 
-
-
-**一个 BUG**
+**实例2：**
 
 假定目录结构为：
 
@@ -1539,8 +1753,6 @@ sys.modules.pop("models")
 from models import a
 ```
 
-
-
 ### 10. Python buid-in fuction and operation
 
 参考资料：[Python 标准库官方文档](https://docs.python.org/3/library/functions.html)
@@ -1593,13 +1805,20 @@ delattr(x, "foo")  # 等价于 del x.foo
 
 ### 11. Python 内存管理与垃圾回收（待补充）
 
+### 12. 怎么运行 Python 脚本（感觉没啥有价值的，考虑移除）
+
+主要参考（翻译）自：[RealPython](https://realpython.com/run-python-scripts/)
+
+主要有：
+
+- python xx/yy.py
+- python -m xx.yy
+- import
+- runpy
+- importlib
+- exec
+
 ## python代码打包
-
-### How to import package
-
-[参考realpython](https://realpython.com/pypi-publish-python-package/#different-ways-of-calling-a-package)
-
-
 
 ### 项目组织形式
 
@@ -1820,6 +2039,12 @@ xxx
 ```
 
 备注：whl 格式实际上是 zip 格式，因此可以进行解压缩查看内容
+
+### 发布到 PyPi
+
+参考资料
+
+- [参考realpython](https://realpython.com/pypi-publish-python-package/#different-ways-of-calling-a-package)
 
 ## 不能实例化的类
 
