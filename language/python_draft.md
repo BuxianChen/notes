@@ -2040,6 +2040,118 @@ xxx
 
 备注：whl 格式实际上是 zip 格式，因此可以进行解压缩查看内容
 
+**例子 1**
+
+[labelme-4.5.12](https://github.com/wkentaro/labelme) 的源码目录如下：
+
+```
+ROOT
+  - .github/      # 无__init__.py文件
+  - docker/       # 无__init__.py文件
+  - docs/         # 无__init__.py文件
+  - examples/     # 无__init__.py文件
+  - github2pypi/  # 有__init__.py文件
+  	- __init__.py
+  	- replay_url.py
+  	- ...
+  - labelme/
+    - __init__.py
+    - ...
+  - tests/        # 无__init__.py文件
+  	- labelme_tests/
+  	  - __init__.py
+  	  - test_app.py
+  	  - ...
+  	- doc_tests/
+  - setup.py
+  - README.md
+  - .gitignore
+  - MANIFEST.in
+  - LICENSE
+  - ...
+```
+
+其中 labelme 文件夹内部的文件目录为：
+
+```
+- __init__.py
+- cli/
+  - __init__.py
+  - draw_json.py
+  - draw_label_png.py
+  - json_to_dataset.py
+  - on_docker.py
+- config  # 存放着非py文件，安装后有此目录及文件
+  - __init__.py
+  - default_config.yaml
+- icons  # 存放着非py文件，安装后有此目录及文件
+  - *.png
+- translate/  # 存放着非py文件，安装后无此目录
+- utils/
+- widgets/
+- ...
+```
+
+setup 函数如下
+
+```python
+setup(
+    name="labelme",
+    version=version,
+    packages=find_packages(exclude=["github2pypi"]),
+    description="Image Polygonal Annotation with Python",
+    long_description=get_long_description(),
+    long_description_content_type="text/markdown",
+    author="Kentaro Wada",
+    author_email="www.kentaro.wada@gmail.com",
+    url="https://github.com/wkentaro/labelme",
+    install_requires=get_install_requires(),
+    license="GPLv3",
+    keywords="Image Annotation, Machine Learning",
+    classifiers=[
+        "Development Status :: 5 - Production/Stable",
+        "Intended Audience :: Developers",
+        "Natural Language :: English",
+        "Programming Language :: Python",
+        "Programming Language :: Python :: 2.7",
+        "Programming Language :: Python :: 3.5",
+        "Programming Language :: Python :: 3.6",
+        "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python :: Implementation :: PyPy",
+    ],
+    package_data={"labelme": ["icons/*", "config/*.yaml"]},
+    entry_points={
+        "console_scripts": [
+            "labelme=labelme.__main__:main",
+            "labelme_draw_json=labelme.cli.draw_json:main",
+            "labelme_draw_label_png=labelme.cli.draw_label_png:main",
+            "labelme_json_to_dataset=labelme.cli.json_to_dataset:main",
+            "labelme_on_docker=labelme.cli.on_docker:main",
+        ],
+    },
+    data_files=[("share/man/man1", ["docs/man/labelme.1"])],
+)
+```
+
+使用 `python setup.py install` 后，安装相关的存储路径（conda）例如
+
+```
+anaconda3/envs/env_name/Scripts
+anaconda3/envs/env_name/Lib/site-packages/labelme
+anaconda3/envs/env_name/Lib/site-packages/labelme-4.5.12.dist-info
+```
+
+`Scripts` 目录下多出了
+
+```
+labelme.exe
+labelme_draw_json.exe
+labelme_draw_label_png.exe
+labelme_json_to_dataset.exe
+labelme_on_docker.exe
+```
+
 ### 发布到 PyPi
 
 参考资料

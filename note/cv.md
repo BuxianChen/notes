@@ -1,4 +1,4 @@
-### COCO 标注格式
+## COCO 标注格式
 
 [参考链接](https://www.immersivelimit.com/tutorials/create-coco-annotations-from-scratch)
 
@@ -179,7 +179,7 @@ annotations 是一个列表，每个列表代表一个标注（即一个物体�
 
 一个简易的标注可视化代码参见 [show_mask.py](../.gitbook/assets/coco/show_mask.py)。（仅供理解，不要重复造轮子:blush:）
 
-#### pycocotools
+### pycocotools
 
 **安装**
 
@@ -264,7 +264,13 @@ class COCO: #全部函数如下
         """待补充"""
 ```
 
-## PIL
+## 常用库
+
+### OpenCV
+
+[跳转](./opencv/opencv.md)
+
+### PIL
 
 ```python
 from PIL import Image
@@ -295,6 +301,10 @@ img_cv2 = cv2.imread("./images/unmasked.jpg")  # img_cv2(np.array): (H,W,3), BGR
 img_pil = Image.fromarray(img_cv2)  # img_pil(Image), 默认认为img_cv2的RGB存储的
 img_pil.save("pil.jpg")  # 保存的图片与原始图片颜色通道不一样
 ```
+
+## 
+
+## 人脸识别任务
 
 ### LFW 数据集
 
@@ -426,3 +436,127 @@ Megaface 比赛评测方法：
 Probe set （facescrub）图片数量：不到 4000 张
 
 MegaFace Gallery set 未去噪前图片数量：1027058
+
+
+
+## 开源工具
+
+### labelImg
+
+标注目标检测框
+
+### labelme
+
+标注实例分割，语义分割，目标检测等任务
+
+安装
+
+```
+pip install labelme
+```
+
+
+
+实例分割
+
+```
+labelme data_annotated --labels labels.txt --nodata --validatelabel exact --config '{shift_auto_shape_color: -2}'
+```
+
+- `data_annotated` 为存储图片的文件夹
+- `--labels label.txt` 表示标签文件
+- `--nodata` 表示生成的标注文件中不存储图片
+- `--validatelabel exact` 表示不允许标注不在 `labels.txt` 中的标签
+- `--config '{shift_auto_shape_color: -2}'`  的含义未知
+- 操作界面里每个多边形需要给出标签，另外还可以选择给一个 `group_id`，适用于用多个多边形框住一个物体的情况
+- 输出的标注形式是每张图片一个 Json 文件，格式为 labelme 包的格式
+
+将标注格式转换为 coco 格式
+
+```python
+# labelme-4.5.12/examples/instance_segmentation/labelme2coco.py
+./labelme2coco.py data_annotated data_dataset_coco --labels labels.txt
+```
+
+- `data_annotated` 文件夹中存放着上一步得到的一堆 Json 文件（labelme 包的格式）
+
+- `data_dataset_coco` 为转换后的文件目录，转换后会得到
+
+  ```
+  data_dataset_coco
+    - JPEGImages/  # 原始图片, 不包含没有被标注的文件
+    - Visualization/  # 标注可视化结构
+    - annotation.json  # coco格式的标注
+  ```
+
+### TextRecognitionDataGenerator
+
+生成文本图片数据
+
+版本号
+
+```
+commit id: 9cc441
+```
+
+使用方法
+
+```
+python run.py ...
+```
+
+- `--output_dir`
+
+- `--input_dir`
+
+- `-l en`：设置语言，必须有 `fonts/lantin` 文件夹，`-l cn` 必须有 `fonts/cn` 文件夹，文件底下都是 `.ttf` 文件。脚本运行的逻辑每张图片随机从这些字体中选择
+
+- `-c 1000`：生成 1000 张小条图
+
+- `-rs`，`-let`，`-num`，`-sym`：适用于生成随机文本进行生成的情况，用法略去
+
+- `-w`，`-r`：不明含义，看字面意思是生成小条图中有多少个字符，但似乎总是会生成整个文本
+
+  ```python
+  parser.add_argument("-w", "--length", type=int, nargs="?", help="Define how many words should be included in each generated sample. If the text source is Wikipedia, this is the MINIMUM length",default=1)
+  
+  parser.add_argument("-r", "--random", action="store_true", help="Define if the produced string will have variable word count (with --length being the maximum)", default=False)
+  ```
+
+- `-f 32`：将小条图的高度设置为 32 像素
+
+- `-t 4`：运行 `run.py` 脚本的线程数
+
+- `-e jpg`：生成图片的后缀名
+
+- `-k 20`：生成的文字逆时针 20 度，`-rk` 表示随机旋转 `[-20, 20]` 度角
+
+- `-wk`：不明含义
+
+- `-bl 3`：表示增加高斯模糊，高斯模糊的卷积核大小为 3，`-rbl` 表示随机适用 `[0, 3]` 的高斯模糊核
+
+- `-b`：`-b 3` 表示背景图片从 `pictures` 文件夹里随机选择
+
+- `-hw`：生成手写字符，需要 tensorflow 的训练模型，未测试
+
+- `-na 0`：输出图片的命名方式为 `[TEXT]_[ID].[EXT]`
+
+- `-d 2`：采用的 distorsion （图像扭曲）方式为 Cosine wave
+
+- `-do`：`-d 0` 表示只对垂直方向做扭曲，`1` 表示只对水平方向做扭曲，`2` 表示对两个方向都做扭曲
+
+- `-wd`：`-wd -1` 根据字符串长度自动确定小条图的长度（像素个数），`-wd 300`表示手动设定小条图的长度
+
+- `-al 1`：设置对齐方式为中心对齐
+
+- `-or 1`：设置文字方向为垂直，即每个字的方向都是正向的，但书写方向为从上自下
+
+- `-tc #FF0000`：文字的颜色为红色
+
+- `-sw 1.5`：字符间隔，测试发现似乎无效
+
+```python
+#run.py核心代码
+FakeTextDataGenerator.generate_from_tuple(...) # 生成一张小条图，无随机因素
+```
+
