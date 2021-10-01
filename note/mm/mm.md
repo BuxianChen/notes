@@ -5,6 +5,8 @@ mmcv 是 mmdet 的主要依赖包。mmcv 的特点是广泛地使用配置文件
 - mmcv-full 1.3.9
 - mmdetection （git commit id: 522eb9ebd7df0944b2a659354f01799895df74ce，版本为2.14~2.15之间）
 
+与许多优秀的开源项目一样，mmlab 的项目也会存在 API 变化的现象，大多数时候 mmlab 会对之前的 API 兼容，但给出警告。对于源码分析而言，这种代码是一种干扰。
+
 ## 典型用法（此处补充一个 mmdet 的例子）：
 
 ```python
@@ -15,7 +17,9 @@ runner = RUNNER.build(Config.fromfile("xxx.py"))
 
 ## mmcv.utils.config.Config 类
 
-基本上是读取配置文件转为字典
+### 动机
+
+这个类的作用是配置的解析，mmlab 的项目通常是直接使用“python”文件作为配置文件的，
 
 ```python
 # source code: mmcv.utils.config.py
@@ -73,18 +77,6 @@ class Config:
 mmdetection 内置的模型通常使用配置文件，放置在 `mmdetection/configs` 文件夹下，
 
 ### 进阶：Config.fromfile 方法的实现细节
-
-<details>
-<summary>
-成功代码：
-</summary>
-
-```python
-class Solution:
-    def solve(self):
-        return None
-```
-</details>
 
 
 ```python
@@ -188,15 +180,16 @@ class Config:
 
 ## mmcv.utils.registry.Registry 类
 
-目的是希望可以使用类似于如下的方式进行规范化：
+目的是希望可以使用类似于如下的方式进行统一地初始化模型：
 
 ```python
 # from mmcv.cnn import MODELS
 MODELS = Register("model") # 实际上也就是上一行
 @MODELS.register_module()
 class MyModel:
-	pass
-MODEL.build(Config.fromfile("xxx.py"))
+	def __init__(self, in_channel, out_channel):
+        pass
+MODEL.build({"type": "MyModel", "in_channel": 3, "out_channel": 256})
 ```
 
 Register 的作用如下，假定 MODELS 为一个 Register 对象，通过对其他的类使用 MODELS.register_module 装饰，在 MODELS 内部维护一个映射表，例如：
@@ -259,6 +252,8 @@ print(REG.build({"type": "a", "a": 1, "b": 2}))
 print(REG.build({"type": "B", "c": 3}))
 ```
 
+
+
 ### mmcv 与 mmdetection 中的 Registry 实例：
 
 ```python
@@ -281,7 +276,21 @@ LOSSES = MODELS
 DETECTORS = MODELS
 ```
 
-### mmdet/../tools/train.py 脚本源码解析
+
+
+## mmcv.runner.builder.Runner 类
+
+
+
+
+
+```
+python tools/test.py configs/yolo/yolov3_d53_320_273e_coco.py checkpoints/yolov3_d53_320_273e_coco-421362b6.pth --show-dir temp
+```
+
+
+
+## mmdet/../tools/train.py 脚本源码解析
 
 此脚本为训练脚本，通常利用这个脚本训练模型
 
@@ -487,22 +496,6 @@ mmcv.MODELS=Registry('model', build_func=build_model_from_cfg)
 mmdet.MODELS = Registry('models', parent=mmcv.MODELS)
 BACKBONES=NECKS=HEADS=mmdet.MODELS
 ```
-
-
-
-## mmcv.runner.builder.Runner 类
-
-
-
-
-
-```
-python tools/test.py configs/yolo/yolov3_d53_320_273e_coco.py checkpoints/yolov3_d53_320_273e_coco-421362b6.pth --show-dir temp
-```
-
-
-
-mmdet.
 
 
 
