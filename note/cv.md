@@ -302,7 +302,38 @@ img_pil = Image.fromarray(img_cv2)  # img_pil(Image), 默认认为img_cv2的RGB�
 img_pil.save("pil.jpg")  # 保存的图片与原始图片颜色通道不一样
 ```
 
-## 
+### base64
+
+base64格式一般用于网络传输
+
+```
+disk -> byte: open("rb"), read
+byte -> disk: open("wb"), write
+
+byte -> base64: base64.b64encode
+base64 -> byte: base64.b64decode
+```
+
+读取磁盘图片
+
+```python
+with open("a.jpg", "rb") as fr:
+    b = fr.read()
+with open("b.jpg", "wb") as fw:
+    fw.write(b)
+```
+
+网络传输情形
+
+```python
+# with open("a.jpg", "rb") as fr:
+    # b = fr.read()
+# b64 = base64.b64encode(b)
+# 网络传输一般从这里开始(接收到的是base64格式数据): 先将base64格式转为byte再保存
+b = base64.b64decode(b64)
+with open("b.jpg", "wb") as fw:
+    fw.write(b)
+```
 
 ## 人脸识别任务
 

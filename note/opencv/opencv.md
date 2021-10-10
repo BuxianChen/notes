@@ -25,6 +25,14 @@ cv2.imencode(".jpg", image)[1].tofile(path)  # image: (H, W, 3) np.ndarray, uint
 image = cv2.imdecode(np.fromfile(path, dtype=np.uint8), -1)  # image: (H, W, 3) np.ndarray, uint8, BGR format
 ```
 
+```python
+with open("a.jpg", "rb") as fr:
+    b = fr.read()
+image = cv2.imdecode(np.frombuffer(b, np.uint8), -1)
+```
+
+
+
 备注：imdecode 中的第二个参数 -1 实际上是 cv2.IMREAD_UNCHANGED。对于 imread 函数来说，原型如下：
 
 ```python
