@@ -780,6 +780,18 @@ echo Password read
 echo "password is $password"
 ```
 
+#### 例 3：移动文件
+
+```bash
+for subdir in $(ls ./train);
+do
+	for filename in $(ls ./train/${subdir});
+	do
+	mv ./train/${subdir}/${filename} ./temp/${filename};
+	done
+done
+```
+
 ## 第 3 课：vim
 
 备注：<font color=red>按键严格区分大小写</font>
