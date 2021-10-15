@@ -2294,6 +2294,52 @@ pip install numpy pandas scipy scikit-learn matplotlib seaborn scikit-image open
 # torch请查看官网说明
 ```
 
+## logging
+
+基本的用法，日志信息打印在终端并且同时保存在文件中（运行程序的过程中文件内容会不断增加，不是运行完后一次性写入）
+
+```python
+import logging
+logger = logging.getLogger()
+
+fh = logging.FileHandler(filename, mode="w")
+fh.setFormatter(logging.Formatter(fmt="%(message)s"))
+fh.setLevel(logging.INFO)
+logger.addHandler(fh)
+
+ch = logging.StreamHandler(sys.stdout)
+ch.setLevel(self.slevel)
+ch.setFormatter(self.formatter)
+logger.addHandler(ch)
+
+logger.setLevel(logging.INFO)
+logger.info("xxx")
+```
+
+控制输出内容，不同的日志文件写不同的内容
+
+```python
+import logging
+def get_logger(logger_name,log_file,level=logging.INFO):
+	logger = logging.getLogger(logger_name)
+	formatter = logging.Formatter('%(asctime)s : %(message)s', "%Y-%m-%d %H:%M:%S")
+	fileHandler = logging.FileHandler(log_file, mode='w')
+	fileHandler.setFormatter(formatter)
+
+	logger.setLevel(level)
+	logger.addHandler(fileHandler)
+
+	return logger
+
+log_file1 = '1.log'
+log_file2 = '2.log'
+# logger_name确保不相同,才会生成两个实例
+log1 = get_logger('log1', log_file1)
+log2 = get_logger('log2', log_file2)
+log1.error('log1: error')
+log2.info('log2: info')
+```
+
 ## numpy
 
 ```python
