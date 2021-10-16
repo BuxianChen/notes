@@ -1,13 +1,55 @@
-# plan
+# TODO LIST
 
-easydict.EasyDict
+## Python Tools
 
-addict
+wandb：类似于 Tensorboard 的东西，待探索这类可视化工具对做实验是否有实际价值
 
-np.ndarray.flags, contiguaous
+argparse：metavar
 
-.bin文件
+配置解析：easydict.EasyDict，addict，yacs
 
-torch.cuda.set_device
+numpy：
 
-xxx
+- np.ndarray.flags, contiguaous
+
+Pytorch
+
+- 提高显卡利用率
+- 多卡训练官方教程
+- Apex（timm中可以选择的并行方式）
+- 基础分类的 Demo Code：Dataset，DataLoader，transformers（图像增强），Optimizers，Scheduler，梯度剪裁，Loss，DistributeDataParallel
+- Pytorch 笔记完善
+
+## Deep Learning Papers and Corresponding Code
+
+Transformer，ViT，Swin Transformer，DETR
+
+目标检测：Cascade RCNN，HTC，YOLO
+
+文字检测：PSE
+
+OCR 文字识别：SAR
+
+图网络与图像聚类结合的论文
+
+剪枝蒸馏量化
+
+## GitHub Projects
+
+mmcv，mmdetection（目标：不使用开发模式安装mmdet来开发项目），mmOCR
+
+YOLOv5（弄清细节）
+
+## CS Tools
+
+docker 使用及 Dockfile 的编写，“轻量”且“标准”容器的构建
+
+vscode 推荐配置摸索与整理
+
+shell 脚本学习与笔记完善
+
+vim 的基本使用与插件
+
+## 杂项
+
+数据转换：COCO-YOLOv5互转，mxnet RECORD格式，lmdb格式

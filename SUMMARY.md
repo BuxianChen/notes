@@ -8,6 +8,7 @@
 * [CS课程中缺失的一课](learn/missing_semester.md)
 * [Pytorch](tool/pytorch.md)
 * [炼丹](note/dl.md)
+* [TODO LIST](note/plan.md)
 
 ## Tool
 
