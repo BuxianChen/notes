@@ -264,6 +264,42 @@ class COCO: #全部函数如下
         """待补充"""
 ```
 
+## 数据增强
+
+### Mixup
+
+将两张图片逐像素相加，标签按比例分配
+
+```python
+# x1: (H, W, 3), x2: (H, W, 3)
+# y1: onehot, y2: onehot
+x = (alpha)*x1 + (1-alpha)*x2
+label = alpha*y1 + alpha*y2
+```
+
+### Cutout
+
+剪裁图像的一部分，标签不变
+
+```python
+# mask (L, 2), x: (H, W, 3), y: int
+x[mask] = 0
+label = y
+```
+
+### CutMix
+
+剪裁的部分用另一张图的一部分替换，标签按比例分配
+
+```python
+# x1: (H, W, 3), x2: (H, W, 3)
+# mask: (H, W)
+# y1: onehot, y2: onehot
+x = mask * x1 + (1 - mask) * x2
+alpha = mask.sum() / mask.numel()
+label = alpha * y1 + alpha * y2
+```
+
 ## 常用库
 
 ### OpenCV
