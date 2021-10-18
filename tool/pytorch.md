@@ -14,6 +14,28 @@ community部分没探索过
 
 ## dataloader
 
+[官方文档](https://pytorch.org/docs/stable/data.html)
+
+```
+DataLoader(dataset, batch_size=1, shuffle=False, sampler=None,
+           batch_sampler=None, num_workers=0, collate_fn=None,
+           pin_memory=False, drop_last=False, timeout=0,
+           worker_init_fn=None, *, prefetch_factor=2,
+           persistent_workers=False)
+```
+
+对于纯自定义的情形，有如下说明：
+
+一般而言，需要自定义一个继承自 `torch.utils.data.Dataset` 的类，该类必须实现 `__len__`，`__getitem__` 方法。`dataset` 参数为该自定义类的实例。
+
+`sampler`，`batch_size`，`shuffle`，`drop_last` 这组参数与 `batch_sampler` 参数是互斥的关系。`sampler` 参数若指定，只需要是一个定义了 `__len__` 的 `Iterable` 即可（最好是 `torch.utils.data.Sampler` 的子类实例）。`batch_sample` 也类似。
+
+`sampler` 作为迭代器时，每次 `next` 返回的应该是一个下标。而 `batch_sampler` 作为迭代器时，每次 `next` 返回的应该是一个 `batch` 的下标列表。
+
+`collate_fn` 应该是一个 `Callable`，其输入是一个下标列表。
+
+例子：
+
 ```python
 import torch
 import numpy as np
@@ -50,7 +72,7 @@ for x in dl:
     print(x)
 ```
 
-## finetune(微调)
+## finetune
 
 待补充
 
@@ -96,11 +118,12 @@ for epoch in range(20):
         output = model(input)
         loss = loss_fn(output, target)
         loss.backward()
+        nn.utils.clip_grad_norm_(model.parameters(), max_norm=5., norm_type=2)
         optimizer.step()
     scheduler.step()
 ```
 
-**torch.optim**
+### torch.optim
 
 ```
 optimizer = optim.SGD(model.parameters(), lr=0.01, momentum=0.9)
@@ -130,7 +153,7 @@ optimizer.add_param_group({'params': g1, 'weight_decay': hyp['weight_decay']})
 optimizer.add_param_group({'params': g2})
 ```
 
-**torch.optim.lr_scheduler**
+### torch.optim.lr_scheduler
 
 使用自定义的学习率调整策略可以使用 `LambdaLR` 类
 
@@ -184,6 +207,56 @@ for i in range(2):
 # [4, 4]
 # [9, 6]
 ```
+
+### 梯度剪裁
+
+梯度剪裁的用法例子如下
+
+```python
+optimizer.zero_grad()
+outputs = model(data)
+loss = loss_fn(outputs, targets)
+nn.utils.clip_grad_norm_(model.parameters(), max_norm=5., norm_type=2)
+optimizer.step()
+```
+
+```python
+# Pytorch 1.9.1 源码(有删减注释1) torch/nn/utils/clip_grad.py
+def clip_grad_norm_(
+        parameters: _tensor_or_tensors, max_norm: float, norm_type: float = 2.0,
+        error_if_nonfinite: bool = False) -> torch.Tensor:
+    r"""
+    The norm is computed over all gradients together, as if they were
+    concatenated into a single vector. Gradients are modified in-place.
+    Returns:
+        Total norm of the parameters (viewed as a single vector).
+    """
+    if isinstance(parameters, torch.Tensor):
+        parameters = [parameters]
+    parameters = [p for p in parameters if p.grad is not None]
+    max_norm = float(max_norm)
+    norm_type = float(norm_type)
+    if len(parameters) == 0:
+        return torch.tensor(0.)
+    device = parameters[0].grad.device
+    if norm_type == inf:
+        norms = [p.grad.detach().abs().max().to(device) for p in parameters]
+        total_norm = norms[0] if len(norms) == 1 else torch.max(torch.stack(norms))
+    else:
+        total_norm = torch.norm(torch.stack([torch.norm(p.grad.detach(), norm_type).to(device) for p in parameters]), norm_type)
+    if total_norm.isnan() or total_norm.isinf():
+        if error_if_nonfinite:
+            raise RuntimeError("")
+        else:
+            warnings.warn("", FutureWarning, stacklevel=2)
+    clip_coef = max_norm / (total_norm + 1e-6)
+    if clip_coef < 1:
+        for p in parameters:
+            p.grad.detach().mul_(clip_coef.to(p.grad.device))
+    return total_norm
+```
+
+
 
 ## 自定义算子
 
@@ -607,7 +680,9 @@ step:        READY/UNSCALED -> STEPPED
 
 总结: update, unscale\_, step函数的顺序不能乱
 
-## inplace = True
+## Pytorch Internal
+
+### inplace = True
 
 pytorch 中某些函数允许使用 inplace=True，但前提条件是这个 tensor 在反向求导时是不需要的：
 
@@ -645,6 +720,12 @@ torch.autograd.gradcheck(Square.apply, x)
 # Use gradcheck to verify second-order derivatives
 torch.autograd.gradgradcheck(Square.apply, x)
 ```
+
+### detach
+
+注意，使用 detach 后，返回的新张量与原来的张量共享内存。详情参考[官方文档](https://pytorch.org/docs/stable/generated/torch.Tensor.detach.html)，摘录如下
+
+> Returned Tensor shares the same storage with the original one. In-place modifications on either of them will be seen, and may trigger errors in correctness checks. IMPORTANT NOTE: Previously, in-place size / stride / storage changes (such as resize_ / resize_as_ / set_ / transpose_) to the returned tensor also update the original tensor. Now, these in-place changes will not update the original tensor anymore, and will instead trigger an error. For sparse tensors: In-place indices / values changes (such as zero_ / copy_ / add_) to the returned tensor will not update the original tensor anymore, and will instead trigger an error.
 
 ## 常用函数
 
