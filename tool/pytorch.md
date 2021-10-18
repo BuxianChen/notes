@@ -12,7 +12,43 @@ libraries部分包含torchvision等
 
 community部分没探索过
 
+## dataloader
 
+```python
+import torch
+import numpy as np
+
+class MyDataset(torch.utils.data.Dataset):
+    def __init__(self, length):
+        self.length = length
+    def __len__(self):
+        return self.length
+    def __getitem__(self, idx):
+        return np.array([-idx*2, -idx*2])
+
+class MySampler(torch.utils.data.Sampler):
+    def __init__(self, batch_nums):
+        self.batch_nums = batch_nums
+
+    def __iter__(self):
+        return self.foo()
+
+    def foo(self):
+        for i in range(self.batch_nums):
+            yield [i, i+1]
+
+    # def __len__(self):
+    #     return self.batch_nums
+
+def collect(samples):
+    print("passed to collect", samples)
+    return samples
+
+dl = torch.utils.data.DataLoader(MyDataset(10),
+    batch_sampler=MySampler(20), collate_fn=collect)
+for x in dl:
+    print(x)
+```
 
 ## finetune(微调)
 
