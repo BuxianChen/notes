@@ -53,3 +53,5 @@ vim 的基本使用与插件
 ## 杂项
 
 数据转换：COCO-YOLOv5互转，mxnet RECORD格式，lmdb格式
+
+Python自带的数据库：sqlite3

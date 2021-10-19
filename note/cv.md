@@ -371,6 +371,45 @@ with open("b.jpg", "wb") as fw:
     fw.write(b)
 ```
 
+### lmdb
+
+lmdb 是一个 key-value 数据库，使用 Python 安装后即可使用。可用于存储多张图片数据。保存的方式为
+
+```
+train
+  - data.mdb
+  - lock.mdb
+```
+
+将图片从磁盘写入 lmdb 数据库的例子
+
+```python
+import lmdb
+env = lmdb.open("./train", map_size=1024*1024*640)  # 单位为Byte, 即640M
+txn = env.begin(write=True)
+for image_name in image_names:
+    with open(image_name, "rb") as fr:
+        bs = fr.read()  # byte
+    txn.put(key=image_name.encode("utf-8"）, value=bs) 
+env.close()
+```
+
+将图片从上述 lmdb 数据库读出并转换为 cv2 的格式：
+
+```python
+import lmdb
+env = lmdb.open("./train")
+txn = env.begin()
+# 遍历获取
+for key, value in txn.cursor():
+	image_name = key.decode(encoding="utf-8")
+    image = cv2.imdecode(np.frombuffer(value, np.uint8), -1)
+# 获取单条数据
+bs = txn.get("xx.jpg".encode("utf-8"))
+image = cv2.imdecode(np.frombuffer(bs, np.int8), -1)
+env.close()
+```
+
 ## 人脸识别任务
 
 ### LFW 数据集
