@@ -2294,6 +2294,18 @@ pip install numpy pandas scipy scikit-learn matplotlib seaborn scikit-image open
 # torch请查看官网说明
 ```
 
+## typing
+
+typing 模块用于注解
+
+`Sized` 表示有一个具有 `__len__` 方法的对象，`Optional[Sized]` 等同于 `Union[Sized, None]`。
+
+```python
+from typing import Optional, Sized
+def foo(a: Optional[Sized]):
+	pass
+```
+
 ## logging
 
 基本的用法，日志信息打印在终端并且同时保存在文件中（运行程序的过程中文件内容会不断增加，不是运行完后一次性写入）
