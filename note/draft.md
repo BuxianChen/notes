@@ -148,6 +148,45 @@ CLI \(command-line interface\) 命令行接口
 
 wildcards 通配符
 
+## 关于机器的进程数
+
+```bash
+$ cat /proc/cpuinfo | grep "physical id" | sort| uniq | wc -l  #  多少个物理cpu
+2
+$ cat /proc/cpuinfo | grep "core id" | sort| uniq | wc -l  # 每个物理cpu上多少个核
+14
+$ cat /proc/cpuinfo | grep "processor" | sort| uniq | wc -l  # 多少个逻辑cpu
+56
+```
+
+现代 CPU 的每个核一般都支持超线程。因此：
+$$
+逻辑CPU数=物理CPU数*每个CPU的核数*每个核支持的超线程数
+$$
+
+```bash
+$ lscpu
+Architecture:          x86_64
+CPU op-mode(s):        32-bit, 64-bit
+Byte Order:            Little Endian
+CPU(s):                56		// 逻辑CPU数
+On-line CPU(s) list:   0-55		// 每个逻辑CPU的编号
+Thread(s) per core:    2		// 每个核的超线程数
+Core(s) per socket:    14		// 每个CPU的核数
+Socket(s):             2		// 物理CPU数
+...
+```
+
+逻辑 CPU 数即为该机器并行的最大线程数。
+
+在 Python 中，可以使用如下两种方式得到逻辑 CPU 数。（参考 Pytorch Dataloader 源码）
+
+```python
+import os
+os.sched_getaffinity(0)  # 获取与进程号为0的进程的亲和CPU编号集合,适用于linux
+os.cpu_count()  # 逻辑CPU数，适用于OSX,Windows,linux
+```
+
 ## 配置文件格式（待补充）
 
 ### json
