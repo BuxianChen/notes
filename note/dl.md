@@ -14,5 +14,10 @@ import numpy as np
 np.set_printoptions(precision=2, suppress=True)
 ```
 
+捕获 NaN
 
+```
+x = torch.tensor([1, 2, np.nan])
+torch.isnan(x)
+```
 

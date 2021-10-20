@@ -340,6 +340,8 @@ torch.cuda.device_count()  # 2
 
 #### 使用
 
+例子 1
+
 ```python
 import torch
 import torch.nn as nn
@@ -370,6 +372,16 @@ for data in rand_loader:
 
 ```
 model = nn.DataParallel(model)
+```
+
+例子 2
+
+```python
+import timm
+model = timm.create_model("resnet18")  # 此处的是否将模型放在GPU上均可以
+model = torch.nn.DataParallel(model, [0, 1])
+inp = torch.rand([33, 3, 224, 224]).cuda(2)
+model(inp)  # 此处的inp可以任何位置, 包括CPU, 第0, 1块GPU上,甚至是其他GPU上
 ```
 
 #### 原理
