@@ -917,6 +917,33 @@ print(my_values.value1)
 print(my_values.value2)
 ```
 
+#### 2.10 pickle 与 `__setstate__`、`__getstate__` 方法
+
+某些时候，一个对象无法进行序列化，则可以自定义 `__getstate__`，在进行序列化时，只序列化 `__setstate__` 的返回值。另外，可自定义 `__setstate__` 方法，在反序列化时，利用 `__getstate__` 的返回值将对象恢复。具体可参考[官方文档](https://docs.python.org/3/library/pickle.html)。
+
+一个说明功能的例子：
+
+```python
+import pickle
+class A:
+    def __init__(self, a):
+        self.a = a
+    def __getstate__(self):
+        return (self.a, self.a+1)
+    def __setstate__(self, state):
+        a, b = state
+        print(a, b)
+        self.a = "recover"
+a = A(2)
+with open("test.pkl", "wb") as fw:
+    pickle.dump(a, fw)
+with open("test.pkl", "rb") as fr:
+    a = pickle.load(fr)
+print(a.a)  # "recover"
+```
+
+更有意义的例子待补充
+
 ### 3. 继承
 
 #### MRO (Method Resolution Order) 与 C3 算法
@@ -1817,6 +1844,17 @@ delattr(x, "foo")  # 等价于 del x.foo
 - runpy
 - importlib
 - exec
+
+### 13. 迭代器与生成器
+
+```python
+class A:
+	def __iter__(self):
+        for i in range(10):
+            yield i
+a = A()  # a是一个可迭代对象(Iterable)
+iter(a)  # 返回的是一个生成器(特殊的迭代器)
+```
 
 ## python代码打包
 
