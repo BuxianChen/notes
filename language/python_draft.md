@@ -2344,6 +2344,24 @@ def foo(a: Optional[Sized]):
 	pass
 ```
 
+```python
+from typing import overload
+# 注意: 此处的...是语法
+@overload
+def foo(name: str) -> str:
+	...
+@overload
+def foo(name: float) -> str:
+	...
+@overload
+def foo(name: int, age: int) -> str:
+	...
+def foo(name, age=18):
+    return "hello" + str(n)
+```
+
+
+
 ## logging
 
 基本的用法，日志信息打印在终端并且同时保存在文件中（运行程序的过程中文件内容会不断增加，不是运行完后一次性写入）

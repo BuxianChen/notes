@@ -55,3 +55,6 @@ vim 的基本使用与插件
 数据转换：COCO-YOLOv5互转，mxnet RECORD格式，lmdb格式
 
 Python自带的数据库：sqlite3
+
+代码文档自动生成：[MkDocs](https://www.mkdocs.org/)，使用例子：[Spektral](https://github.com/danielegrattarola/spektral/)
+

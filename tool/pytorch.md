@@ -739,6 +739,10 @@ torch.autograd.gradgradcheck(Square.apply, x)
 
 > Returned Tensor shares the same storage with the original one. In-place modifications on either of them will be seen, and may trigger errors in correctness checks. IMPORTANT NOTE: Previously, in-place size / stride / storage changes (such as resize_ / resize_as_ / set_ / transpose_) to the returned tensor also update the original tensor. Now, these in-place changes will not update the original tensor anymore, and will instead trigger an error. For sparse tensors: In-place indices / values changes (such as zero_ / copy_ / add_) to the returned tensor will not update the original tensor anymore, and will instead trigger an error.
 
+### non-blocking 参数
+
+参考[问答](https://jovian.ai/forum/t/purpose-of-non-blocking-true-in-tensor-to/14760)、[问答](https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3)、[pytorch官方例程](https://github.com/pytorch/examples/blob/master/imagenet/main.py#L280-L291)
+
 ## 常用函数
 
 `torch.version.cuda` 变量存储了 cuda 的版本号
