@@ -20,6 +20,8 @@ Pytorch
 - 基础分类的 Demo Code：Dataset，DataLoader，transformers（图像增强），Optimizers，Scheduler，梯度剪裁，Loss，DistributeDataParallel
 - Pytorch 笔记完善
 
+多进程库的使用
+
 ## Deep Learning Papers and Corresponding Code
 
 Transformer，ViT，Swin Transformer，DETR
@@ -49,6 +51,8 @@ vscode 推荐配置摸索与整理
 shell 脚本学习与笔记完善
 
 vim 的基本使用与插件
+
+浏览器开发者工具的使用
 
 ## 杂项
 

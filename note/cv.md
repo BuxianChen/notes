@@ -410,9 +410,334 @@ image = cv2.imdecode(np.frombuffer(bs, np.int8), -1)
 env.close()
 ```
 
+### mxnet: recordio
+
+#### 细节与原理
+
+mxnet 中推荐使用如下数据格式进行文件 IO，典型应用场景是原始数据为十万张图片以及相应的标签，mxnet 提供了相应的工具将所有的图片与标签压缩到一个后缀名为 `.rec` 的文件中，例如：
+
+```
+<dataname>.rec
+```
+
+`.rec` 文件的实际存储为二进制形式，（猜测）实际存储格式为：
+
+```
+<第一条数据的byte数><第一条数据的实际内容>
+<第二条数据的byte数><第二条数据的实际内容>
+...
+```
+
+其中字节数目占用 8 个字节的空间，而每条数据的实际内容所占的字节数不定长。
+
+**mx.recordio.MXRecordIO**
+
+```python
+mxnet.recordio.MXRecordIO(uri, flag)  # flag可以取值为"w"或"r"
+```
+
+这个类只需要一个 `.rec` 文件作为输入，只处理最基本的读写操作，如下：
+
+```python
+record = mx.recordio.MXRecordIO('tmp.rec', 'w')
+# <mxnet.recordio.MXRecordIO object at 0x10ef40ed0>
+for i in range(3):
+    record.write('record_%d'%i)
+record.close()
+record = mx.recordio.MXRecordIO('tmp.rec', 'r')
+for i in range(3):
+    item = record.read()
+    print(item)
+# record_0
+# record_1
+# record_2
+record.close()
+```
+
+注意：由于每行数据所占的字节数是不一样的，所以 `MXRecordIO` 类只支持顺序读取，而不能进行随机读取（例如直接读取第 102 条数据）。
+
+**mx.recordio.MXIndexedRecordIO**
+
+```python
+mxnet.recordio.MXIndexedRecordIO(idx_path, uri, flag, key_type=int)
+```
+
+这个类的主要作用是支持随机读写，因此还需要一个映射表用于指示每条数据的起始位置。需要两个文件作为输入，例如：
+
+```
+data.idx
+data.rec
+```
+
+其中 `data.idx` 为一个文本文件，其内容大致为（分割符为制表符）：
+
+```
+1	0
+2	5768
+3	12520
+4	19304
+```
+
+每行数据的第一个数字表示下标（即之后所述的 `read_idx(idx)` 中的 `idx`），第二个数字表示该下标对应的数据的起始位置。
+
+小细节：`.rec` 文件中的字节对齐
+
+```python
+record = mx.recordio.MXRecordIO("data.rec", 'r')
+for _ in range(3):
+    x = record.read()  # x的类型为字节
+    print(len(x))  # 依次为5760, 6742, 6773
+```
+
+注意实际存储时，每行的实际数据的字节数会对齐到 8 的倍数，因此实际存储时的存储如下
+
+```
+8byte 5760byte
+8byte 6742byte 2byte(padding)
+8byte 6773byte 3byte(padding)
+```
+
+`MXIndexedRecordIO` 的实际使用例子如下：
+
+```python
+for i in range(5):
+    record.write_idx(i, 'record_%d'%i)
+record.close()
+record = mx.recordio.MXIndexedRecordIO('tmp.idx', 'tmp.rec', 'r')
+record.read_idx(3)
+record_3
+```
+
+**mx.recordio.pack/unpack/pack_img/unpack_img**
+
+mxnet 中针对图像数据的 `.rec` 文件格式做了一些约定，当 `.rec` 文件的存储满足这些约定时，可以调用四个函数进行数据处理。以下 `header` 表示一个 `IRHeader` 对象，`s` 表示字节（即调用`MXRecordIO` 的 `read` 方法得到的东西），而 `img` 表示的是一个形状为 `(H, W, 3)` BGR 格式的三维数组。
+
+```python
+pack(header, s) -> s
+unpack(s) -> header, s
+pack_img(header, img, quality=95, img_fmt='.jpg') -> s
+unpack_img(s, iscolor=-1) -> header, img
+```
+
+`IRHeader` 实际上就是一个 `namedtuple`，定义如下：
+
+```
+IRHeader = namedtuple('HEADER', ['flag', 'label', 'id', 'id2'])
+```
+
+- flag 是一个整数，可以自由根据需要设置
+- label 是一个浮点数或浮点数组，代表标签
+- id 是每条记录的唯一 id
+- id2 一般设置为 0 即可
+
+**工具**
+
+待补充
+
+`mxnet/tools/im2rec.py` 用于生成 `.rec` 格式的数据
+
+#### 例子
+
+**一个一般用法的例子**
+
+```python
+import mxnet as mx
+import cv2
+import numpy as np
+import pickle
+
+writer = mx.recordio.MXIndexedRecordIO("x.idx", "x.rec", "w")
+for i, name in enumerate(["000001", "000002"]):
+    header = mx.recordio.IRHeader(0, float(i), i*2, 0)
+    img = cv2.imread(f"test_data/{name}.jpg")
+    s = mx.recordio.pack_img(header, img, quality=95, img_fmt='.jpg')  # BGR
+    writer.write_idx(i*2, s)
+header = mx.recordio.IRHeader(0, np.array([1., 2.]), 10, 0)
+b = pickle.dumps([1, 2, "dataname"])
+s = mx.recordio.pack(header, b)
+writer.write_idx(20, s)
+writer.close()
+
+reader = mx.recordio.MXIndexedRecordIO("x.idx", "x.rec", "r")
+print(reader.keys)  # [0, 2, 20]
+s = reader.read_idx(0)
+header, img = mx.recordio.unpack(s)
+img = mx.image.imdecode(img).asnumpy()  # RGB
+img = np.ascontiguousarray(img[:, :, ::-1])
+cv2.imwrite("000001.jpg", img)
+print(header)
+
+s = reader.read_idx(20)
+header, content = mx.recordio.unpack(s)
+print(pickle.loads(content))
+print(header)
+
+reader.close()
+```
+
+**一个实际例子：**
+
+生成recordio形式的数据，参考[insightface](https://github.com/deepinsight/insightface/blob/master/python-package/insightface/data/rec_builder.py)
+
+```python
+import pickle
+import numpy as np
+import os
+import os.path as osp
+import sys
+import mxnet as mx
+
+
+class RecBuilder():
+    def __init__(self, path, image_size=(112, 112)):
+        self.path = path
+        self.image_size = image_size
+        self.widx = 0
+        self.wlabel = 0
+        self.max_label = -1
+        assert not osp.exists(path), '%s exists' % path
+        os.makedirs(path)
+        self.writer = mx.recordio.MXIndexedRecordIO(os.path.join(path, 'train.idx'), 
+                                                    os.path.join(path, 'train.rec'),
+                                                    'w')
+        self.meta = []
+
+    def add(self, imgs):
+        #!!! img should be BGR!!!!
+        #assert label >= 0
+        #assert label > self.last_label
+        assert len(imgs) > 0
+        label = self.wlabel
+        for img in imgs:
+            idx = self.widx
+            image_meta = {'image_index': idx, 'image_classes': [label]}
+            header = mx.recordio.IRHeader(0, label, idx, 0)
+            if isinstance(img, np.ndarray):
+                s = mx.recordio.pack_img(header,img,quality=95,img_fmt='.jpg')
+            else:
+                s = mx.recordio.pack(header, img)
+            self.writer.write_idx(idx, s)
+            self.meta.append(image_meta)
+            self.widx += 1
+        self.max_label = label
+        self.wlabel += 1
+
+
+    def add_image(self, img, label):
+        #!!! img should be BGR!!!!
+        #assert label >= 0
+        #assert label > self.last_label
+        idx = self.widx
+        header = mx.recordio.IRHeader(0, label, idx, 0)
+        if isinstance(label, list):
+            idlabel = label[0]
+        else:
+            idlabel = label
+        image_meta = {'image_index': idx, 'image_classes': [idlabel]}
+        if isinstance(img, np.ndarray):
+            s = mx.recordio.pack_img(header,img,quality=95,img_fmt='.jpg')
+        else:
+            s = mx.recordio.pack(header, img)
+        self.writer.write_idx(idx, s)
+        self.meta.append(image_meta)
+        self.widx += 1
+        self.max_label = max(self.max_label, idlabel)
+
+    def close(self):
+        with open(osp.join(self.path, 'train.meta'), 'wb') as pfile:
+            pickle.dump(self.meta, pfile, protocol=pickle.HIGHEST_PROTOCOL)
+        print('stat:', self.widx, self.wlabel)
+        with open(os.path.join(self.path, 'property'), 'w') as f:
+            f.write("%d,%d,%d\n" % (self.max_label+1, self.image_size[0], self.image_size[1]))
+            f.write("%d\n" % (self.widx))
+```
+
+读取上述recordio形式的数据，参考[insightface](https://github.com/deepinsight/insightface/blob/master/recognition/arcface_torch/dataset.py)
+
+```python
+import numbers
+import os
+
+import mxnet as mx
+import numpy as np
+import torch
+from torch.utils.data import DataLoader, Dataset
+from torchvision import transforms
+
+class MXFaceDataset(Dataset):
+    def __init__(self, root_dir, local_rank):
+        super(MXFaceDataset, self).__init__()
+        self.transform = transforms.Compose(
+            [transforms.ToPILImage(),
+             transforms.RandomHorizontalFlip(),
+             transforms.ToTensor(),
+             transforms.Normalize(mean=[0.5, 0.5, 0.5], std=[0.5, 0.5, 0.5]),
+             ])
+        self.root_dir = root_dir
+        self.local_rank = local_rank
+        path_imgrec = os.path.join(root_dir, 'train.rec')
+        path_imgidx = os.path.join(root_dir, 'train.idx')
+        self.imgrec = mx.recordio.MXIndexedRecordIO(path_imgidx, path_imgrec, 'r')
+        s = self.imgrec.read_idx(0)
+        header, _ = mx.recordio.unpack(s)
+        if header.flag > 0:
+            self.header0 = (int(header.label[0]), int(header.label[1]))
+            self.imgidx = np.array(range(1, int(header.label[0])))
+        else:
+            self.imgidx = np.array(list(self.imgrec.keys))
+
+    def __getitem__(self, index):
+        idx = self.imgidx[index]
+        s = self.imgrec.read_idx(idx)
+        header, img = mx.recordio.unpack(s)
+        label = header.label
+        if not isinstance(label, numbers.Number):
+            label = label[0]
+        label = torch.tensor(label, dtype=torch.long)
+        sample = mx.image.imdecode(img).asnumpy()
+        if self.transform is not None:
+            sample = self.transform(sample)
+        return sample, label
+
+    def __len__(self):
+        return len(self.imgidx)
+```
+
+### mxnet
+
+mxnet 与 pytorch 一样，对于卷积算法，默认情况下会开启自动搜索最快算法的功能。如果需要关闭此功能，需要进行如下操作（参考 [github-issue](https://github.com/apache/incubator-mxnet/issues/8132)）：
+
+- 首先将模型保存文件 `*.json` 中的如下键值对修改：
+
+  ```
+  "cudnn_tune": "limited_workspace"
+  修改为
+  "cudnn_tune": "none"
+  ```
+
+  备注：mxnet 模型保存形式为两个文件：`*.json` 与 `*.params`。
+
+- 运行时需修改环境变量
+
+  方案一：
+
+  ```bash
+  $ export MXNET_CUDNN_AUTOTUNE_DEFAULT=0
+  ```
+
+  方案二：在 python 代码中添加
+
+  ```python
+  os.environ["MXNET_CUDNN_AUTOTUNE_DEFAULT"] = "0"
+  ```
+
+  
+
 ## 人脸识别任务
 
-### LFW 数据集
+### 数据集及评价标准
+
+#### LFW 数据集
 
 > ​       LFW数据集共有13233张人脸图像，每张图像均给出对应的人名，共有5749人，且绝大部分人仅有一张图片。每张图片的尺寸为250X250，绝大部分为彩色图像，但也存在少许黑白人脸图片。
 > ​       LFW数据集主要测试人脸识别的准确率，该数据库从中随机选择了6000对人脸组成了人脸辨识图片对，其中3000对属于同一个人2张人脸照片，3000对属于不同的人每人1张人脸照片。测试过程LFW给出一对照片，询问测试中的系统两张照片是不是同一个人，系统给出“是”或“否”的答案。通过6000对人脸测试结果的系统答案与真实答案的比值可以得到人脸识别准确率
@@ -420,13 +745,13 @@ env.close()
 > 版权声明：本文为CSDN博主「姚路遥遥」的原创文章，遵循CC 4.0 BY-SA版权协议，转载请附上原文出处链接及本声明。
 > 原文链接：https://blog.csdn.net/Roaddd/article/details/114221618
 
-### Megaface 数据集
+#### Megaface 数据集
 
 **测试方法**
 
 Cumulative Match Characteristics (CMC) curve：将待
 
-#### 人脸关键点
+### 人脸关键点
 
 参考链接：[CSDN](https://blog.csdn.net/u013841196/article/details/85720897)
 
@@ -661,8 +986,67 @@ python run.py ...
 
 - `-sw 1.5`：字符间隔，测试发现似乎无效
 
-```python
-#run.py核心代码
-FakeTextDataGenerator.generate_from_tuple(...) # 生成一张小条图，无随机因素
+源码分析
+
+```
+commit id: 989bcc7c (2021.9.20)
 ```
 
+目录结构如下
+
+```
+ROOT
+  - custom/  # 输出样例
+  - samples/  # 输出样例
+  - tests/  # 输出样例
+  - trdg/ # 主要的代码
+    - dicts/
+    - fonts/
+    - generators/
+    - handwritten_model/
+    - images/
+    - texts/
+    - __init__.py
+    - background_generator.py
+    - computer_text_generator.py
+    - data_generator.py
+    - distorsion_generator.py
+    - handwritten_text_generator.py
+    - run.py
+    - string_generator.py
+    - utils.py
+  - .gitignore
+  - .travis.yml
+  - codecov.yml
+  - Dockerfile
+  - LICENSE
+  - MANIFEST.in
+  - README.md
+  - requirements-hw.txt  # 如果需要生成手写体图片, 需要安装更多的包
+  - requirements.txt
+  - setup.cfg
+  - setup.py
+  - tests.py  # 使用unittest进行单元测试的代码
+```
+
+主要代码集中在 `trdg` 文件夹下，其入口为 `trdg/run.py` 的 `main` 函数，其实际逻辑主要是利用 `argparse` 模块从命令行获取控制输出的参数，利用多进程调用 `trdg/data_genearator.py` 中的类方法 `FakeTextDataGenerator.generate_from_tuple` 生成图片：
+
+```python
+# run.py核心代码
+from multiprocessing import Pool
+...
+p = Pool(args.thread_count)
+p.imap_unordered(
+    FakeTextDataGenerator.generate_from_tuple,
+    zip([i for i in range(0, string_count)], strings, ...))
+p.terminate()
+...
+```
+
+而这个函数内部将依次调用：
+
+- `trdg/computer_text_generator.py:generate` 或 `trdg/computer_text_generator.py:generate`：分别适用于生成打印体与手写体。对于前者，实际上主要就是调用了 `PIL.Image.text` 方法生成文字图片以及文字区域的`mask`。
+- `trdg/distorsion_generator.py:*`：`*` 是 `sin`、`cos`、`random` 中的一个。用于对前一步生成的图片进行扭曲
+- `trdg/background_generator.py:*`：`*` 是 `gaussian_noise`、`plain_white`、`quasicrystal`、`image` 中的一个，用于生成背景图片，注意：`image` 函数是利用用户指定的图片作为背景
+- 利用 `PIL.Image.paste` 方法将背景图片与扭曲过的图片融合，得到融合后的图片
+- 利用 `PIL` 的一些方法加上一些模糊
