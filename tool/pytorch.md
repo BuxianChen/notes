@@ -302,6 +302,8 @@ torch.autograd.gradcheck(Conv2D.apply, (X, weight))  # 梯度检查
 
 [参考官方文档](https://pytorch.org/docs/1.9.0/notes/cuda.html)
 
+#### TensorFloat-32(TF32) on Ampere devices
+
 pytorch 1.7 之后，可以通过设置这两个参数为 True 提升 32 位浮点运算的速度，默认值即为 True。设置为 True 之后，运算精度会变低许多，但速度会快很多
 
 ```python
@@ -311,6 +313,27 @@ torch.backends.cuda.matmul.allow_tf32 = True
 # The flag below controls whether to allow TF32 on cuDNN. This flag defaults to True.
 torch.backends.cudnn.allow_tf32 = True
 ```
+
+#### Asynchronous execution
+
+##### CUDA streams
+
+CUDA streams 是 Nvidia CUDA C 官方文档中所用的术语，一个 CUDA stream 表示的是一串在 GPU 上执行的命令。这一串命令将保证按次序执行，但用户可以创建多个 CUDA streams，不同的 CUDA stream 中的指令是并发执行的。在 Pytorch 中，每块 GPU 都有一个默认的 CUDA stream，其特别之处是会在必要的时候自动做同步。但用户也可以自己创建新的 CUDA stream，并将命令放在创建的 CUDA stream 中执行。此时，必要的同步操作需要用户自己做，例如下面的程序没有做好同步，因此计算出的 `B` 是错误的。
+
+```python
+cuda = torch.device('cuda')
+s = torch.cuda.Stream()  # Create a new stream.
+A = torch.ones((32, 64, 448, 448), device=cuda)  # execute in default stream
+weight = torch.rand((64, 64, 5, 5), device=cuda)  # execute in default stream
+A = torch.conv2d(A, weight, padding=2)  # execute in default stream
+A.zero_().normal_().zero_()  # execute in default stream
+with torch.cuda.stream(s):
+    # sum() may start execution before default stream finishes!
+    # torch.cuda.synchronize()  # 加上这行可以避免错误
+    B = torch.sum(A)
+```
+
+一般可以使用 `torch.cuda.synchronize()` 或 `torch.cuda.Stream.synchronize()` 或 `torch.cuda.Stream.wait_stream(stream)` 等方法进行同步。完整 API 参见[官方文档](https://pytorch.org/docs/stable/generated/torch.cuda.Stream.html)。
 
 ### 简介
 
