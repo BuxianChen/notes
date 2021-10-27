@@ -342,6 +342,39 @@ $ mount -t nfs <device> <dir>  # 将设备/目录device挂载到目录dir(称为
 $ umount <device/dir>  # 取消挂载, 用挂载点或者设备名均可
 ```
 
+#### ${varname:-"abc"}
+
+这种语法表示给变量设定缺省值，若 `varname` 未被定义，则 `varname` 将被赋值为 `abc`，否则该条语句不起作用。例如：
+
+已经被定义的情形
+
+```bash
+$ varname="111"
+$ echo ${varname}
+111
+$ echo ${varname:-"abc"}
+111
+$ echo ${varname}
+111
+```
+
+没有被定义的情形
+
+```bash
+$ echo ${varname}  # 未被定义的变量没有输出
+
+$ echo ${varname:-"abc"}
+abc
+$ echo ${varname}
+abc
+```
+
+实例：在 Github Pytorch 项目的 README 文档介绍如何进行源码安装时，需要执行如下命令
+
+```bash
+$ export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
+```
+
 ### 命令例子
 
 #### 例 1：/dev/null、文件描述符

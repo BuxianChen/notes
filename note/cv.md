@@ -302,6 +302,26 @@ label = alpha * y1 + alpha * y2
 
 ## 常用库
 
+### 图像格式
+
+**图像保存尽量使用 `.png` 格式，`jpg` 格式是有损压缩的**
+
+```python
+import cv2
+x = cv2.imread("b.jpg")  # 无论原始图片是jpg格式还是png格式, 保存成png格式总是无损的
+cv2.imwrite("c.png", x)
+y = cv2.imread("c.png")
+(x == y).all()  # True
+```
+
+```python
+import cv2
+x = cv2.imread("b.png")
+cv2.imwrite("c.jpg", x)
+y = cv2.imread("c.jpg")  # 无论原始图片是jpg格式还是png格式, 保存成jpg格式总是有损的
+(x == y).all()  # True
+```
+
 ### OpenCV
 
 [跳转](./opencv/opencv.md)
@@ -338,6 +358,21 @@ img_pil = Image.fromarray(img_cv2)  # img_pil(Image), 默认认为img_cv2的RGB�
 img_pil.save("pil.jpg")  # 保存的图片与原始图片颜色通道不一样
 ```
 
+#### 利用 PIL 在图上写文字
+
+由于 cv2 不支持中文文字，可以利用 PIL 实现
+
+```python
+from PIL import Image, ImageDraw, ImageFont
+txt_mask = Image.new("RGB", (224, 224), (0, 0, 0))
+txt_mask_draw = ImageDraw.Draw(txt_mask, mode="RGB")
+font = ImageFont.truetype(font=r"C:\Windows\Fonts\Arial.ttf", size=24)
+txt_mask_draw.text((100, 50), "font", (0, 0, 255))  # (100, 50)为左上角坐标
+txt_mask.save("a.png")
+```
+
+备注：`PIL.ImageDraw.Draw.text` 函数的文字位置参数指的是文字的左上角坐标，而 `cv2.putText` 函数中的文字位置参数指的是文字的左下角坐标。
+
 ### base64
 
 base64格式一般用于网络传输
@@ -350,7 +385,7 @@ byte -> base64: base64.b64encode
 base64 -> byte: base64.b64decode
 ```
 
-读取磁盘图片
+读取磁盘图片，不进行任何解码操作。（适用于任何文件，相当于拷贝文件）
 
 ```python
 with open("a.jpg", "rb") as fr:
