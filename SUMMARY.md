@@ -6,7 +6,7 @@
 
 * [python:draft](language/python_draft.md)
 * [CS课程中缺失的一课](learn/missing_semester.md)
-* [Pytorch](tool/pytorch.md)
+* [Pytorch](note/pytorch.md)
 * [炼丹](note/dl.md)
 * [TODO LIST](note/plan.md)
 
