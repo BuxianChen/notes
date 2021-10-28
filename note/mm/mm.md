@@ -200,15 +200,6 @@ Register 的作用如下，假定 MODELS 为一个 Register 对象，通过对�
 
 而被装饰的类本身没有被进行任何的修改。
 
-mmcv/utils/registry.py
-
-```python
-@staticmethod
-def infer_scope():
-    # 感觉设计略有不妥，这个函数实际上只能在__init__中被调用
-	pass
-```
-
 简化版：
 
 ```python
@@ -251,6 +242,46 @@ print(REG.module_dict)
 print(REG.build({"type": "a", "a": 1, "b": 2}))
 print(REG.build({"type": "B", "c": 3}))
 ```
+
+源码：
+
+`mmcv/utils/registry.py:Registry`，个人完整注释版参见[这里](../../.gitbook/assets/mmlab/registry.py)
+
+```python
+# 感觉设计略有不妥，这个函数实际上只能在__init__中被调用
+@staticmethod
+def infer_scope():
+    """Infer the scope of registry.
+
+        The name of the package where registry is defined will be returned.
+
+        Example:
+            # in mmdet/models/backbone/resnet.py
+            >>> MODELS = Registry('models')
+            >>> @MODELS.register_module()
+            >>> class ResNet:
+            >>>     pass
+            The scope of ``ResNet`` will be ``mmdet``.
+
+
+        Returns:
+            scope (str): The inferred scope name.
+        """
+    # inspect.stack() trace where this function is called, the index-2
+    # indicates the frame where `infer_scope()` is called
+    
+    # inspect.stack()[0]是infer_scope函数
+    # inspect.stack()[1]是__init__函数
+    # inspect.stack()[2]为调用Registry()处
+    # 最终返回的是顶级包名
+    filename = inspect.getmodule(inspect.stack()[2][0]).__name__
+    split_filename = filename.split('.')
+    return split_filename[0]
+```
+
+
+
+
 
 
 
