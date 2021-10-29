@@ -12,8 +12,6 @@ libraries部分包含torchvision等
 
 community部分没探索过
 
-## 范例（待补充）
-
 ## dataloader
 
 [官方文档](https://pytorch.org/docs/stable/data.html)
@@ -74,11 +72,47 @@ for x in dl:
     print(x)
 ```
 
-## finetune
+## AutoGrad、计算图、自定义算子
+
+参考：[pytorch 官方文档](https://pytorch.org/tutorials/intermediate/custom_function_conv_bn_tutorial.html)
+
+例子1：自己实现二维卷积
+
+```python
+import torch
+from torch.autograd.function import once_differentiable
+import torch.nn.functional as F
+
+def convolution_backward(grad_out, X, weight):
+    grad_input = F.conv2d(X.transpose(0, 1), grad_out.transpose(0, 1)).transpose(0, 1)
+    grad_X = F.conv_transpose2d(grad_out, weight)
+    return grad_X, grad_input
+
+class Conv2D(torch.autograd.Function):
+    @staticmethod
+    def forward(ctx, X, weight):
+        ctx.save_for_backward(X, weight)  # 这是torch.autograd.Function的方法, 保存数据供反向求导使用
+        return F.conv2d(X, weight)
+
+    # Use @once_differentiable by default unless we intend to double backward
+    @staticmethod
+    @once_differentiable
+    def backward(ctx, grad_out):
+        X, weight = ctx.saved_tensors
+        return convolution_backward(grad_out, X, weight)
+
+weight = torch.rand(5, 3, 3, 3, requires_grad=True, dtype=torch.double)
+X = torch.rand(10, 3, 7, 7, requires_grad=True, dtype=torch.double)
+torch.autograd.gradcheck(Conv2D.apply, (X, weight))  # 梯度检查
+```
+
+## torch.nn.Module
+
+### finetune
 
 待补充
 
-## load and save
+### load and save
 
 ```python
 class MyModule(torch.nn.Module):
@@ -258,45 +292,114 @@ def clip_grad_norm_(
     return total_norm
 ```
 
+## 自动混合精度训练\(Automatic Mixed Precision\)
 
+docs-&gt;[torch.cuda.amp](https://pytorch.org/docs/stable/amp.html?highlight=torch%20cuda%20amp#module-torch.cuda.amp)
 
-## 自定义算子
+混合精度训练只能在gpu上进行, 因为底层是使用Nvidia为自家gpu提供的`Float16`高效数值运算能力. 平时使用一般只需要用`torch.cuda.amp.GradScaler`以及`torch.cuda.amp.autocast`即可, 并且可以设置`enabled`参数, 当它为`True`时, 则启用amp训练, 否则等价于通常的训练方式. 实际体验上: amp训练计算速度与内存消耗未必快...
 
-参考：[pytorch 官方文档](https://pytorch.org/tutorials/intermediate/custom_function_conv_bn_tutorial.html)
+混合精度训练时，模型的参数是 float32 类型的？
 
-例子1：自己实现二维卷积
+**torch.cuda.amp.GradScaler**
+
+**通常用法**
 
 ```python
-import torch
-from torch.autograd.function import once_differentiable
-import torch.nn.functional as F
+use_amp = True
+optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
+scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
 
-def convolution_backward(grad_out, X, weight):
-    grad_input = F.conv2d(X.transpose(0, 1), grad_out.transpose(0, 1)).transpose(0, 1)
-    grad_X = F.conv_transpose2d(grad_out, weight)
-    return grad_X, grad_input
-
-class Conv2D(torch.autograd.Function):
-    @staticmethod
-    def forward(ctx, X, weight):
-        ctx.save_for_backward(X, weight)  # 这是torch.autograd.Function的方法, 保存数据供反向求导使用
-        return F.conv2d(X, weight)
-
-    # Use @once_differentiable by default unless we intend to double backward
-    @staticmethod
-    @once_differentiable
-    def backward(ctx, grad_out):
-        X, weight = ctx.saved_tensors
-        return convolution_backward(grad_out, X, weight)
-
-weight = torch.rand(5, 3, 3, 3, requires_grad=True, dtype=torch.double)
-X = torch.rand(10, 3, 7, 7, requires_grad=True, dtype=torch.double)
-torch.autograd.gradcheck(Conv2D.apply, (X, weight))  # 梯度检查
+for epoch in range(epochs):
+    for input, target in zip(data, targets):
+        with torch.cuda.amp.autocast(enabled=use_amp):
+            output = net(input)
+            loss = loss_fn(output, target)
+        scaler.scale(loss).backward()
+        # scaler.unscale_(optimizer)
+        # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
+        scaler.step(optimizer)
+        scaler.update()
+        opt.zero_grad()
 ```
 
+其中第11行及第12行只有在需要对梯度做修改时才需要做, 此时需要对这两行同时取消注释.
 
+* `scaler.scale(loss).backward()`可以简单地理解为: `(loss*scaler.get_scale()).backward()`, 所以造成的结果是`model.parameters()`中每个参数的`grad`属性被放大了一个倍数\(所有参数共用一个倍数\)
+* `scaler.step(optimizer)`可以简单理解为, 首先缩小每个参数的`grad`属性\(原地修改, 并且实际上就是调用了`unscale_`方法\), 之后调用`optimizer.step()`
+* `scaler.update()`: 大概是更新放缩比例, 必要性参照下节
 
-## cuda
+**what is it really**
+
+可以通过下面的例子证实上一部分的说明
+
+```python
+scaler = torch.cuda.amp.GradScaler()
+x = torch.tensor([1., 2.], requires_grad=True, device="cuda:0")
+z = torch.tensor([2., 3.], requires_grad=True, device="cuda:0")
+y = torch.sum(x) + torch.sum(z)
+opt = torch.optim.SGD([x, z], lr=0.001)
+
+scaler.scale(y).backward()
+print(x.grad, y)  # [65536, 65536], 8
+# opt.step() # 此处若直接用opt调用step, 会利用65536倍的梯度更新, 并且x.grad依然为[65536, 65536], 这种操作会引发错误(相当于学习率被放大), 要避免
+scaler.unscale_(opt)
+print(x.grad, scaler.get_scale()) # [1, 1], 65535
+# torch.nn.utils.clip_grad_norm_([x, z], 1.)  # x.grad = [0.5, 0.5]
+torch.nn.utils.clip_grad_norm_(x, 1.)  # 如果将x改为[x, z], 则会将x与z合并起来将梯度剪裁
+torch.nn.utils.clip_grad_norm_(z, 1.)
+print(x.grad, scaler.get_scale())  # [0.7, 0.7]
+scaler.step(opt)
+print(x)  # [0.9993, 1.9993]
+scaler.update()
+```
+
+疑问: 在实现上, 是否取消前一节的两行注释, 代码都能正常工作, 这是怎么做到的呢?
+
+通过阅读源码, 发现`GradScaler`内部用一个参数记录了当前的状态, 如下
+
+```python
+class OptState(Enum):
+    READY = 0  # __init__以及update函数会将状态更新为READY
+    UNSCALED = 1  # 已经调用了unscale_函数
+    STEPPED = 2  # 已经调用了step函数
+```
+
+当手动调用`unscale_`函数后, 状态会被更新为`UNSCALED`, 而在执行`step`函数时, 如果发现状态为`READY`, 则先调用`unscale_`, 由此做到自动性\(疑问解答\). 另外, `unscale_`函数会首先检查当前状态, 如果是`UNSCALED`或者`STEPPED`直接报错, 因此每次调用`step`后必须使用`update`才能使用`unscale_`
+
+```text
+__init__:    -> READY
+update:      READY/UNSCALED/STEPPED -> READY
+unscale_:    READY -> UNSCALED
+step:        READY/UNSCALED -> STEPPED
+```
+
+总结: update, unscale\_, step函数的顺序不能乱
+
+## cuda and distributed
+
+### 入门
+
+#### 环境变量
+
+```python
+# 最佳实践需设定这一项
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'
+```
+
+设定使用的 GPU，PCI_BUS_ID 是表示 `0,1` 代表的是物理 GPU ID 为 `0,1` 的两块 GPU。[参考](https://www.jianshu.com/p/d10bfee104cc)
+
+```python
+import os
+import torch
+# 这两行顺序不能乱，否则后一行的结果会不正确
+os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'
+torch.cuda.device_count()  # 2
+```
+
+### 简介
+
+[参考官方文档](https://pytorch.org/tutorials/beginner/dist_overview.html)
 
 ### 术语释义
 
@@ -334,32 +437,6 @@ with torch.cuda.stream(s):
 ```
 
 一般可以使用 `torch.cuda.synchronize()` 或 `torch.cuda.Stream.synchronize()` 或 `torch.cuda.Stream.wait_stream(stream)` 等方法进行同步。完整 API 参见[官方文档](https://pytorch.org/docs/stable/generated/torch.cuda.Stream.html)。
-
-### 简介
-
-[参考官方文档](https://pytorch.org/tutorials/beginner/dist_overview.html)
-
-### 环境变量
-
-```python
-# 最佳实践需设定这一项
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'
-```
-
-设定使用的 GPU，PCI_BUS_ID 是表示 `0,1` 代表的是物理 GPU ID 为 `0,1` 的两块 GPU。[参考](https://www.jianshu.com/p/d10bfee104cc)
-
-
-
-```python
-import os
-import torch
-# 这两行顺序不能乱，否则后一行的结果会不正确
-os.environ["CUDA_VISIBLE_DEVICES"] = '0,1'
-torch.cuda.device_count()  # 2
-```
-
-
 
 ### torch.nn.DataParallel
 
@@ -437,7 +514,7 @@ local_rank一般是只每个机器内部的GPU编号
 os.environ['WORLD_SIZE']
 单机: nnodes=1, 八卡: nproc_per_node=8
 
-torch 1.6 中 `torch/distributed/launch.py` 源码（只去除了注释）如下：
+torch 1.6.0 中 `torch/distributed/launch.py` 源码（只去除了注释）如下：
 
 ```python
 from __future__ import absolute_import, division, print_function, unicode_literals
@@ -548,7 +625,40 @@ y.backward(y1.grad)
 w.grad
 ```
 
+#### torch/distributed/run.py 与 torchrun
+
+在 1.0.0-1.8.1 版本中，均使用 `torch/distributed/launch.py`（简称 `launch.py`）来启动。但在 1.9.0 及 1.9.1 版本中，官方文档中说 `torch/distributed/launch.py`（简称 `run.py`）已被弃用，推荐用 `run.py` 来启动，而 1.9.0 与 1.9.1 版本的 `launch.py` 改为了调用 `run.py` 内的相关函数。而在 1.10.0 版本中，`setup.py` 文件引进了一项改动，又变为使用脚本 `torchrun` 进行启动，但实质上与 `run.py` 是一样的。而 1.9.0 版本的 `run.py` 本质上是调用了合并自 `TorchElastic` 的 `torch.distributed.elastic` 子模块下的内容。
+
+??-1.9.1 版本的 `setup.py` 文件关于 `entry_points` 的写法：
+
+```python
+entry_points = {
+        'console_scripts': [
+            'convert-caffe2-to-onnx = caffe2.python.onnx.bin.conversion:caffe2_to_onnx',
+            'convert-onnx-to-caffe2 = caffe2.python.onnx.bin.conversion:onnx_to_caffe2',
+        ]
+    }
+```
+
+1.10.0 版本的 `setup.py` 文件关于 `entry_points` 的写法：
+
+```python
+entry_points = {
+        'console_scripts': [
+            'convert-caffe2-to-onnx = caffe2.python.onnx.bin.conversion:caffe2_to_onnx',
+            'convert-onnx-to-caffe2 = caffe2.python.onnx.bin.conversion:onnx_to_caffe2',
+            'torchrun = torch.distributed.run:main',
+        ]
+    }
+```
+
+总结一下：torch 1.8.1 及之前的 `launch.py` 文件实现逻辑及用法如上一节所述。torch 1.9.0 版本由于 TorchElastic 引入了 torch 中，所以使用了新的 `run.py` 作为启动文件（使用 TorchElastic 的功能），为保持兼容性，`launch.py` 的用法维持原状，但本质上也是在使用 `run.py`。
+
+因此，只需介绍 torch 1.9.1 版本的 `run.py` 即可
+
 ### TorchElastic
+
+TorchElastic 原本是一个[独立的包](https://github.com/pytorch/elastic)，但 Pytorch 1.9.0 版本将 TorchElastic 进行了集成，位于 `torch.distributed.elastic` 子模块下。参见上一节关于 `torch/distributed/run.py` 的介绍。
 
 ### RPC
 
@@ -583,139 +693,13 @@ scripted_model(another_input)
 `jit.trace`与`jit.script`嵌套，并将模型保存
 
 ```python
-class MyDecisionGate(torch.nn.Module):
-    def forward(self, x):
-        return x if x.sum() > 0 else -x
-
-class MyCell(torch.nn.Module):
-    def __init__(self, dg):
-        super(MyCell, self).__init__()
-        self.dg = dg
-        self.linear = torch.nn.Linear(4, 4)
-    def forward(self, x, h):
-        new_h = torch.tanh(self.dg(self.linear(x)) + h)
-        return new_h, new_h
-
-x, h = torch.rand(3, 4), torch.rand(3, 4)
-# scripted_gate = torch.jit.trace(MyDecisionGate(), x)
-scripted_gate = torch.jit.script(MyDecisionGate())
-class MyRNNLoop(torch.nn.Module):
-    def __init__(self):
-        super(MyRNNLoop, self).__init__()
-        self.cell = torch.jit.trace(MyCell(scripted_gate), (x, h))
-    def forward(self, xs):
-        h, y = torch.zeros(3, 4), torch.zeros(3, 4)
-        for i in range(xs.size(0)):
-            y, h = self.cell(xs[i], h)
-        return y, h
-rnn_loop = torch.jit.script(MyRNNLoop())
-print(rnn_loop.code)
-print(rnn_loop.cell.dg.code)
-
-class WrapRNN(torch.nn.Module):
-    def __init__(self):
-        super(WrapRNN, self).__init__()
-        self.loop = torch.jit.script(MyRNNLoop())
-
-    def forward(self, xs):
-        y, h = self.loop(xs)
-        return torch.relu(y)
-
-traced = torch.jit.trace(WrapRNN(), (torch.rand(10, 3, 4)))
-print(traced.code)
-print(traced.loop.cell.dg.code)
-
-traced.save('wrapped_rnn.pt')
-loaded = torch.jit.load('wrapped_rnn.pt')
+class MyDecisionGate(torch.nn.Module):    def forward(self, x):        return x if x.sum() > 0 else -xclass MyCell(torch.nn.Module):    def __init__(self, dg):        super(MyCell, self).__init__()        self.dg = dg        self.linear = torch.nn.Linear(4, 4)    def forward(self, x, h):        new_h = torch.tanh(self.dg(self.linear(x)) + h)        return new_h, new_hx, h = torch.rand(3, 4), torch.rand(3, 4)# scripted_gate = torch.jit.trace(MyDecisionGate(), x)scripted_gate = torch.jit.script(MyDecisionGate())class MyRNNLoop(torch.nn.Module):    def __init__(self):        super(MyRNNLoop, self).__init__()        self.cell = torch.jit.trace(MyCell(scripted_gate), (x, h))    def forward(self, xs):        h, y = torch.zeros(3, 4), torch.zeros(3, 4)        for i in range(xs.size(0)):            y, h = self.cell(xs[i], h)        return y, hrnn_loop = torch.jit.script(MyRNNLoop())print(rnn_loop.code)print(rnn_loop.cell.dg.code)class WrapRNN(torch.nn.Module):    def __init__(self):        super(WrapRNN, self).__init__()        self.loop = torch.jit.script(MyRNNLoop())    def forward(self, xs):        y, h = self.loop(xs)        return torch.relu(y)traced = torch.jit.trace(WrapRNN(), (torch.rand(10, 3, 4)))print(traced.code)print(traced.loop.cell.dg.code)traced.save('wrapped_rnn.pt')loaded = torch.jit.load('wrapped_rnn.pt')
 ```
 
 **C++ Fronted API**
 
 * 一种方案是使用C++ API进行完整的训练与模型保存\(torchscript中定义的格式\)
 * 另一种方案是使用Python训练并保存\(必须使用torchscript定义的格式保存\), 然后使用C++ API进行导入
-
-## 自动混合精度训练\(Automatic Mixed Precision\)
-
-docs-&gt;[torch.cuda.amp](https://pytorch.org/docs/stable/amp.html?highlight=torch%20cuda%20amp#module-torch.cuda.amp)
-
-混合精度训练只能在gpu上进行, 因为底层是使用Nvidia为自家gpu提供的`Float16`高效数值运算能力. 平时使用一般只需要用`torch.cuda.amp.GradScaler`以及`torch.cuda.amp.autocast`即可, 并且可以设置`enabled`参数, 当它为`True`时, 则启用amp训练, 否则等价于通常的训练方式. 实际体验上: amp训练计算速度与内存消耗未必快...
-
-混合精度训练时，模型的参数是 float32 类型的？
-
-**torch.cuda.amp.GradScaler**
-
-**通常用法**
-
-```python
-use_amp = True
-optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
-scaler = torch.cuda.amp.GradScaler(enabled=use_amp)
-
-for epoch in range(epochs):
-    for input, target in zip(data, targets):
-        with torch.cuda.amp.autocast(enabled=use_amp):
-            output = net(input)
-            loss = loss_fn(output, target)
-        scaler.scale(loss).backward()
-        # scaler.unscale_(optimizer)
-        # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
-        scaler.step(optimizer)
-        scaler.update()
-        opt.zero_grad()
-```
-
-其中第11行及第12行只有在需要对梯度做修改时才需要做, 此时需要对这两行同时取消注释.
-
-* `scaler.scale(loss).backward()`可以简单地理解为: `(loss*scaler.get_scale()).backward()`, 所以造成的结果是`model.parameters()`中每个参数的`grad`属性被放大了一个倍数\(所有参数共用一个倍数\)
-* `scaler.step(optimizer)`可以简单理解为, 首先缩小每个参数的`grad`属性\(原地修改, 并且实际上就是调用了`unscale_`方法\), 之后调用`optimizer.step()`
-* `scaler.update()`: 大概是更新放缩比例, 必要性参照下节
-
-**what is it really**
-
-可以通过下面的例子证实上一部分的说明
-
-```python
-scaler = torch.cuda.amp.GradScaler()
-x = torch.tensor([1., 2.], requires_grad=True, device="cuda:0")
-z = torch.tensor([2., 3.], requires_grad=True, device="cuda:0")
-y = torch.sum(x) + torch.sum(z)
-opt = torch.optim.SGD([x, z], lr=0.001)
-
-scaler.scale(y).backward()
-print(x.grad, y)  # [65536, 65536], 8
-# opt.step() # 此处若直接用opt调用step, 会利用65536倍的梯度更新, 并且x.grad依然为[65536, 65536], 这种操作会引发错误(相当于学习率被放大), 要避免
-scaler.unscale_(opt)
-print(x.grad, scaler.get_scale()) # [1, 1], 65535
-# torch.nn.utils.clip_grad_norm_([x, z], 1.)  # x.grad = [0.5, 0.5]
-torch.nn.utils.clip_grad_norm_(x, 1.)  # 如果将x改为[x, z], 则会将x与z合并起来将梯度剪裁
-torch.nn.utils.clip_grad_norm_(z, 1.)
-print(x.grad, scaler.get_scale())  # [0.7, 0.7]
-scaler.step(opt)
-print(x)  # [0.9993, 1.9993]
-scaler.update()
-```
-
-疑问: 在实现上, 是否取消前一节的两行注释, 代码都能正常工作, 这是怎么做到的呢?
-
-通过阅读源码, 发现`GradScaler`内部用一个参数记录了当前的状态, 如下
-
-```python
-class OptState(Enum):
-    READY = 0  # __init__以及update函数会将状态更新为READY
-    UNSCALED = 1  # 已经调用了unscale_函数
-    STEPPED = 2  # 已经调用了step函数
-```
-
-当手动调用`unscale_`函数后, 状态会被更新为`UNSCALED`, 而在执行`step`函数时, 如果发现状态为`READY`, 则先调用`unscale_`, 由此做到自动性\(疑问解答\). 另外, `unscale_`函数会首先检查当前状态, 如果是`UNSCALED`或者`STEPPED`直接报错, 因此每次调用`step`后必须使用`update`才能使用`unscale_`
-
-```text
-__init__:    -> READY
-update:      READY/UNSCALED/STEPPED -> READY
-unscale_:    READY -> UNSCALED
-step:        READY/UNSCALED -> STEPPED
-```
-
-总结: update, unscale\_, step函数的顺序不能乱
 
 ## Pytorch Internal
 
@@ -815,3 +799,6 @@ pytorch 复制 tensor 的推荐姿势
 target = source.clone().detach()
 target = source.clone().detach().to("cuda:1").requires_grad_(True)
 ```
+
+## 范例（待补充）
+
