@@ -187,6 +187,20 @@ os.sched_getaffinity(0)  # 获取与进程号为0的进程的亲和CPU编号集�
 os.cpu_count()  # 逻辑CPU数，适用于OSX,Windows,linux
 ```
 
+## pdf 格式
+
+bitmap, image, raster graphics：都指的是以像素点的像素值进行存储的图片
+
+verctor graphics: 翻译为矢量图或位图，是电脑图形
+
+pdf 的基本元素为
+
+- 字符（单个字符及相应的位置）
+- 位图（电脑图形）
+- 图片
+- 多媒体数据（例如动图）
+- 其他（超链接，Javascript，form）
+
 ## 配置文件格式（待补充）
 
 ### json

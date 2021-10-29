@@ -15,45 +15,123 @@ cd Python-3.7.4
 ./configure --enable-optimizations --prefix=/usr/python3.7
 make -j 8
 sudo make altinstall
-ln -s /usr/python3.8/bin/python3.8 /usr/bin/python3.7
-ln -s /usr/python3.8/bin/pip3.8 /usr/local/bin/pip3.7
+ln -s /usr/python3.7/bin/python3.7 /usr/bin/python3.7
+ln -s /usr/python3.7/bin/pip3.7 /usr/local/bin/pip3.7
 ```
 
-## Python程序的运行方式\(待补充\)
+可以在 `~/.bashrc` 或 `/etc/profile` 中添加 Python 安装的可执行文件到 PATH 环境变量。
+
+```bash
+export PATH="$PATH:/usr/python3.7/bin/"
+```
+
+```bash
+$ . ~/bashrc  # 需重启
+$ . /ect/profile  # 无需重启
+```
+
+某些用 pip 安装的包会在 `setup.py` 文件中的 `setup` 函数中指定 `scripts` 参数，这些脚本将被复制到 `/usr/python3.7/bin` 目录下。例如：pdfminer 的源码中
+
+```
+setup(..., scripts = ["tools/pdf2txt.py", "tools/dumppdf.py"], ...)
+```
+
+## Python 程序的运行方式
 
 [参考链接\(realpython.com\)](https://realpython.com/run-python-scripts/)
 
-命令行的启动方式主要有以下两种（**注意这种情况下当前目录下有xx文件夹**）
+命令行的启动方式主要有以下两种
 
-```text
-python -m xx.yy
-python ./xx/yy.py
+```bash
+python -m xx.yy  # 用脚本的方式启动
+python ./xx/yy.py  # 用模块的方式启动
 ```
 
-用IDE里的按钮或快捷键来启动时，最终会回到上述两种之一，一般为第二种，但需要搞清楚**当前目录是什么**。 _待确认：_在Pycharm中，实际上是第二种方式，并且当前目录为`xx/`（即先执行了`cd xx`，再执行了`python yy.py`）
+两者的区别可用例子看出
 
-假定目录结构如下
+例子：
 
-```text
-test/
-  src/
-      module0.py
-    module1.py
-    module2.py
 ```
-
-各文件内容如下：
+ROOT
+  - b/
+    - b.py
+    - __init__.py
+  - c/
+    - c.py
+    - __init__.py
+```
 
 ```python
-# module0.py
-def foo():
-    print("do something")
-# module1.py
-from src.module0 import foo
-def wrapper():
-    foo()
-if __name__ == "__main__":
+# b.py 内容如下, 其余文件均为空
+print(__name__)
+import os
+print(os.path.abspath(os.getcwd()))
+import sys
+print(sys.path)
+from c import c
 ```
+
+在与 `b`、`c` 目录同级的目录下启动
+
+```bash
+$ python b/b.py  # error
+__main__
+/home/name/ROOT
+[/home/name/ROOT/b, ...]
+ModuleNotFoundError: No module named 'c'
+```
+
+```bash
+$ python -m b.b  # OK
+__main__
+/home/name/ROOT
+[/home/name/ROOT, ...]
+```
+
+总结：
+
+相同点：
+
+- `os.getcwd()` 对于两种启动方式是一致的，以运行命令的位置一致
+- 两者都将启动的 `.py` 文件的 `__name__` 赋值为 `"__main__"`
+
+不同点：
+
+- 采用 `python b/c/b.py` 运行时，`sys.path` 会将 `b/c` 目录添加，而 `python -m b.c.b` 会将当前目录添加到 `sys.path` 中
+
+除此以外，使用 `python -m b.b` 运行时还有两个特殊之处：
+
+- 如果 `b.b` 是已经用 `pip install` 安装的包名，则可以在任意目录使用该方式运行脚本，无论该脚本是否被加入 `setup.py` 文件的 `setup.py` 的 `entry_points` 参数中。
+
+  例如：
+
+  torch 1.9.0 版本可以用如下方式启动多卡运行脚本
+
+  ```bash
+  python -m torch.distributed.launch --nproc_per_node=2 --nnodes=1 --node_rank=0 --master_addr 127.0.0.1 --master_port 29500 train.py
+  ```
+
+  ```python
+  # setup.py(torch源码中entry_point并无此脚本)
+  entry_points = {
+          'console_scripts': [
+              'convert-caffe2-to-onnx = caffe2.python.onnx.bin.conversion:caffe2_to_onnx',
+              'convert-onnx-to-caffe2 = caffe2.python.onnx.bin.conversion:onnx_to_caffe2',
+          ]
+      }
+  ```
+
+- 以 `python -m b.b` 运行时，`b/b.py` 中的相对路径导入可以部分起作用，例如：`from .s import s`，但不能使用 `from ..c import c`，否则会报错
+
+  ```
+  ValueError: attempted relative import beyond top-level package
+  ```
+
+  若切换到 `b` 目录，以 `python b.py` 而言，即使使用 `from .s import s`，仍然会直接报错
+
+  ```
+  ImportError: attempted relative import with no known parent package
+  ```
 
 ## Ipython在终端的使用
 
@@ -206,7 +284,7 @@ conda env list
 
 以conda管理为例, 假设需要将环境temp加入到jupyter中, 首先执行:
 
-```text
+```bash
 # 为temp环境安装ipykernel包
 conda activate temp
 pip install ipykernel # conda install ipykernel
@@ -214,7 +292,7 @@ pip install ipykernel # conda install ipykernel
 
 接下来继续将temp加入至jupyter的kernel中:
 
-```text
+```bash
 jupyter kernelspec list  # 列出当前可用的kernel环境
 jupyter kernelspec remove 环境名称  # 移除kernel环境
 # 进入需要加入至kernel的环境后
@@ -223,7 +301,7 @@ python -m ipykernel install --user --name 环境名称 --display-name "jupyter�
 
 使用:
 
-```text
+```bash
 # 激活base环境后
 cd 目录名
 jupyter-notebook # jupyter-lab
@@ -2000,9 +2078,9 @@ pip install -r requirements.txt
 
 一些历史, 关于`distutils`, `distutils2`, `setuptools`等, [参考链接](https://zhuanlan.zhihu.com/p/276461821). 大体来说, `distutils`是最原始的打包工具, 是Python标准库的一部分. 而`setuptools`是一个第三方库, 在`setuptools`的变迁过程中, 曾出现过一个分支`distribute`, 现在已经合并回`setuptools`, 而`distutils2`希望充分利用前述三者:`distutils`, `setuptools`, `distribute`的优点成为标准库的一部分, 但没有成功, 并且已经不再维护了. 总之, `distutils`是标准库, `setuptools`是开发者常用的第三方库, 安装好后还额外带着一个叫`easy_install`的第三方管理工具, 而`easy_install`目前用的比较少, `pip`是其改进版. 顺带提一句: python源码安装一般是下载一个压缩包\(先解压, 再编译, 再安装\), 二进制安装一般是下载一个`.egg`或者`.whl`的二进制文件进行安装, 后者已经取代前者成为现今的通用标准. 下面仅介绍基于`setuptools`的使用, 其关键在于编写`setup.py`. 上传到PyPI的方法参考[python官方文档.](https://packaging.python.org/tutorials/packaging-projects/)
 
-**setup.py编写**
+#### setup.py 的编写与使用简介
 
-首先尝鲜, 在介绍各个参数的用法\(完整列表参见[官方文档](https://setuptools.readthedocs.io/en/latest/references/keywords.html)\)
+首先尝鲜，在介绍各个参数的用法（完整列表参见[官方文档](https://setuptools.readthedocs.io/en/latest/references/keywords.html)）
 
 ```text
 funniest/
@@ -2028,7 +2106,7 @@ setup(name='funniest',  # 包的名称, 决定了用pip install xxx
       ])  # 依赖项, 优于手动安装requires.txt里的包的方法
 ```
 
-```text
+```bash
 # 源码安装只需一行
 python setup.py install
 
@@ -2040,43 +2118,36 @@ pip install funniest
 # 打包为whl格式(以后补充)
 ```
 
-已经弃用的参数:
+#### setup.py 的 setup 函数的各个参数详解
+
+**已经弃用的参数**
 
 | 已弃用的参数 | 替代品 | 含义 |
 | :--- | :--- | :--- |
 | `requires` | `install_requires` | 指定依赖包 |
 | `data_files` | `package_data` | 指定哪些数据需要一并安装 |
 
-将非代码文件加入到安装包中，注意：这些非代码文件需要放在某个包（即带有 `__init__.py` 的目录）下
+将非代码文件加入到安装包中，注意：这些非代码文件需要放在某个包（即`packages` 列表）下，使用以下两种方式之一即可
 
-* 使用`MANIFEST.in`文件\(放在与`setup.py`同级目录下\), 并且设置`include_package_data=True`, 可以将非代码文件一起安装.
+* 使用`MANIFEST.in`文件\(放在与`setup.py`同级目录下\), 并且设置`include_package_data=True`, 可以将非代码文件一起安装
 * `package_data`参数的形式的例子为：`{"package_name":["*.txt", "*.png"]}`
 
-**最佳实践**
+**entry_points 参数**
 
-目前主流的打包格式为 `whl` 格式（取代 `egg` 格式），发布到 PyPi 的包一般使用下面的命令进行安装
-
-```shell
-pip install <packagename>
+```python
+entry_points={
+        "console_scripts": [
+            "labelme=labelme.__main__:main",
+            "labelme_draw_json=labelme.cli.draw_json:main"
+        ],
+    },
 ```
 
-实际过程为按照包名 `<packagename>` 在互联网上搜索相应的 .whl 文件，然后进行安装。因此对于源码安装的最佳实践也沿用上述过程，详述如下：
+指定这组参数后，例如：`"labelme=labelme.__main__:main"` 这一行表示执行完安装命令后，与可执行文件 `python` 同级的目录下会出现可执行文件 `labelme`，如果执行该文件，则等同于执行 `labelme.__main__.py` 文件内的 `main` 函数。
 
-`setup.py` 文件的 `setup` 函数的参数 `packages` 列表长度最好刚好为 1，此时 `setup.py` 文件的 `setup` 函数的参数 `name` 应与 `packages` 的唯一元素相同，且命名全部用小写与下划线，且尽量不要出现下划线。使用下面两条命令安装
+**scripts 参数**
 
-```
-python setup.py bdist_wheel  # 打包为一个.whl文件，位于当前文件夹的dist目录下
-pip install dist/xxx-1.7.4-py3-none-any.whl
-```
-
-在 site-packages 目录下会出现类似于如下两个目录
-
-```
-xxx-1.7.4.dist-info
-xxx
-```
-
-备注：whl 格式实际上是 zip 格式，因此可以进行解压缩查看内容
+似乎不推荐使用
 
 **例子 1**
 
@@ -2189,6 +2260,32 @@ labelme_draw_label_png.exe
 labelme_json_to_dataset.exe
 labelme_on_docker.exe
 ```
+
+**打包方式最佳实践**
+
+目前主流的打包格式为 `whl` 格式（取代 `egg` 格式），发布到 PyPi 的包一般使用下面的命令进行安装
+
+```shell
+pip install <packagename>
+```
+
+实际过程为按照包名 `<packagename>` 在互联网上搜索相应的 .whl 文件，然后进行安装。因此对于源码安装的最佳实践也沿用上述过程，详述如下：
+
+`setup.py` 文件的 `setup` 函数的参数 `packages` 列表长度最好刚好为 1，此时 `setup.py` 文件的 `setup` 函数的参数 `name` 应与 `packages` 的唯一元素相同，且命名全部用小写与下划线，且尽量不要出现下划线。使用下面两条命令安装
+
+```
+python setup.py bdist_wheel  # 打包为一个.whl文件，位于当前文件夹的dist目录下
+pip install dist/xxx-1.7.4-py3-none-any.whl
+```
+
+在 site-packages 目录下会出现类似于如下两个目录
+
+```
+xxx-1.7.4.dist-info
+xxx
+```
+
+备注：whl 格式实际上是 zip 格式，因此可以进行解压缩查看内容
 
 ### 发布到 PyPi
 

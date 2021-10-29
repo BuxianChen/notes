@@ -207,7 +207,7 @@ IFS （internal field separator，内部字段分隔符）环境变量默认为�
 $ dirname <file|dir> # 返回文件或目录的父目录
 ```
 
-#### tee
+#### tee（待补充）
 
 ```bash
 $ tee a.txt b.txt  # 同时向 a.txt 和 b.txt 中写入相同的内容，输入这行命令后，需要继续输入要写入的内容，以 Ctrl+Z 结束。注意 tee 命令写入的东西同时也会打印至屏幕上。
@@ -220,6 +220,8 @@ $ echo "abc" | tee a.txt b.txt
 abc  # 写入文件并同时将写入的信息输出至标准输出流
 $ echo "abc" | tee a.txt > b.txt  # 用重定向的方式同时写入两个文件，并且不显示在屏幕上
 ```
+
+一个常见的错误参考例 7：修改屏幕亮度
 
 #### printf
 
@@ -340,6 +342,34 @@ $ echo dosome4
 ```bash
 $ mount -t nfs <device> <dir>  # 将设备/目录device挂载到目录dir(称为挂载点)上, -t参数表示指定档案系统型态, 通常无需指定
 $ umount <device/dir>  # 取消挂载, 用挂载点或者设备名均可
+```
+
+若 umount 时出现 `device is busy` 的错误，可以参照[链接](https://www.cnblogs.com/xuey/p/7878529.html)进行解决，摘录如下：
+
+```bash
+$ # fuser命令使用 apt install psmisc 进行安装
+$ fuser -m -v <dir>  # 显示所有占用该目录的进程
+$ fuser -k <dir>  # 杀死所有占用该的进程
+$ umount <dir>
+
+$ # 以下为手动删除的办法, 但有时不奏效
+$ # ps aux | grep <pid>  # 显示该进程的信息
+$ # kill -9 <pid>  # 可以直接杀死进程
+```
+
+#### ps（待补充）
+
+用于列出所有进程
+
+[参考链接](https://www.jianshu.com/p/943b90150c10)
+
+#### nmap
+
+打印本机打开的所有端口信息
+
+```bash
+$ # apt install nmap
+$ nmap 127.0.0.1
 ```
 
 #### ${varname:-"abc"}

@@ -142,6 +142,11 @@ class Registry:
         """
         # inspect.stack() trace where this function is called, the index-2
         # indicates the frame where `infer_scope()` is called
+        
+        # inspect.stack()[0]是infer_scope函数
+        # inspect.stack()[1]是__init__函数
+        # inspect.stack()[2]为调用Registry()处
+        # 最终返回的是顶级包名
         filename = inspect.getmodule(inspect.stack()[2][0]).__name__
         split_filename = filename.split('.')
         return split_filename[0]

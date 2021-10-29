@@ -285,7 +285,7 @@ def infer_scope():
 
 
 
-### mmcv 与 mmdetection 中的 Registry 实例：
+### Registry 实例：
 
 ```python
 # mmcv/cnn/builder.py
@@ -305,6 +305,8 @@ SHARED_HEADS = MODELS
 HEADS = MODELS
 LOSSES = MODELS
 DETECTORS = MODELS
+
+# mmdet/models/__init__.py
 ```
 
 
@@ -379,7 +381,7 @@ train_cfg = ...
 test_cfg = ...
 ```
 
-#### 运行实例：Yolov3
+### 运行实例：Yolov3
 
 下面具体介绍一个模型，启动方式为：
 
