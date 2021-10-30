@@ -201,7 +201,7 @@ with open("a.jpg", "rb") as fr:
 image = cv2.imdecode(np.frombuffer(b, np.uint8), cv2.IMREAD_UNCHANGED)
 ```
 
-![](E:\project\notes\note\opencv-src\figures\imread-imwrite.png)
+![](./opencv-src/figures/imread-imwrite.png)
 
 ### RGB 与 BGR 转换（cv2 默认使用 BGR 格式）
 
