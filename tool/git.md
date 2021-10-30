@@ -8,6 +8,165 @@
 - https://www.ruanyifeng.com/blog/2015/12/git-cheat-sheet.html
 - ...
 
+## 第 6 课：Git
+
+本节课的讲法是先大致讲清 Git 的数据模型（实现），再讲操作命令。个人认为很受用，强烈推荐。这里仅记录 Git 数据模型等内部相关的东西，关于 Git 的使用参见[这里](../tools/git.md)。
+
+一个数据模型的例子如下：
+
+```
+<root> (tree)
+|
++- foo (tree)
+|  |
+|  + bar.txt (blob, content = "hello world")
+|
++- baz.txt (blob, content = "git is wonderful")
+```
+
+### blob、tree、commit、object、reference
+
+注：这些东西都可以在 `.git` 目录中探索。
+
+在 Git 中，文件被称作 blob。目录被称作 tree。commit 包含了父 commit，提交信息、作者、以及本次提交的 tree 等信息。object 则可以是前三者的任意一个。进一步，对每个 object 进行哈希，用哈希值代表每个 object。注意 object 是不可变的，而 reference 是一个映射（指针），字符串（例如 master）映射到 object 的哈希值。所以，一个仓库可以看作是一堆 object 与一堆 reference（即objects 与 references），Git 命令大多数是在操作 object 或者 reference，具体地说，是增加 object ；增加/删除/修改 reference（即改变其指向）。伪代码如下：
+
+```
+type blob = array<byte>;
+type tree = map<string, blob | tree>;
+type commit = struct {
+	parent: array<commit>
+	author: string
+	message: string
+	snapshot: tree
+}
+type object = blob | tree | commit
+objects = map<string, object> // objects[hash(object)] = object
+// 只提供用 hash 值查找 object 以及对 objects 增加的接口
+references = map<string, string> // 前一个 string 表示指针名，例如：master, 后一个 string 表示 object 的哈希值，这里的指针名的例子是：分支名、HEAD
+```
+
+### workspace、stage、version
+
+以下参杂个人理解：这三者实际上都是一个版本/快照，而所谓的快照基本上等同于一个 tree/commit 对象。
+
+workspace 表示工作区，也就是 `.git` 目录以外的所有内容，workspace 可以看作是一个快照；
+
+stage 是为了方便用户使用的一个机制，比如说开发了一个新特性，将其放入缓冲区，之后再增加了一些调试代码，那么提交时可以不提交调试代码。stage 中的信息被保存在了 `.git/INDEX` 文件内，stage 可以看作是一个快照；
+
+version 则是历史提交的版本，因此实际上是若干个快照。
+
+许多命令例如：`git add`，`git diff`，`git restore` 实际上就是利用上述三者之一修改/比较另外一个或多个快照。
+
+### branch、HEAD
+
+每个 branch 都是一条直线的提交序列（一系列的 commit 对象），每个 branch 都有一个名字，例如 master、dev 等，它们指向其中的一次提交。`git commit` 命令实际上的作用是生成一个 commit 对象后，将生成的 commit 对象的父亲设置为当前的分支名指向的提交，而后将分支名指向的对象设置为新生成的对象，伪代码如下：
+
+```python
+def git_commit(branch_name):
+	new_commit = make_commit(stage)
+	old_commit = branch_name.current_commit
+	new_commit.parent = old_commit
+	branch.current_commit = new_commit
+```
+
+而 HEAD 指的是当前状态下的最近一次的提交。通常情况下，HEAD 总是与某个分支名的指向相同。但在某些情况下，HEAD 指向的提交不与任何的分支名的指向一致，称为 detached 的状态，例如使用类似如下的方式切换分支：
+
+```bash
+git checkout a7141d0
+git checkout HEAD~3
+git checkout master~3
+```
+
+本质上而言，分支名与 HEAD 都是 reference 对象中的元素，存储的都是一个特定的 commit_id。而整个版本库存放的东西无外乎是一堆 commit 对象（每个 commit 对象包含指向其父亲的指针以及一个 tree 对象）。
+
+### `.git` 目录
+
+依次执行
+
+```bash
+git config --global user.name "BuxianChen"
+git config --global user.email "541205605@qq.com"
+git init
+echo "abc" > a.txt
+git add .  # add_1
+git commit -m "a"  # commit_1
+mkdir b
+echo "def" > b.txt
+git add .  # add_2
+git commit -m "b"  # commit_2
+git branch dev  # branch_1
+```
+
+得到如下目录（省略了一些目录及文件）
+
+```shell
+.git
+│  HEAD  # 文件内容是 refs/heads/<分支名>
+│  index  # add_1, add_2
+│  ...
+├─logs
+│  ...
+├─objects
+│  ├─24
+│  │      c5735c3e8ce8fd18d312e9e58149a62236c01a  # blob (./b/b.txt), add_2
+│  ├─3e
+│  │      bc756fee46dfcb9410ab7f07980a8ff0e71d82  # commit, commit_2
+│  ├─43
+│  │      8e5d5f895ccf4910e1a463ff5f31e52c28df3c  # tree (./), commit_2
+│  ├─83
+│  │      edaf0d7f419929b1b0b84c8a7550f38daf97ac  # tree (./b), commit_2
+│  ├─8b
+│  │      3d54f8c5d0ebd682ea6e83386451e96a541496  # tree (./), commit_1
+│  │      aef1b4abc478178b004d62031cf7fe6db6f903  # blob (./a.txt), add_1
+│  ├─f7
+│  │      496edd08d97d10773a6a76eabd9d24d96785c2  # commit, commit_1
+└─refs
+    ├─heads
+    │      dev  # branch_1, 文件内容是某个 commit 的哈希值
+    │      master  # 文件内容是某个 commit 的哈希值
+    └─tags
+```
+
+注释项代表该条命令运行之后生成了该文件。除了 `objects` 目录以及 `index` 文件外，其余均为文本文件。为了获取 `objects` 目录及 `index` 文件的内容，可以使用以下两行命令：
+
+```bash
+git cat-file -p 24c5735c3e8ce8fd18d312e9e58149a62236c01a  # 查看 objects 目录下的文件内容
+git ls-files -s  # 查看当前缓冲区内容, 即 .git/index 中的内容
+```
+
+结论：
+
+- `git add` 命令只会生成 blob 对象
+- `git commit` 命令会同时生成 tree 和 commit 对象
+- `HEAD` 指向某个分支名，`git checkout <分支名>` 会同时修改 `HEAD` 及 `index` 的内容，并且切换分支时 `git status` 的结果必须为 `clean`，否则无法执行。
+
+### object 的 hash 值
+
+一个 blob 对象的hash值的计算过程如下：
+
+假定 `readme.txt` 文件内容为`123`，它被 `git add` 的时候，`objects` 目录下会增加一个以二进制序列命名的文件
+
+```text
+d8/00886d9c86731ae5c4a62b0b77c437015e00d2
+```
+
+一共40位（加密算法为SHA-1），其中前两位为目录名，后38位为文件名
+
+使用 python 可以用如下方式计算出来：
+
+```python
+import hashlib
+# `header`+内容计算
+# `header` = 文件类型+空格+文件字节数+空字符
+hashlib.sha1(b'blob 3\0'+b'123').hexdigest() # d800886d9c86731ae5c4a62b0b77c437015e00d2
+
+hashlib.sha1(b'blob 5\0'+'12中'.encode("utf-8")).hexdigest() 
+# ec493cf5f7f9a5a205afbc80d7f56dbb34b10600
+
+# len('12中'.encode("utf-8"))
+# '12中'.encode("utf-8")
+```
+
 ## 术语
 
 - stage/cache/index/缓冲区/暂存区都是指的同一个东西

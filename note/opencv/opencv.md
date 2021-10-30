@@ -31,8 +31,6 @@ with open("a.jpg", "rb") as fr:
 image = cv2.imdecode(np.frombuffer(b, np.uint8), -1)
 ```
 
-
-
 备注：imdecode 中的第二个参数 -1 实际上是 cv2.IMREAD_UNCHANGED。对于 imread 函数来说，原型如下：
 
 ```python
@@ -59,7 +57,9 @@ cv2.imwrite("x.png", img, (cv2.IMWRITE_PNG_COMPRESSION, 3))
 ```
 
 - cv2.IMWRITE_JPEG_QUALITY=1：JPEG 格式，0-100 的整数，表示图像质量，默认为 95。
-- cv.IMWRITE_PNG_COMPRESSION=16：PNG 格式，0-9表示压缩级别，级别越高图像越小，默认值为 3。
+- cv2.IMWRITE_PNG_COMPRESSION=16：PNG 格式，0-9表示压缩级别，级别越高图像越小，默认值为 3。
+
+备注：JPEG 格式为有损压缩；而 PNG 格式为无损压缩，PNG 的压缩级别会影响编码解码时间。
 
 ### RGB 与 BGR 转换（cv2 默认使用 BGR 格式）
 
@@ -69,6 +69,8 @@ destRGB = cv2.cvtColor(srcBGR, cv2.COLOR_BGR2RGB)
 ```
 
 ### 在图像上绘制
+
+详细可参考[官方文档](https://docs.opencv.org/4.5.4/d6/d6e/group__imgproc__draw.html#ga5126f47f883d730f633d74f07456c576)
 
 #### 画点（实际上是在画圈）
 
@@ -84,6 +86,20 @@ cv2.circle(img, (x, y), 2, (0, 0, 255), thickness=2)
 cv2.putText(image, text, org, font, fontScale, color[, thickness[, lineType[, bottomLeftOrigin]]])
 # org是左下角坐标, font是字体, fontScale是字体
 cv2.putText(image, "mark", (100, 200), cv2.FONT_HERSHEY_COMPLEX, 5, (0, 0, 255), 6)
+```
+
+#### 添加线、矩形、多边形
+
+```python
+cv2.line(img, pt1, pt2, color[, thickness, lineType[, shift]])
+# pt1,pt2分别为起点和终点
+cv2.line(img, (10, 10), (200, 10), (0, 0, 255))
+```
+
+```python
+cv2.ploylines(img, pts, isClosed, color[, thickness[, lineType, [shift]]])
+pts = [(10, 10), (30, 30), (20, 30), (10, 20)]
+cv2.ploylines(img, pts, True, (0, 0, 255))  # 画一个四边形
 ```
 
 

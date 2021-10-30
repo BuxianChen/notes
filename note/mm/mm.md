@@ -7,6 +7,21 @@ mmcv 是 mmdet 的主要依赖包。mmcv 的特点是广泛地使用配置文件
 
 与许多优秀的开源项目一样，mmlab 的项目也会存在 API 变化的现象，大多数时候 mmlab 会对之前的 API 兼容，但给出警告。对于源码分析而言，这种代码是一种干扰。
 
+## 安装
+
+源码安装 mmcv-full，可能需要修改 `setup.py`
+
+```python
+# cmd_class = {'build_ext': torch.utils.cpp_extension.BuildExtension}
+cmd_class = {'build_ext': torch.utils.cpp_extension.BuildExtension.with_options(use_ninja=False)}
+```
+
+随后使用如下命令进行安装
+
+```
+MMCV_WITH_OPS=1 pip install -e .
+```
+
 ## 典型用法（此处补充一个 mmdet 的例子）：
 
 ```python
@@ -245,31 +260,254 @@ print(REG.build({"type": "B", "c": 3}))
 
 源码：
 
-`mmcv/utils/registry.py:Registry`，个人完整注释版参见[这里](../../.gitbook/assets/mmlab/registry.py)
+2.16.0 版本 `mmcv/utils/registry.py:Registry`
+
+```python
+import inspect
+import warnings
+from functools import partial
+from .misc import is_seq_of
+
+def build_from_cfg(cfg, registry, default_args=None):
+    if not isinstance(cfg, dict):
+        raise TypeError(f'cfg must be a dict, but got {type(cfg)}')
+    if 'type' not in cfg:
+        if default_args is None or 'type' not in default_args:
+            raise KeyError('...')
+    if not isinstance(registry, Registry):
+        raise TypeError('...')
+    if not (isinstance(default_args, dict) or default_args is None):
+        raise TypeError('...')
+    args = cfg.copy()
+    if default_args is not None:
+        for name, value in default_args.items():
+            args.setdefault(name, value)
+    obj_type = args.pop('type')
+    if isinstance(obj_type, str):
+        obj_cls = registry.get(obj_type)
+        if obj_cls is None:
+            raise KeyError('')
+    elif inspect.isclass(obj_type):
+        obj_cls = obj_type
+    else:
+        raise TypeError('')
+    try:
+        return obj_cls(**args)
+    except Exception as e:
+        raise type(e)(f'{obj_cls.__name__}: {e}')
+
+
+class Registry:
+    """
+        scope (str, optional): The scope of registry. It is the key to search
+            for children registry. If not specified, scope will be the name of
+            the package where class is defined, e.g. mmdet, mmcls, mmseg.
+            Default: None.
+    """
+
+    def __init__(self, name, build_func=None, parent=None, scope=None):
+        self._name = name
+        self._module_dict = dict()
+        self._children = dict()
+        self._scope = self.infer_scope() if scope is None else scope
+
+        if build_func is None:
+            if parent is not None:
+                self.build_func = parent.build_func
+            else:
+                self.build_func = build_from_cfg
+        else:
+            self.build_func = build_func
+        if parent is not None:
+            assert isinstance(parent, Registry)
+            parent._add_children(self)
+            self.parent = parent
+        else:
+            self.parent = None
+
+    def __len__(self):
+        return len(self._module_dict)
+
+    def __contains__(self, key):
+        return self.get(key) is not None
+
+    def __repr__(self):
+        pass  # omit
+
+    @staticmethod
+    def infer_scope():
+        filename = inspect.getmodule(inspect.stack()[2][0]).__name__
+        split_filename = filename.split('.')
+        return split_filename[0]
+
+    @staticmethod
+    def split_scope_key(key):
+        """Examples:
+            >>> Registry.split_scope_key('mmdet.ResNet')
+            'mmdet', 'ResNet'
+            >>> Registry.split_scope_key('ResNet')
+            None, 'ResNet'
+        """
+        split_index = key.find('.')
+        if split_index != -1:
+            return key[:split_index], key[split_index + 1:]
+        else:
+            return None, key
+
+    @property
+    def name(self):
+        return self._name
+
+    @property
+    def scope(self):
+        return self._scope
+
+    @property
+    def module_dict(self):
+        return self._module_dict
+
+    @property
+    def children(self):
+        return self._children
+
+    def get(self, key):
+        """Get the registry record.
+
+        Args:
+            key (str): The class name in string format.
+
+        Returns:
+            class: The corresponding class.
+        """
+        scope, real_key = self.split_scope_key(key)
+        if scope is None or scope == self._scope:
+            # get from self
+            if real_key in self._module_dict:
+                return self._module_dict[real_key]
+        else:
+            # get from self._children
+            if scope in self._children:
+                return self._children[scope].get(real_key)
+            else:
+                # goto root
+                parent = self.parent
+                while parent.parent is not None:
+                    parent = parent.parent
+                return parent.get(key)
+
+    def build(self, *args, **kwargs):
+        return self.build_func(*args, **kwargs, registry=self)
+
+    def _add_children(self, registry):
+        """Add children for a registry.
+
+        The ``registry`` will be added as children based on its scope.
+        The parent registry could build objects from children registry.
+
+        Example:
+            >>> models = Registry('models')
+            >>> mmdet_models = Registry('models', parent=models)
+            >>> @mmdet_models.register_module()
+            >>> class ResNet:
+            >>>     pass
+            >>> resnet = models.build(dict(type='mmdet.ResNet'))
+        """
+
+        assert isinstance(registry, Registry)
+        assert registry.scope is not None
+        assert registry.scope not in self.children, \
+            f'scope {registry.scope} exists in {self.name} registry'
+        self.children[registry.scope] = registry
+
+    def _register_module(self, module_class, module_name=None, force=False):
+        if not inspect.isclass(module_class):
+            raise TypeError('module must be a class, '
+                            f'but got {type(module_class)}')
+
+        if module_name is None:
+            module_name = module_class.__name__
+        if isinstance(module_name, str):
+            module_name = [module_name]
+        for name in module_name:
+            if not force and name in self._module_dict:
+                raise KeyError(f'{name} is already registered '
+                               f'in {self.name}')
+            self._module_dict[name] = module_class
+
+    def deprecated_register_module(self, cls=None, force=False):
+        warnings.warn(
+            'The old API of register_module(module, force=False) '
+            'is deprecated and will be removed, please use the new API '
+            'register_module(name=None, force=False, module=None) instead.')
+        if cls is None:
+            return partial(self.deprecated_register_module, force=force)
+        self._register_module(cls, force=force)
+        return cls
+
+    def register_module(self, name=None, force=False, module=None):
+        """Register a module.
+
+        A record will be added to `self._module_dict`, whose key is the class
+        name or the specified name, and value is the class itself.
+        It can be used as a decorator or a normal function.
+
+        Example:
+            >>> backbones = Registry('backbone')
+            >>> @backbones.register_module()
+            >>> class ResNet:
+            >>>     pass
+
+            >>> backbones = Registry('backbone')
+            >>> @backbones.register_module(name='mnet')
+            >>> class MobileNet:
+            >>>     pass
+
+            >>> backbones = Registry('backbone')
+            >>> class ResNet:
+            >>>     pass
+            >>> backbones.register_module(ResNet)
+
+        Args:
+            name (str | None): The module name to be registered. If not
+                specified, the class name will be used.
+            force (bool, optional): Whether to override an existing class with
+                the same name. Default: False.
+            module (type): Module class to be registered.
+        """
+        if not isinstance(force, bool):
+            raise TypeError(f'force must be a boolean, but got {type(force)}')
+        # NOTE: This is a walkaround to be compatible with the old api,
+        # while it may introduce unexpected bugs.
+        if isinstance(name, type):
+            return self.deprecated_register_module(name, force=force)
+
+        # raise the error ahead of time
+        if not (name is None or isinstance(name, str) or is_seq_of(name, str)):
+            raise TypeError(
+                'name must be either of None, an instance of str or a sequence'
+                f'  of str, but got {type(name)}')
+
+        # use it as a normal method: x.register_module(module=SomeClass)
+        if module is not None:
+            self._register_module(
+                module_class=module, module_name=name, force=force)
+            return module
+
+        # use it as a decorator: @x.register_module()
+        def _register(cls):
+            self._register_module(
+                module_class=cls, module_name=name, force=force)
+            return cls
+
+        return _register
+```
+
+
 
 ```python
 # 感觉设计略有不妥，这个函数实际上只能在__init__中被调用
 @staticmethod
 def infer_scope():
-    """Infer the scope of registry.
-
-        The name of the package where registry is defined will be returned.
-
-        Example:
-            # in mmdet/models/backbone/resnet.py
-            >>> MODELS = Registry('models')
-            >>> @MODELS.register_module()
-            >>> class ResNet:
-            >>>     pass
-            The scope of ``ResNet`` will be ``mmdet``.
-
-
-        Returns:
-            scope (str): The inferred scope name.
-        """
-    # inspect.stack() trace where this function is called, the index-2
-    # indicates the frame where `infer_scope()` is called
-    
     # inspect.stack()[0]是infer_scope函数
     # inspect.stack()[1]是__init__函数
     # inspect.stack()[2]为调用Registry()处
@@ -278,12 +516,6 @@ def infer_scope():
     split_filename = filename.split('.')
     return split_filename[0]
 ```
-
-
-
-
-
-
 
 ### Registry 实例：
 

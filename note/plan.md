@@ -68,3 +68,5 @@ vim 的基本使用与插件
 Python自带的数据库：sqlite3
 
 代码文档自动生成：[MkDocs](https://www.mkdocs.org/)，使用例子：[Spektral](https://github.com/danielegrattarola/spektral/)
+
+JPG 与 PNG 格式详解（可以看看冈萨雷斯的书上是否有记录）
