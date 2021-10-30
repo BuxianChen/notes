@@ -4,9 +4,10 @@
 
 ## Popular
 
-* [python:draft](language/python_draft.md)
+* [Python environment](language/python/python_environment_usage.md)
+* [Advanced Python](language/python/python_advanced.md)
+* [Python Packages](language/python/python_packages.md)
 * [Pytorch](note/pytorch.md)
-* [炼丹](note/dl.md)
 * [TODO LIST](note/plan.md)
 
 ## Tool
@@ -23,3 +24,4 @@
   * [opencv](note/opencv/opencv.md)
 * [draft](note/draft.md)
 
+- [炼丹](note/dl.md)
