@@ -800,5 +800,18 @@ target = source.clone().detach()
 target = source.clone().detach().to("cuda:1").requires_grad_(True)
 ```
 
+## Tricks and Discusions
+
+### 为什么 torchvision 使用 PIL 而非 CV2？
+
+可参考[stackoverflow问答](https://stackoverflow.com/questions/61346009/why-is-pil-used-so-often-with-pytorch)
+
+目前 torchvision 也可以选择图像处理的后端，按官方说法：accimage 一般比 PIL 要快一些，但支持的操作不完善
+
+```python
+torchvision.set_image_backend(backend)
+# backend可以选择"PIL"或者"accimage"
+```
+
 ## 范例（待补充）
 

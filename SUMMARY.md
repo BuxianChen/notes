@@ -21,8 +21,9 @@
 ## Note
 
 * [CV](note/cv.md)
-  * [mmlab](note/mm/mm.md)
-  * [opencv](note/opencv/opencv.md)
+  * [mmlab](note/mmlab.md)
+  * [opencv](note/opencv.md)
 * [draft](note/draft.md)
 
 - [炼丹](note/dl.md)
+

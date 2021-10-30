@@ -836,5 +836,9 @@ class BaseModule(nn.Module, metaclass=ABCMeta):
 ```
 ```
 
+## Tricks and Discussion and Have Fun
 
+### 为什么叫 mmdetection？
+
+参考[知乎](https://zhuanlan.zhihu.com/p/406445141)，因为 mmlab 开源项目起源于香港中文大学的多媒体实验室，多媒体（multi-media）
 
