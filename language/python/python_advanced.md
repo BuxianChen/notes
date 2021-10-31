@@ -1081,7 +1081,7 @@ class MessageWriter(object):
     def __init__(self, filename):
         self.file_name = filename
 
-    # 此处需要定义为生成器而不能是函数
+    # 此处需要定义为生成器而不能是函数，并且该迭代器必须只能有一个
     @contextmanager
     def open_file(self):
         try:
@@ -1095,10 +1095,10 @@ with message_writer.open_file() as my_file:
     my_file.write('Hello world')
 ```
 
-执行顺序为: 首先`open_file`函数被调用, 并且将返回值`file`传递给`my_file`, 之后执行with语句内部的`write`方法, 之后再回到open\_file方法的`yeild file`后继续执行. 可以简单理解为:
+执行顺序为：首先 `open_file` 函数被调用，并且将返回值 `file` 传递给 `my_file`，之后执行 with 语句内部的`write` 方法, 之后再回到 `open_file` 方法的 `yeild file` 后继续执行。可以简单理解为：
 
-* open_file函数从第一个语句直到第一个yield语句为\`\_enter_\`
-* open_file函数从第一个yield语句到最后为\`\_exit_\`
+* open_file函数从第一个语句直到第一个yield语句为`__enter__`
+* open_file函数从第一个yield语句到最后为`__exit__`
 
 #### 5.4 "复合"with语句
 

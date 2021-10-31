@@ -319,7 +319,7 @@ for epoch in range(epochs):
         # torch.nn.utils.clip_grad_norm_(model.parameters(), max_norm)
         scaler.step(optimizer)
         scaler.update()
-        opt.zero_grad()
+        optimizer.zero_grad()
 ```
 
 其中第11行及第12行只有在需要对梯度做修改时才需要做, 此时需要对这两行同时取消注释.
@@ -502,6 +502,14 @@ class torch.nn.DataParallel(module, device_ids=None, output_device=None, dim=0)
 
 #### torch/distributed/launch.py
 
+##### 使用
+
+参考 Github 项目：[分布式训练的例子](https://github.com/tczhangzhi/pytorch-distributed)
+
+[pytorch-src/dist_example.py](pytorch-src/dist_example.py)
+
+##### 原理 & 源码
+
 有时会见到以这种方式启动训练脚本
 
 ```shell
@@ -583,12 +591,47 @@ def main():
         process = subprocess.Popen(cmd, env=current_env)
         processes.append(process)
     for process in processes:
-        process.wait()
+        process.wait()  # 等待所有子进程结束
         if process.returncode != 0:
             raise subprocess.CalledProcessError(returncode=process.returncode,cmd=cmd)
 if __name__ == "__main__":
     main()
 ```
+
+
+
+例如：使用下面的命令启动训练脚本 `train.py` 时
+
+```
+python -m torch.distributed.launch --nproc_per_node=2 --nnodes=1 --node_rank=0 train.py --lr 0.2 --layers 34 -m 7
+```
+
+launch 脚本实际做的事情是利用 train.py 之前的参数设定开的进程的环境变量
+
+```
+--nnodes
+--node_rank
+--nproc_per_node
+--master_addr
+--master_port
+--use_env
+-m, --module
+--no_python
+# training_script
+# training_script_args
+```
+
+备注：由于REMAINDER的特性，training_script_args仍然会包含 `["-m", "7"]`
+
+最终转换为开启多个进程执行
+
+```
+XXX=111 YYY=111 python -u train.py --local_rank={k} --lr 0.2 --layers 34 -m 7
+```
+
+因此，使用这个脚本时，train.py 必须能解析 --local_rank 这个参数
+
+
 
 **原理**
 
