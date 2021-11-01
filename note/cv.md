@@ -371,7 +371,7 @@ txt_mask_draw.text((100, 50), "font", (0, 0, 255))  # (100, 50)为左上角坐�
 txt_mask.save("a.png")
 ```
 
-备注：`PIL.ImageDraw.Draw.text` 函数的文字位置参数指的是文字的左上角坐标，而 `cv2.putText` 函数中的文字位置参数指的是文字的左下角坐标。
+备注：`PIL.ImageDraw.Draw.text` 函数的文字位置参数指的是文字的左上角坐标，而 `cv2.putText` 函数中的文字位置参数默认为文字的左下角坐标。
 
 ### base64
 
