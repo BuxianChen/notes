@@ -239,7 +239,11 @@ cv2.putText(image, text, org, font, fontScale, color, thickness=1, lineType=cv2.
 cv2.putText(image, "mark", (100, 200), cv2.FONT_HERSHEY_COMPLEX, 5, (0, 0, 255), thickness=2, bottomLeftOrigin=True)
 ```
 
+获取字体大小
+
 #### 添加线、矩形、多边形
+
+**画线段**
 
 ```python
 cv2.line(img, pt1, pt2, color[, thickness, lineType[, shift]])
@@ -247,28 +251,48 @@ cv2.line(img, pt1, pt2, color[, thickness, lineType[, shift]])
 cv2.line(img, (10, 10), (200, 10), (0, 0, 255))
 ```
 
+**画矩形**
+
+```python
+cv2.rectangle(img, pt1, pt2, color[, thickness[, lineType[, shift]]]) -> img
+# pt1, pt2为左上与右下角的坐标
+cv2.rectangle(image, (10, 10), (20, 30), (0, 0, 255))
+```
+
+**画多边形**
+
+方法一：使用 `cv2.polylines`
+
 ```python
 # 此函数用于画多个相同b多边形
-cv2.ploylines(img, pts, isClosed, color[, thickness[, lineType, [shift]]])
+cv2.polylines(img, pts, isClosed, color[, thickness[, lineType, [shift]]])
 # pts 的传参方式很诡异:
 
 # 画一个四边形
 # (1)pts可以使用一个长度为1的列表, 列表内为一个(4, 2)形状的数组: [(4, 2)]
 # (2)pts也可以使用一个形状为(1, 4, 2)的数组: (1, 4, 2)
 pts = np.array([[10, 10], [30, 30], [20, 30], [10, 20]])
-cv2.ploylines(img, [pts], True, (0, 0, 255))
+cv2.polylines(img, [pts], True, (0, 0, 255))
 
 # 画K个多四边形
 # (1)pts可以使用一个长度为K的列表, 列表内为一个(4, 2)形状的数组: [(4, 2),...,(4,2)]
 # (2)pts也可以使用一个形状为(K, 4, 2)的数组: (K, 4, 2)
 pts = np.array([[[10, 10], [30, 30], [20, 30], [10, 20]],
                 [[110, 110], [130, 130], [120, 130], [110, 120]]])
-cv2.ploylines(img, pts, True, (0, 0, 255))
+cv2.polylines(img, pts, True, (0, 0, 255))
 
 # 诡异的是 [(4, 1, 2)], [(1, 4, 2)] 这种传法也是对的
 ```
 
+方法二：使用 `cv2.drawContours`
 
+```python
+cv2.drawContours(image, contours, contourIdx, color[, thickness[, lineType[, hierarchy[, maxLevel[, offset]]]]]) -> image
+# contours为一个二维数组的列表, 二维数组的形状为(K, 2)
+# contoursIdx为一个整数, 表示要画那个, 若取值为-1, 则表示全部画出
+contours = np.array([[20, 20], [40, 20], [40, 40], [30, 30], [20, 40]])
+cv2.drawContours(image, [contours], 0, (0, 0, 255))
+```
 
 ### 图像变换
 
