@@ -139,6 +139,16 @@ subprocess.run(cmd, shell=True)  #正常运行
 * windows下`cmd`是一个shell, 而平时所说的`dos`是一种操作系统的名字, 而`dos命令`是这个操作系统中的命令. `cmd`窗口下的能执行的命令与`dos`命令有许多重叠之处, 但不能混为一谈.
 * 所谓`shell`, 这是一个操作系统中的概念, 不同的操作系统有不同的`shell`, 常见的有: windows下的`cmd`\(命令行shell\), powershell\(命令行shell\), windows terminal\(命令行shell\), 文件资源管理器\(图形化shell\); linux下的bash\(命令行shell, 全称: Bourne Again shell\), shell是一种脚本语言.
 
+**subprocess.check_output**
+
+用于执行脚本得到输出结果
+
+```python
+import subprocess
+output = subprocess.check_output(["echo", "abc"], shell = False)
+output.decode()
+```
+
 ### multiprocessing
 
 #### Processing

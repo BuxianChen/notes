@@ -42,6 +42,13 @@ OCR 文字识别：SAR
 
 mmcv，mmdetection（目标：不使用开发模式安装mmdet来开发项目），mmOCR
 
+- [ ] mmcv：
+  - DataContainer（mmcv/parallel/data_container.py）
+  - MMDistributedDataParallel（mmcv/parallel/distributed.py）
+  - save_checkpoint（mmcv/runner/checkpoint.py）
+  - BaseRunner（mmcv/runner/base_runner.py）
+  - Hook（mmcv/runner/hooks/hook.py）
+
 YOLOv5（弄清细节）
 
 - [x] [分布式训练的例子](https://github.com/tczhangzhi/pytorch-distributed)：2021/10/31 完成（还未测试成功）
