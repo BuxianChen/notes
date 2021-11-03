@@ -73,7 +73,7 @@ def accuracy(output, target, topk=(1, )):
 
         res = []
         for k in topk:
-            correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+            correct_k = correct[:k].reshape(-1).float().sum(0, keepdim=True)
             res.append(correct_k.mul_(100.0 / batch_size))
         return res
 
@@ -147,8 +147,8 @@ for epoch in range(10):
             losses.update(reduced_loss.item(), batch_y.size(0))
             top1.update(reduced_acc1.item(), batch_y.size(0))
             top5.update(reduced_acc5.item(), batch_y.size(0))
-    # I'm not sure the following line will print multiple time or not
-    print(f"loss: {losses.val}, top1: {top1.val}, top5: {top5.val}")
+    if local_rank == 0:
+        print(f"loss: {losses.val}, top1: {top1.val}, top5: {top5.val}")
 
     # ============ save checkpoint =============
     # you may want to save optimizer for resume

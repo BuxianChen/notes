@@ -70,6 +70,8 @@ vim 的基本使用与插件
 
 浏览器开发者工具的使用
 
+pdb 与 pudb
+
 ## 杂项
 
 数据转换：COCO-YOLOv5互转，mxnet RECORD格式，lmdb格式
