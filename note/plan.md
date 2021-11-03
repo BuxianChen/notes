@@ -4,7 +4,7 @@
 
 wandb：类似于 Tensorboard 的东西，待探索这类可视化工具对做实验是否有实际价值
 
-argparse：metavar
+argparse：metavar 等
 
 配置解析：easydict.EasyDict，addict，yacs
 
@@ -22,7 +22,7 @@ Pytorch
 
 多进程库的使用
 
-- [ ] pathlib：2021/11/3 完成
+- [ ] pathlib：2021/11/3 完成（记录笔记推迟），官方文档[链接](https://docs.python.org/zh-cn/3/library/pathlib.html#correspondence-to-tools-in-the-os-module)，发现对 os.path 模块基本可以替换掉，但某些非 os.path 的函数例如 os.walk 没有很好的替代品
 
 ## Deep Learning Papers and Corresponding Code
 
@@ -52,7 +52,7 @@ mmcv，mmdetection（目标：不使用开发模式安装mmdet来开发项目）
 YOLOv5（弄清细节）
 
 - [x] [分布式训练的例子](https://github.com/tczhangzhi/pytorch-distributed)：2021/10/31 完成（还未测试成功）
-- [ ] [GPU上进行数据预处理](https://github.com/NVIDIA/DALI)
+- [ ] [GPU上进行数据预处理：DALI](https://github.com/NVIDIA/DALI)
 
 [pdfminer](https://github.com/pdfminer/pdfminer.six)
 
@@ -71,6 +71,8 @@ vim 的基本使用与插件
 浏览器开发者工具的使用
 
 pdb 与 pudb
+
+git 换行符问题，参考[链接](https://adaptivepatchwork.com/2012/03/01/mind-the-end-of-your-line/)做笔记整理
 
 ## 杂项
 

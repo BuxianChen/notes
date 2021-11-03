@@ -316,6 +316,18 @@ git branch -D <待删除的分支名>  # 强制删除，即使被删除的分支
 git branch --set-upstream-to <远程仓库名>/<远程仓库分支名> <本地分支名>
 ```
 
+### git stash
+
+git stash 用于暂存一些文件，但不进行提交。参见例 4。
+
+```bash
+git stash  # 暂存
+git stash pop stash@{0}  # 将暂存的东西取出, 并且不保留该份存储
+git stash drop stash@{0}  # 丢弃某份存储
+git stash apply stash@{0}  # 将暂存的东西取出, 并且保留该份存储
+git stash clear  # 清除所有的暂存
+```
+
 ### git checkout/switch/restore
 
 git checkout 命令用于切换分支以及文件的版本切换作用
@@ -342,8 +354,8 @@ git checkout -- readme.txt # 将工作区回退到暂存区或版本库其中之
 **git switch**
 
 ```bash
-git checkout <branch_name>  # 注意：此处不能用commit_id进行切换，因此切换后必不为 detached 状态
-git checkout --detach <branch_name/commit_id>  # 切换后为 detached 状态
+git switch <branch_name>  # 注意：此处不能用commit_id进行切换，因此切换后必不为 detached 状态
+git switch --detach <branch_name/commit_id>  # 切换后为 detached 状态
 ```
 
 **git restore**
@@ -360,10 +372,17 @@ git restore -s dbv231 README.md # 将工作区恢文件内容恢复到特定提�
 分支合并的一般流程为：
 
 ```bash
+# step 1:
 git merge <branch_name>  # 将 branch_name 分支合并至当前分支
-# 手动解决冲突
+
+# step2: 手动解决冲突(即修改好发生冲突的文件)
+
+# step3: 将解决好了的冲突文件进行添加
 git add .
+
+# step 4: 继续合并
 git merge --continue  # 填写好提交信息后就完成了合并
+# 或者直接使用 git commit 也是ok的
 ```
 
 ### git rebase
@@ -820,6 +839,36 @@ git commit -m "add show_git.py 0.1.0 version"
   ```text
   ref: refs/heads/master
   ```
+
+### 例 4（git stash 与 git merge 综合实例）
+
+适用场景如下，例如：master 分支为线上分支，现在需要开发一个新功能，则基于该分支创建一个 dev 分支，但还没修改完毕并且不想提交时，发现 master 分支上出现了 bug，需紧急修复。此时直接使用 `git branch master` 会报错，此时可以使用 git stash 命令将改动的文件暂存，这样便可以正常切换分支。完整过程如下
+
+```bash
+# 在dev分支上做了一些还不想提交的修改
+git stash  # 暂存所有修改过的文件，但不产生提交
+git checkout master
+git checkout -b bug
+
+# 修复bug后, 将bug与master合并
+git merge master
+git checkout master
+git merge bug  # Fast-forward, 不会有冲突
+git branch -d bug  # 删除bug分支
+
+git checkout dev
+git stash list  # 展示暂存的东西
+git stash pop stash@{0}  # 将暂存的东西取出, 并且不保留该份存储
+# 对dev分支修改完毕后
+git commit
+git merge master
+# 解决冲突
+git add .
+git merge --continue
+git checkout master
+git merge dev  # Fast-forward, 不会有冲突
+git branch -d dev
+```
 
 ## Git 合作模式
 
