@@ -93,6 +93,8 @@ mmdetection 内置的模型通常使用配置文件，放置在 `mmdetection/con
 
 ### 进阶：Config.fromfile 方法的实现细节
 
+- 注意：可以在配置文件中配置 `custom_imports`，这样可以不对源码进行修改添加自定义的模型或数据集
+
 
 ```python
 # source code: mmcv.utils.config.py
@@ -517,6 +519,19 @@ def infer_scope():
     return split_filename[0]
 ```
 
+### Registry 的默认 `build_func`
+
+如上所述
+
+```
+class Registry:
+	def __init__(self, name, build_func=None, parent=None, scope=None)
+```
+
+
+
+
+
 ### Registry 实例：
 
 ```python
@@ -836,9 +851,91 @@ class BaseModule(nn.Module, metaclass=ABCMeta):
 ```
 ```
 
+## 记录
+
+### mmdetction 2.16.0
+
+```
+_base_
+  - datasets/
+  - models/
+  - schedules/
+    - schedule_1x.py
+    - schedule_2x.py
+    - schedule_20e.py
+```
+
+`configs/_base_/schedules` 里的区别只在于
+
+```python
+# schedule_*.py
+# optimizer
+optimizer = dict(type='SGD', lr=0.02, momentum=0.9, weight_decay=0.0001)
+optimizer_config = dict(grad_clip=None)
+# learning policy
+lr_config = dict(
+    policy='step',
+    warmup='linear',
+    warmup_iters=500,
+    warmup_ratio=0.001,
+    step=[8, 11])  # 1x为[8, 11], 2x为[16, 22], 20e为[16, 19]
+runner = dict(type='EpochBasedRunner', max_epochs=12)  # 1x为12, 2x为24, 20e为20
+```
+
+一个把配置文件打印出来的工具
+
+```
+python tools/misc/print_config.py configs/htc/htc_r50_fpn_1x_coco.py
+```
+
+
+
+`tools/train.py` 可以同时支持分布式与非分布式的启动方式
+
+分布式启动的脚本如下（`tools/dist_train.sh`）：
+
+```bash
+#!/usr/bin/env bash
+
+CONFIG=$1
+GPUS=$2
+PORT=${PORT:-29500}
+
+PYTHONPATH="$(dirname $0)/..":$PYTHONPATH \
+python -m torch.distributed.launch --nproc_per_node=$GPUS --master_port=$PORT \
+    $(dirname "$0")/train.py $CONFIG --launcher pytorch ${@:3}
+```
+
+直接单卡启动最简的启动方式为
+
+```bash
+python tools/train.py configs/cityscapes/cascade_mask_rcnn_r50_augfpn_autoaug_10e_cityscapes.py
+```
+
+以分布式的方式启动时，train.py脚本中存在以下语句，不知道是否写的太死
+
+```python
+if args.launcher == 'none':
+    distributed = False
+else:
+    distributed = True
+    init_dist(args.launcher, **cfg.dist_params)
+    # re-set gpu_ids with distributed training mode
+    _, world_size = get_dist_info()
+    cfg.gpu_ids = range(world_size)  # 此处将gpu_ids写死了, 而dist_train.sh脚本并未设置CUDA_VISIBLE_DEVICES
+```
+
+
+
+
+
 ## Tricks and Discussion and Have Fun
 
 ### 为什么叫 mmdetection？
 
 参考[知乎](https://zhuanlan.zhihu.com/p/406445141)，因为 mmlab 开源项目起源于香港中文大学的多媒体实验室，多媒体（multi-media）
+
+```
+mmdetection 1.1.0  commit id   4c21f7ff
+```
 

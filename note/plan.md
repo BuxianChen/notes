@@ -4,7 +4,11 @@
 
 wandb：类似于 Tensorboard 的东西，待探索这类可视化工具对做实验是否有实际价值
 
-argparse：metavar 等
+argparse：
+
+- metavar
+
+- `mmcv/utils/config.py:DictAction` 继承自 `argparse.Action`，但似乎不能解析多重字典
 
 配置解析：easydict.EasyDict，addict，yacs
 
