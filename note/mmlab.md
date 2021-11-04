@@ -521,14 +521,133 @@ def infer_scope():
 
 ### Registry 的默认 `build_func`
 
-如上所述
+如上所述，mmcv 1.3.16 版本
 
-```
+```python
 class Registry:
-	def __init__(self, name, build_func=None, parent=None, scope=None)
+	def __init__(self, name, build_func=None, parent=None, scope=None):
+        pass
+	def build(self, *args, **kwargs):
+        return self.build_func(*args, **kwargs, registry=self)
+```
+
+此处的 `build_func` 的默认值为 `build_from_cfg(cfg, registry, default_args=None)`，而这个函数的作用就是利用 `cfg` 的 `"type"` 字段取出，其余参数用于创建实例。
+
+
+
+`mmcv.cnn.MODELS` 所使用的 `build_func` 使用的是如下：
+
+```python
+def build_model_from_cfg(cfg, registry, default_args=None):
+    if isinstance(cfg, list):
+        modules = [
+            build_from_cfg(cfg_, registry, default_args) for cfg_ in cfg
+        ]
+        return Sequential(*modules)
+    else:
+        return build_from_cfg(cfg, registry, default_args)
+```
+
+即如果传入参数 `cfg` 是字典，则使用默认的 `build_from_cfg`，如果是列表则依次使用默认的 `build_from_cfg`。
+
+
+
+而 mmdetection 2.18.0 的 `tools/train.py` 中用如下方式调用
+
+```python
+model = build_detector(cfg.model, train_cfg=cfg.get('train_cfg'), test_cfg=cfg.get('test_cfg'))
+```
+
+的 `mmdet/models/builder.py:build_detector` 源码如下
+
+```python
+def build_detector(cfg, train_cfg=None, test_cfg=None):
+    """Build detector."""
+    if train_cfg is not None or test_cfg is not None:
+        warnings.warn(
+            'train_cfg and test_cfg is deprecated, '
+            'please specify them in model', UserWarning)
+    assert cfg.get('train_cfg') is None or train_cfg is None, \
+        'train_cfg specified in both outer field and model field '
+    assert cfg.get('test_cfg') is None or test_cfg is None, \
+        'test_cfg specified in both outer field and model field '
+    return DETECTORS.build(
+        cfg, default_args=dict(train_cfg=train_cfg, test_cfg=test_cfg))
+```
+
+备注：在之前的 mmdetection 版本中，最初的 `.py` 配置文件里 `model`，`train_cfg`，`test_cfg` 是并列的关系。而在此 mmdetection 版本中，后两者被包在前者里面。此处仅仅是为了兼容性，因此实际上等同于调用
+
+```python
+build_detector(cfg.model, None, None)
+DETECTORS.build(cfg.model, {train_cfg: None, test_cfg: None})
+```
+
+因此本质上是调用 `DETECTOR.build`。
+
+然而，mmdetection 中的迭代器实际上在 `mmdet/models/builder.py` 被一起定义了，其 `build_func` 直接沿用了 `mmcv.cnn.MODELS`
+
+```python
+from mmcv.cnn import MODELS as MMCV_MODELS
+from mmcv.utils import Registry
+
+MODELS = Registry('models', parent=MMCV_MODELS)
+
+BACKBONES = MODELS
+NECKS = MODELS
+ROI_EXTRACTORS = MODELS
+SHARED_HEADS = MODELS
+HEADS = MODELS
+LOSSES = MODELS
+DETECTORS = MODELS
 ```
 
 
+
+而 mmdetection 2.18.0 的 `tools/train.py` 中用如下方式调用
+
+```python
+datasets = [build_dataset(cfg.data.train)]
+if len(cfg.workflow) == 2:
+    val_dataset = copy.deepcopy(cfg.data.val)
+    val_dataset.pipeline = cfg.data.train.pipeline
+    datasets.append(build_dataset(val_dataset))
+```
+
+而 `mmdet/datasets/builder.py` 的 `build_dataset` 源码为递归方式（如果 `cfg` 参数中的 `"type"` 为特殊取值，则特殊处理，这些特殊的类都被注册在 `DATASETS` 里）：
+
+- 最常用的情况：cfg 本身为字典的列表，则逐个调用 `build_dataset` 后再包一层 `ConcatDataset`
+
+- ConcatDataset及其他情况基本都假定 `cfg.datasets` 是一个字典的列表
+
+```python
+DATASETS = Registry('dataset')
+PIPELINES = Registry('pipeline')
+
+def build_dataset(cfg, default_args=None):
+    from .dataset_wrappers import (ConcatDataset, RepeatDataset,
+                                   ClassBalancedDataset, MultiImageMixDataset)
+    if isinstance(cfg, (list, tuple)):
+        dataset = ConcatDataset([build_dataset(c, default_args) for c in cfg])
+    elif cfg['type'] == 'ConcatDataset':
+        dataset = ConcatDataset(
+            [build_dataset(c, default_args) for c in cfg['datasets']],
+            cfg.get('separate_eval', True))
+    elif cfg['type'] == 'RepeatDataset':
+        dataset = RepeatDataset(
+            build_dataset(cfg['dataset'], default_args), cfg['times'])
+    elif cfg['type'] == 'ClassBalancedDataset':
+        dataset = ClassBalancedDataset(
+            build_dataset(cfg['dataset'], default_args), cfg['oversample_thr'])
+    elif cfg['type'] == 'MultiImageMixDataset':
+        cp_cfg = copy.deepcopy(cfg)
+        cp_cfg['dataset'] = build_dataset(cp_cfg['dataset'])
+        cp_cfg.pop('type')
+        dataset = MultiImageMixDataset(**cp_cfg)
+    elif isinstance(cfg.get('ann_file'), (list, tuple)):
+        dataset = _concat_dataset(cfg, default_args)
+    else:
+        dataset = build_from_cfg(cfg, DATASETS, default_args)
+```
 
 
 
@@ -626,6 +745,19 @@ model = dict(
 )
 train_cfg = ...
 test_cfg = ...
+```
+
+真正复杂的逻辑发生在
+
+```
+train_detector(
+    model,
+    datasets,
+    cfg,
+    distributed=distributed,
+    validate=(not args.no_validate),
+    timestamp=timestamp,
+    meta=meta)
 ```
 
 ### 运行实例：Yolov3
@@ -925,7 +1057,7 @@ else:
     cfg.gpu_ids = range(world_size)  # 此处将gpu_ids写死了, 而dist_train.sh脚本并未设置CUDA_VISIBLE_DEVICES
 ```
 
-
+### mmcv 1.3.16
 
 
 
