@@ -311,6 +311,18 @@ jupyter-notebook # jupyter-lab
 
 `A`: 在上方插入一个block, `B`: 在下方插入一个block
 
+## VSCode
+
+```
+{
+	"python.formatting.provider": "yapf"
+}
+```
+
+备注：
+
+- yapf，autopep8，black 均为将代码格式化的工具
+
 ## 调试
 
 pudb 调试快捷键
