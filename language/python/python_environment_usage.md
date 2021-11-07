@@ -131,11 +131,168 @@ __main__
   ImportError: attempted relative import with no known parent package
   ```
 
-## Ipython在终端的使用
+## 调试
 
-使用`ipython`启动, 如果要在一个cell中输入多行, 则可以使用`ctrl+o`快捷键, 注意不要连续使用两个`enter`或者在最后一行输入`enter`, 否则会使得当前cell被运行
+pudb 调试快捷键
 
-[一个不那么好的教程](https://www.xspdf.com/resolution/50080150.html)
+pdb 调试
+
+使用 VSCode 调试 Python 代码的 launch.json 文件模板
+
+```json
+{
+    // Use IntelliSense to learn about possible attributes.
+    // Hover to view descriptions of existing attributes.
+    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Python: load_detr.py",
+            "type": "python",
+            "request": "launch",
+            "program": "load_detr.py",
+            "console": "integratedTerminal",
+            "justMyCode": false,
+            "cwd": "${workspaceFolder}",
+            "args": []
+        }
+    ]
+}
+```
+
+## Python编程规范
+
+[参考链接](https://blog.csdn.net/u014636245/article/details/89813732)（待整理）
+
+### 1. 命名规范
+
+| 用途          | 命名原则 | 例子 |
+| :------------ | :------- | :--- |
+| 类            |          |      |
+| 函数/类的方法 |          |      |
+| 模块名        |          |      |
+| 变量名        |          |      |
+|               |          |      |
+|               |          |      |
+|               |          |      |
+
+### 2. 其他
+
+```python
+a = ()  # 空元组, 注意不能写为(,)
+a = (1,)  # 一个元素的元组, 注意不能写为(1), 否则`a`是一个整型数字1
+a = []  # 空列表, 注意不能写为[,]
+# 不要使用\换行, 可以用`()`, `[]`, `{}`形成隐式换行, 注意用这两种换行方式时第二行缩进多少是任意的, 
+
+# 列表与元组最后是否以逗号结尾要看具体情况
+a = ["a",
+    "b",]
+a = ["a", "b"]
+```
+
+### 3. 注解的规范
+
+[python PEP 484](https://www.python.org/dev/peps/pep-0484/)
+
+注意 Python 解释器不会真的按照注解来检查输入输出，这些信息只是为了方便程序员理解代码、代码文档自动生成以及 IDE 的自动提示。
+
+```python
+def f(a: int = 1, b: "string" = "") -> str:
+    a: int = 1
+    b: "str" = "a"
+    print(a, b)
+a: int = 1
+f.__annotations__
+```
+
+如果不使用这种方式进行注解，还可以利用 `.pyi` 文件。这种 `.pyi` 文件被称为存根文件（stub fiile），类似与 C 语言中的函数声明，详情可参考 [stackoverflow](https://stackoverflow.com/questions/59051631/what-is-the-use-of-stub-files-pyi-in-python) 问答，例如：
+
+```python
+# pkg.py文件内容
+def foo(x, y):
+    return x + y
+# pkg.pyi文件内容，注意省略号是语法的一部分
+def foo(x: int, y: int) -> int: ...
+```
+
+这种 `.pyi` 文件除了用于注释普通 `.py` 文件外，通常也用来注释 Python 包中引入的 C 代码。例如在 Pytorch 1.9.0 中，在 `torch/_C` 目录下就有许多 `.pyi` 文件，但注意这并不是 stub file，例如 `torch/_C/__init__.pyi` 文件关于 `torch.version` 的注解如下：
+
+```python
+# Defined in torch/csrc/Device.cpp
+class device:
+    type: str  # THPDevice_type
+    index: _int  # THPDevice_index
+
+    def __get__(self, instance, owner=None) -> device: ...
+
+    # THPDevice_pynew
+    @overload
+    def __init__(self, device: Union[_device, _int, str]) -> None: ...
+
+    @overload
+    def __init__(self, type: str, index: _int) -> None: ...
+
+    def __reduce__(self) -> Tuple[Any, ...]: ...  # THPDevice_reduce
+```
+
+关于注解的模块主要是 typing
+
+```python
+# Iterable等也在这里
+from typing import List
+print(isinstance([], List))  # True
+# 注意List不能实例化
+List([1])  # TypeError: Type List cannot be instantiated; use list() instead
+
+# collections模块内也有Iterable
+from collections.abc import Iterable
+isinstance([], Iterable)  # True
+```
+
+### 4. 避免pycharm中shadows name "xxx" from outer scope的警告
+
+以下是两个典型的情形\(注意: 这两段代码从语法及运行上说是完全正确的\)
+
+```python
+data = [4, 5, 6]
+def print_data(data):  # <-- Warning: "Shadows 'data' from outer scope
+    print data
+print_data(data)
+```
+
+```python
+# test1.py
+def foo(i: int):
+    print(i + 100)
+# test2.py
+from test1 import foo
+def bar(foo: int):  # <-- Warning: "Shadows 'foo' from outer scope
+    print(foo)
+bar(1)
+foo(10)
+```
+
+修改方式: 将形式参数重命名即可
+
+为何要做这种规范\([参考stackoverflow回答](https://stackoverflow.com/questions/20125172/how-bad-is-shadowing-names-defined-in-outer-scopes)\): 以第一段代码为例, 假设print\_data内部语句很多, 在开发过程中突然想将形式参数`data`重命名为`d`, 但可能会由于疏忽漏改了函数内部的某个`data`, 这样代码会出现不可预料的错误, 有时难以发现\(相对于这种情形: 假设一开始将形式参数命名为`d`, 现在希望将形式参数命名为`c`, 结果由于疏忽漏改了某个`d`, 这样程序会立刻报错\). 当然, 许多IDE对重命名做的很完善, 减少了上述错误发生的可能性.
+
+### 5. 工具
+
+配合 Git 的使用规范如下（[官方文档](https://pre-commit.com/)，[知乎简易指南](https://zhuanlan.zhihu.com/p/65820736)）
+
+- 安装：`pip install pre-commit`
+
+- 在与 `.git` 目录同级的目录下新建一个 `.pre-commit-config.yaml`
+
+- 在与 `.git` 目录同级的目录下运行
+
+  ```
+  pre-commit install
+  ```
+
+  这条命令将对 `.git/hooks` 目录新创建一个 `pre-commit` 文件，其内容是一个可执行脚本
+
+- 执行 `git commit` 时会自动触发上述钩子
 
 ## pip
 
@@ -276,6 +433,12 @@ conda env remove --name <env_name>
 conda env list
 ```
 
+## Ipython在终端的使用
+
+使用`ipython`启动, 如果要在一个cell中输入多行, 则可以使用`ctrl+o`快捷键, 注意不要连续使用两个`enter`或者在最后一行输入`enter`, 否则会使得当前cell被运行
+
+[一个不那么好的教程](https://www.xspdf.com/resolution/50080150.html)
+
 ## jupyter使用
 
 ### kernel添加与删除
@@ -322,33 +485,4 @@ jupyter-notebook # jupyter-lab
 备注：
 
 - yapf，autopep8，black 均为将代码格式化的工具
-
-## 调试
-
-pudb 调试快捷键
-
-pdb 调试
-
-使用 VSCode 调试 Python 代码的 launch.json 文件模板
-
-```json
-{
-    // Use IntelliSense to learn about possible attributes.
-    // Hover to view descriptions of existing attributes.
-    // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
-    "version": "0.2.0",
-    "configurations": [
-        {
-            "name": "Python: load_detr.py",
-            "type": "python",
-            "request": "launch",
-            "program": "load_detr.py",
-            "console": "integratedTerminal",
-            "justMyCode": false,
-            "cwd": "${workspaceFolder}",
-            "args": []
-        }
-    ]
-}
-```
 

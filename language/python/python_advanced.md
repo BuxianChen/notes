@@ -1,204 +1,6 @@
 # Python 高阶与最佳实践
 
-## Python编程规范
-
-[参考链接](https://blog.csdn.net/u014636245/article/details/89813732)（待整理）
-
-### 1. 命名规范
-
-| 用途          | 命名原则 | 例子 |
-| :------------ | :------- | :--- |
-| 类            |          |      |
-| 函数/类的方法 |          |      |
-| 模块名        |          |      |
-| 变量名        |          |      |
-|               |          |      |
-|               |          |      |
-|               |          |      |
-
-### 2. 其他
-
-```python
-a = ()  # 空元组, 注意不能写为(,)
-a = (1,)  # 一个元素的元组, 注意不能写为(1), 否则`a`是一个整型数字1
-a = []  # 空列表, 注意不能写为[,]
-# 不要使用\换行, 可以用`()`, `[]`, `{}`形成隐式换行, 注意用这两种换行方式时第二行缩进多少是任意的, 
-
-# 列表与元组最后是否以逗号结尾要看具体情况
-a = ["a",
-    "b",]
-a = ["a", "b"]
-```
-
-### 3. 注解的规范
-
-[python PEP 484](https://www.python.org/dev/peps/pep-0484/)
-
-注意 Python 解释器不会真的按照注解来检查输入输出，这些信息只是为了方便程序员理解代码、代码文档自动生成以及 IDE 的自动提示。
-
-```python
-def f(a: int = 1, b: "string" = "") -> str:
-    a: int = 1
-    b: "str" = "a"
-    print(a, b)
-a: int = 1
-f.__annotations__
-```
-
-如果不使用这种方式进行注解，还可以利用 `.pyi` 文件。这种 `.pyi` 文件被称为存根文件（stub fiile），类似与 C 语言中的函数声明，详情可参考 [stackoverflow](https://stackoverflow.com/questions/59051631/what-is-the-use-of-stub-files-pyi-in-python) 问答，例如：
-
-```python
-# pkg.py文件内容
-def foo(x, y):
-    return x + y
-# pkg.pyi文件内容，注意省略号是语法的一部分
-def foo(x: int, y: int) -> int: ...
-```
-
-这种 `.pyi` 文件除了用于注释普通 `.py` 文件外，通常也用来注释 Python 包中引入的 C 代码。例如在 Pytorch 1.9.0 中，在 `torch/_C` 目录下就有许多 `.pyi` 文件，但注意这并不是 stub file，例如 `torch/_C/__init__.pyi` 文件关于 `torch.version` 的注解如下：
-
-```python
-# Defined in torch/csrc/Device.cpp
-class device:
-    type: str  # THPDevice_type
-    index: _int  # THPDevice_index
-
-    def __get__(self, instance, owner=None) -> device: ...
-
-    # THPDevice_pynew
-    @overload
-    def __init__(self, device: Union[_device, _int, str]) -> None: ...
-
-    @overload
-    def __init__(self, type: str, index: _int) -> None: ...
-
-    def __reduce__(self) -> Tuple[Any, ...]: ...  # THPDevice_reduce
-```
-
-关于注解的模块主要是 typing
-
-```python
-# Iterable等也在这里
-from typing import List
-print(isinstance([], List))  # True
-# 注意List不能实例化
-List([1])  # TypeError: Type List cannot be instantiated; use list() instead
-
-# collections模块内也有Iterable
-from collections.abc import Iterable
-isinstance([], Iterable)  # True
-```
-
-### 4. 避免pycharm中shadows name "xxx" from outer scope的警告
-
-以下是两个典型的情形\(注意: 这两段代码从语法及运行上说是完全正确的\)
-
-```python
-data = [4, 5, 6]
-def print_data(data):  # <-- Warning: "Shadows 'data' from outer scope
-    print data
-print_data(data)
-```
-
-```python
-# test1.py
-def foo(i: int):
-    print(i + 100)
-# test2.py
-from test1 import foo
-def bar(foo: int):  # <-- Warning: "Shadows 'foo' from outer scope
-    print(foo)
-bar(1)
-foo(10)
-```
-
-修改方式: 将形式参数重命名即可
-
-为何要做这种规范\([参考stackoverflow回答](https://stackoverflow.com/questions/20125172/how-bad-is-shadowing-names-defined-in-outer-scopes)\): 以第一段代码为例, 假设print\_data内部语句很多, 在开发过程中突然想将形式参数`data`重命名为`d`, 但可能会由于疏忽漏改了函数内部的某个`data`, 这样代码会出现不可预料的错误, 有时难以发现\(相对于这种情形: 假设一开始将形式参数命名为`d`, 现在希望将形式参数命名为`c`, 结果由于疏忽漏改了某个`d`, 这样程序会立刻报错\). 当然, 许多IDE对重命名做的很完善, 减少了上述错误发生的可能性.
-
-## python模块导入\(待整理\)
-
-Note 1: 模块只会被导入一次 \(这意味着: 如果对模块进行了修改, 不能利用再次import的方式使修改后的代码生效\).
-
-```python
-# test.py文件内容如下
-print("abc")
-```
-
-```python
-# 假设test.py文件处于当前目录下
->>> import test
-abc
-# python的处理逻辑是按如下顺序去寻找test模块:
-# (1) 如果已存在于sys.modules(列表)中, 则不会再次导入
-# (2) built-in modules中是否有test, 如果有, 则将其导入, 并将test添加至sys.modules中.
-# (3) 依据sys.path(列表)中的目录查找. 注: 默认情况下, 列表的第0个元素为当前目录.
->>> import test        #不会再次导入
-```
-
-Note 2: 包是一种特殊的模块. python 3.3之后, 存在两种类型的包: 常规包与命名空间. 简单来说, 包是一个目录, 常规包的目录下有着`__init__.py`文件, 而命名空间则没有.
-
-```text
-parent/
-    __init__.py
-    one/
-        __init__.py
-    two/
-        __init__.py
-    three/
-        __init__.py
-```
-
-导入 `parent.one` 将隐式地执行 `parent/__init__.py` \(首先执行\) 和 `parent/one/__init__.py`. 后续导入 `parent.two` 或 `parent.three` 则将分别执行 `parent/two/__init__.py` 和 `parent/three/__init__.py`.
-
-Note 3:
-
-包具有属性`__path__` \(列表\) 与`__name__` \(字符串\), 模块只有`__name__`属性.
-
-Note 4:
-
-```python
-# 绝对导入能使用两种语法:
-# import <>
-# from <> import <>
-import test        #注意import的内容必须是一个模块而不能是模块内定义的函数
-from test import f    #可以import包或者函数等
-
-# 相对导入只能使用:
-# from <> import <>
-
-# 假设test1.py与test.py在同一目录下, 在test1.py中
-from .test import f
-# 注意: 假设在test.py同级目录下打开python交互解释器, 上述import语句会报错. 这是由于__main__的特殊性造成的. 具体细节还待考究, 注意__main__的特殊性.
->>> from .test import f
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-ModuleNotFoundError: No module named '__main__.test'; '__main__' is not a package
-```
-
-一个有趣的例子:
-
-```python
-# test文件内容
-print("abc")
-def f():
-    return 1
-```
-
-```python
-# 注意两点: (1)不能用这种语法引入函数; (2)执行顺序实际上是先执行test.py文件, 再导入test.f, 此时发现test不是一个包, 报错. 但注意, 虽然test.py文件被执行了, 但test模块并未被导入. 具体原因还有待研究.
->>> import test.f
-abc
-Traceback (most recent call last):
-  File "<stdin>", line 1, in <module>
-ModuleNotFoundError: No module named 'test.f'; 'test' is not a package
-```
-
-Note 5: 两种包的区别
-
-## Python高阶
-
-### 1. 装饰器
+## 1. 装饰器
 
 内置装饰器
 
@@ -292,9 +94,9 @@ class C:
 
 备注：property 本质上是一个 Descriptor，参见后面。
 
-### 2. 魔术方法与内置函数
+## 2. 魔术方法与内置函数
 
-#### 2.0 Python 官方文档
+### 2.0 Python 官方文档
 
 - 官方文档主目录：https://docs.python.org/3/
 - 对 Python 语言的一般性描述：https://docs.python.org/3/reference/index.html
@@ -305,7 +107,7 @@ class C:
 - Python HOWTOs（深入介绍一些主题，可以认为是官方博客）：https://docs.python.org/3/howto/index.html
   - Descriptor HowTo Guide：https://docs.python.org/3/howto/descriptor.html
 
-#### 2.1 object 类
+### 2.1 object 类
 
 ```python
 >>> dir(object())
@@ -324,7 +126,7 @@ set(dir(basic)) - set(dir(object))
 
 **`__weakref__`**
 
-#### 2.2 `__str__`、`__repr__` 特殊方法，str、repr 内置函数
+### 2.2 `__str__`、`__repr__` 特殊方法，str、repr 内置函数
 
 **从设计理念上说：两者都是将对象输出，一般而言，`__str__` 遵循可读性原则，`__repr__` 遵循准确性原则。**
 
@@ -360,7 +162,7 @@ __str__
 
 备注: 在 jupyter notebook 中, 对 `pandas` 的 `DataFrame` 使用 `print` 方法，打印出的结果不美观，但不用 `print` 却很美观，原因未知。
 
-#### 2.3 内置函数 vars 与 `__dict__` 属性
+### 2.3 内置函数 vars 与 `__dict__` 属性
 
 **从设计理念上说，`vars` 函数的作用是返回对象的属性名（不会包含方法及特殊属性）。`__dict__` 属性里保存着对象的属性名（不会包含方法以及特殊属性）。这里的特殊属性指的是 `__xxx__`。**
 
@@ -383,7 +185,7 @@ x.__dict__  # 必须定义为一个字典
 
 **`__dict__` 属性与 Python 的查找顺序（lookup chain）息息相关，详情见 Descriptor**。
 
-#### 2.4 `__slots__`属性
+### 2.4 `__slots__`属性
 
 **从设计理念上说，`__slots__` 属性的作用是规定一个类只能有那些属性，防止类的实例随意地动态添加属性。**
 
@@ -399,7 +201,7 @@ a.c = 3  # 报错
 
 注意：假设类 `B` 继承自定义了 `__slots__` 的类 `A`，那么子类 `B` 的实例不会受到父类 `__slots__` 的限制。
 
-#### 2.5 内置函数 dir 与 `__dir__` 方法
+### 2.5 内置函数 dir 与 `__dir__` 方法
 
 **从设计理念上说：不同于 vars 与 `__dict__`，dir 方法倾向于给出全部信息：包括特殊方法名**
 
@@ -459,7 +261,7 @@ Test: __getattribute__, args: __class__
 ['__class__', '__delattr__', '__dir__', '__doc__', '__eq__', '__format__', '__ge__', '__getattr__', '__getattribute__', '__gt__', '__hash__', '__init__', '__init_subclass__', '__le__', '__lt__', '__module__', '__ne__', '__new__', '__reduce__', '__reduce_ex__', '__repr__', '__setattr__', '__sizeof__', '__slots__', '__str__', '__subclasshook__', 'a', 'b', 'c']
 ```
 
-#### 2.6 `__getattr__`、`__getattribute__` 特殊方法，`getattr` 内置函数
+### 2.6 `__getattr__`、`__getattribute__` 特殊方法，`getattr` 内置函数
 
 **从设计理念上说，这三者的作用是使用属性名获取属性值，也适用于方法**
 
@@ -485,15 +287,15 @@ getattr(a, "_A__a")  # ok
 
 备注：如果要自定义 `__getattribute__` 函数，最好在其内部调用 `object.__getattribute__(self, name)`。
 
-#### 2.7 `delattr` 内置方法、`__delattr__` 特殊方法、del 语句
+### 2.7 `delattr` 内置方法、`__delattr__` 特殊方法、del 语句
 
 **作用：`__delattr__` 会拦截所有对属性的删除。**
 
-#### 2.8 `setattr` 内置方法、`__setattr__` 特殊方法
+### 2.8 `setattr` 内置方法、`__setattr__` 特殊方法
 
 **作用：`__setattr__` 会拦截所有对属性的赋值。**
 
-#### 2.9 Descriptor、`__get__`、`__set__`、`__del__`
+### 2.9 Descriptor、`__get__`、`__set__`、`__del__`
 
 参考： 
 
@@ -504,7 +306,7 @@ getattr(a, "_A__a")  # ok
 
 **注：大多数情况下，无须使用 Descriptor**
 
-##### 概念
+#### 概念
 
 按照如下要求实现了 `__get__`、`__set__`、`__delete__` 其中之一的类即满足 Descriptor 协议，称这样的类为 Descriptor（描述符） 。若没有实现 `__set__` 及 `__delete__` 方法，称为 **data descriptor**，否则称为 **non-data descriptor**。
 
@@ -515,7 +317,7 @@ __delete__(self, obj) -> None
 __set_name__(self, owner, name)
 ```
 
-##### Descriptor 的作用
+#### Descriptor 的作用
 
 在 Python 的底层，`staticmethod()`、`property()`、`classmethod()`、`__slots__` 都是借助 Descriptor 实现的。
 
@@ -543,7 +345,7 @@ __set_name__(self, owner, name)
 >
 > —— https://docs.python.org/3/reference/datamodel.html#invoking-descriptors
 
-##### 查找顺序
+#### 查找顺序
 
 完整的顺序如下，对于 `obj.x`，获得其值的查找顺序为：
 
@@ -619,7 +421,7 @@ print(type(my_car).__dict__['number_of_weels'])  # 等价于 mycar.number_of_whe
 print(type(my_car).__base__.__dict__['can_fly'])  # 等价于 mycar.can_fly
 ```
 
-##### 使用 Descriptor
+#### 使用 Descriptor
 
 需实现下列函数，实现 `__get__`、`__set__`、`__delete__` 其中之一即可，`__set_name__` 为 Python 3.6 引入的新特性，可选。参照例子解释：
 
@@ -662,7 +464,7 @@ my_third_foo_object = Foo()
 print(my_third_foo_object.number)
 ```
 
-##### 实用例子
+#### 实用例子
 
 **避免重复使用 `property`**
 
@@ -729,7 +531,7 @@ print(my_values.value1)
 print(my_values.value2)
 ```
 
-#### 2.10 pickle 与 `__setstate__`、`__getstate__` 方法
+### 2.10 pickle 与 `__setstate__`、`__getstate__` 方法
 
 某些时候，一个对象无法进行序列化，则可以自定义 `__getstate__`，在进行序列化时，只序列化 `__setstate__` 的返回值。另外，可自定义 `__setstate__` 方法，在反序列化时，利用 `__getstate__` 的返回值将对象恢复。具体可参考[官方文档](https://docs.python.org/3/library/pickle.html)。
 
@@ -756,9 +558,9 @@ print(a.a)  # "recover"
 
 更有意义的例子待补充
 
-### 3. 继承
+## 3. 继承
 
-#### MRO (Method Resolution Order) 与 C3 算法
+### MRO (Method Resolution Order) 与 C3 算法
 
 Python 在产生多继承关系时，由于子类可能有多个或多层父类，因此方法的搜索顺序（MRO, Method Resolution Order）很重要，同时，搜索顺序也涉及到类的属性。对于属性或者变量的访问，按照 MRO 的顺序依次搜索，直到找到匹配的属性或变量为止。对于每个类，可以使用如下代码来获取 MRO ：
 
@@ -834,7 +636,7 @@ L[A(B, C)] = A + merge(BEDO, CDFO, BC)
            = ABECDFO
 ```
 
-#### `super` 函数
+### `super` 函数
 
 参考资料：[RealPython](https://realpython.com/python-super/)、《Python Cookbook (3ed)》chapter 8.7。
 
@@ -885,7 +687,7 @@ C()
 
 备注：`super` 函数还有单参数的调用形式，参见 [stckoverflow](https://stackoverflow.com/questions/30190185/how-to-use-super-with-one-argument)（理解需要有许多前置知识）。
 
-### 4. 元类
+## 4. 元类
 
 参考资料：[RealPython](https://realpython.com/python-metaclasses/)，[Python 官方文档](https://docs.python.org/3/reference/datamodel.html#metaclasses)，
 
@@ -897,7 +699,7 @@ class A: pass
 class A(object, metaclass=type): pass
 ```
 
-#### `type` 函数
+### `type` 函数
 
 Python 中, type 函数是一个特殊的函数，调用形式有两种：
 
@@ -906,9 +708,9 @@ Python 中, type 函数是一个特殊的函数，调用形式有两种：
 
 
 
-#### `__new__` 函数与 `__init__` 函数（待补充）
+### `__new__` 函数与 `__init__` 函数（待补充）
 
-#### `abc` 模块
+### `abc` 模块
 
 `abc` 模块最常见是搭配使用 `ABCMeta` 与 `abstractmethod`。其作用是让子类必须重写父类用 `abstractmethod` 装饰的方法，否则在创建子类对象时就会报错。[参考](https://riptutorial.com/python/example/23083/why-how-to-use-abcmeta-and--abstractmethod)
 
@@ -953,13 +755,13 @@ a.foo()
 a.bar()  # 此时才会抛出异常
 ```
 
-### 5. with语法\(含少量contextlib包的笔记\)
+## 5. with语法\(含少量contextlib包的笔记\)
 
 主要是为了理解pytorch以及tensorflow中各种with语句
 
 主要[参考链接](https://www.geeksforgeeks.org/with-statement-in-python/)
 
-#### 5.1 读写文件的例子
+### 5.1 读写文件的例子
 
 首先厘清读写文件的一些细节
 
@@ -1011,7 +813,7 @@ finally:
 
 注意到一般情况下, 此处的foo与file是不一样的对象, 参见下节中关于`__enter__`方法的返回值. 但在文件读写的情形下, foo与file是相同的对象. 另外, `__exit__`函数有三个参数, 在自定义这个函数时也应该遵循三个参数的设计\(具体可以参考[这个问答](https://www.reddit.com/r/learnprogramming/comments/duvc2r/problem_with_classes_and_with_statement_in_python/)\).
 
-#### 5.2 with语法与怎么让自定义类支持with语法
+### 5.2 with语法与怎么让自定义类支持with语法
 
 > This interface of \_\_enter\_\_\(\) and \_\_exit\_\_\(\) methods which provides the support of with statement in user defined objects is called `Context Manager`.
 
@@ -1052,7 +854,7 @@ print(hasattr(x, "a"))  # False
 # x.__exit__(None, None, None)
 ```
 
-#### \*5.3 使用contextlib包中的函数来使得类支持with语法
+### \*5.3 使用contextlib包中的函数来使得类支持with语法
 
 按照上一节的做法, 可以使用如下写法让`MassageWriter`支持with语法
 
@@ -1100,7 +902,7 @@ with message_writer.open_file() as my_file:
 * open_file函数从第一个语句直到第一个yield语句为`__enter__`
 * open_file函数从第一个yield语句到最后为`__exit__`
 
-#### 5.4 "复合"with语句
+### 5.4 "复合"with语句
 
 ```python
 with open(in_path) as fr, open(out_path, "w") as fw:
@@ -1130,7 +932,7 @@ def rel2logic(in_path, logic_dir):
             fws[key].writerow([start_id, end_id, relation])
 ```
 
-### 6. for else语法
+## 6. for else语法
 
 ```python
 # 获取[1, n]中的所有素数
@@ -1145,13 +947,13 @@ for n in range(2, 10):
 # 来源于Cython文档里的例子
 ```
 
-### 7. python基本数据类型
+## 7. python基本数据类型
 
 int: 无限精度整数
 
 float: 通常利用`C`里的`double`来实现
 
-### 8. 函数的参数
+## 8. 函数的参数
 
 参考[知乎](https://www.zhihu.com/question/57726430/answer/818740295)
 
@@ -1206,7 +1008,7 @@ def foo(a, b=1, /, c=2, d=3, *, e=5, f, **kwargs): pass
 - 限定关键字形参，带默认值与不带默认值的形参顺序随意
 - 限定位置形参和普通形参，带默认值的形参必须位于不带默认值的形参之后
 
-### 9. 导包规则
+## 9. 导包规则
 
 参考：
 
@@ -1237,7 +1039,7 @@ def foo(a, b=1, /, c=2, d=3, *, e=5, f, **kwargs): pass
 
   目录，且目录下没有 `__init__.py` 文件
 
-#### 9.1 namespace
+### 9.1 namespace
 
 - built-in namespace (运行脚本里的变量)
 - global namespace
@@ -1269,7 +1071,7 @@ import .xx  # 不允许
 
 global namespace 需要额外进行说明，与 import 相关。
 
-#### 9.2 import 语法详解
+### 9.2 import 语法详解
 
 **绝对导入与相对导入**
 
@@ -1591,7 +1393,7 @@ sys.modules.pop("models")
 from models import a
 ```
 
-### 10. Python buid-in fuction and operation
+## 10. Python buid-in fuction and operation
 
 参考资料：[Python 标准库官方文档](https://docs.python.org/3/library/functions.html)
 
@@ -1641,9 +1443,9 @@ a or b  # a if bool(a)==True else b
 delattr(x, "foo")  # 等价于 del x.foo
 ```
 
-### 11. Python 内存管理与垃圾回收（待补充）
+## 11. Python 内存管理与垃圾回收（待补充）
 
-### 12. 怎么运行 Python 脚本（感觉没啥有价值的，考虑移除）
+## 12. 怎么运行 Python 脚本
 
 主要参考（翻译）自：[RealPython](https://realpython.com/run-python-scripts/)
 
@@ -1656,7 +1458,7 @@ delattr(x, "foo")  # 等价于 del x.foo
 - importlib
 - exec
 
-### 13. 迭代器与生成器
+## 13. 迭代器与生成器
 
 ```python
 class A:
@@ -1667,7 +1469,7 @@ a = A()  # a是一个可迭代对象(Iterable)
 iter(a)  # 返回的是一个生成器(特殊的迭代器)
 ```
 
-## python代码打包
+## 14. python代码打包
 
 ### 项目组织形式
 
@@ -2026,14 +1828,16 @@ xxx
 
 - [参考realpython](https://realpython.com/pypi-publish-python-package/#different-ways-of-calling-a-package)
 
-## 不能实例化的类
+## 附录 1
+
+### 不能实例化的类
 
 ```python
 from typing import List
 List[int]()  # 注意报错信息
 ```
 
-## python dict与OrderedDict
+### python dict与OrderedDict
 
 关于python自带的字典数据结构, 实现上大致为\([参考stackoverflow回答](https://stackoverflow.com/questions/327311/how-are-pythons-built-in-dictionaries-implemented)\):
 
@@ -2042,13 +1846,13 @@ List[int]()  # 注意报错信息
 
 说明: 这里的顺序是按照key被插入的顺序决定的, 举例
 
-## 深复制/浅复制/引用赋值
+### 深复制/浅复制/引用赋值
 
 引用赋值: 两者完全一样, 相当于是别名: `x=[1, 2, 3], y=x` 浅赋值: 第一层为复制, 内部为引用: `list.copy(), y=x[:]` 深复制: 全部复制, `import copy; x=[1, 2]; copy.deepcopy(x)`
 
 [Python 直接赋值、浅拷贝和深度拷贝解析 \| 菜鸟教程 \(runoob.com\)](https://www.runoob.com/w3cnote/python-understanding-dict-copy-shallow-or-deep.html)
 
-## Immutable与Hashable的区别
+### Immutable与Hashable的区别
 
 immutable是指创建后不能修改的对象, hashable是指定义了`__hash__`函数的对象, 默认情况下, 用户自定义的数据类型是hashable的. 所有的immutable对象都是hashable的, 但反过来不一定.
 

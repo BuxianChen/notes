@@ -149,7 +149,9 @@ output = subprocess.check_output(["echo", "abc"], shell = False)
 output.decode()
 ```
 
-### multiprocessing
+### multiprocessing（待补充）
+
+plan：先看懂python官方文档的introduction即可
 
 #### Processing
 

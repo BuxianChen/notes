@@ -1071,3 +1071,14 @@ else:
 mmdetection 1.1.0  commit id   4c21f7ff
 ```
 
+### 字典
+
+```python
+# 感觉mmdetection对字典用键列表索引的需求似乎很高, 也许可以独立成一个函数或者写成一个类
+class A:
+    def __init__(self):
+        self.data = {"a": 1, "b": 2}
+    def __getitem__(self, keys):
+        return {key: self.data[key] for key in keys}
+A()[["a", "b"]]
+```

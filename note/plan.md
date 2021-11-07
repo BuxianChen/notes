@@ -21,7 +21,7 @@ Pytorch
 - 提高显卡利用率
 - 多卡训练官方教程
 - Apex（timm中可以选择的并行方式）
-- 基础分类的 Demo Code：Dataset，DataLoader，transformers（图像增强），Optimizers，Scheduler，梯度剪裁，Loss，DistributeDataParallel
+- ~~基础分类的 Demo Code：Dataset，DataLoader，transformers（图像增强），Optimizers，Scheduler，梯度剪裁，Loss，DistributeDataParallel~~（已完成）
 - Pytorch 笔记完善
 
 多进程库的使用
@@ -77,6 +77,13 @@ vim 的基本使用与插件
 pdb 与 pudb
 
 git 换行符问题，参考[链接](https://adaptivepatchwork.com/2012/03/01/mind-the-end-of-your-line/)做笔记整理
+
+missing semester 第5课（记录在shell and linux中即可）
+
+- job control
+- tmux
+- dotfile 配置
+- remote
 
 ## 杂项
 
