@@ -854,6 +854,111 @@ do
 done
 ```
 
+## 第 5 课：命令行环境
+
+### 5.1 Job Control
+
+#### Signal
+
+一般来说，可以使用 `ctrl+c` 来中断程序，又或者使用 `kill -9 <pid>` 杀死进程。这些操作本质上是在给进程发信号（signal）。每个进程在运行中如果接收到信号，那么它必须处理这些信号。而 `kill` 命令的作用就是给进程发信号。
+
+```bash
+$ kill -SIGINT <pid>  # 等价于 kill -2 <pid>，也等价于按快捷键ctrl+c，表示发送中断信息
+$ kill -SIGKILL <pid>  # 等价于 kill -9 <pid>，表示发送杀死进程的信息
+```
+
+完整表格可参见 [man-pages](https://man7.org/linux/man-pages/man7/signal.7.html)
+
+| Signal  | 快捷键 | 默认行为                                   | x86/ARM 所代表的值 |
+| ------- | ------ | ------------------------------------------ | ------------------ |
+| SIGHUP  |        |                                            | 1                  |
+| SIGINT  | ctrl+c | 终止程序运行                               | 2                  |
+| SIGKILL |        | 杀死进程                                   | 9                  |
+| SIGSTOP | ctrl+z | 暂停进程运行                               | 19                 |
+| SIGCONT |        | 继续进程运行                               | 18                 |
+| SIGTERM |        | 终止程序运行                               | 15                 |
+| SIGQUIT | ctrl+\ | 终止程序运行，且终止程序前会进行 core dump | 3                  |
+
+备注：
+
+- core dump 又叫核心转储，当程序运行过程中发生异常，程序异常退出时，由操作系统把程序当前的内存状况存储在一个 core 文件中。但是否会生成该文件还需要打开一项设定：
+
+  ```bash
+  $ ulimit -c 100  # 表示设定允许的core文件的最大大小为100KB
+  $ ulimit -c unlimited  # 无限
+  $ ulimit -a  # 显示设定，第一行即为core文件大小的设定
+  ```
+
+某些信号允许程序自己定义如何进行处理，例如：
+
+```python
+#!/usr/bin/env python
+import signal, time
+
+def handler(signum, time):
+    print("\nI got a SIGINT, but I am not stopping")
+
+signal.signal(signal.SIGINT, handler)
+i = 0
+while True:
+    time.sleep(.1)
+    print("\r{}".format(i), end="")
+    i += 1
+```
+
+使用 `ctrl+c` 发送 `SIGINT` 无法中断程序
+
+```bash
+$ python sigint.py
+24^C
+I got a SIGINT, but I am not stopping
+26^C
+I got a SIGINT, but I am not stopping
+30^\[1]    39913 quit       python sigint.py
+```
+
+### 
+
+
+
+#### `nohup`、`&`、`jobs` 命令
+
+```
+nohup python main.py &
+```
+
+- **nohup**：在关闭终端时，会对所有由该终端运行的进程发送 `SIGHUP` 信号，默认情况下，所有进程均会退出。但使用了 nohup 启动命令后，该程序将无法得到 stdin 的输入，并且将 stderr 与 stdout 重定向到 nohup.out 文件中。并且在关闭终端时，该进程不会接受到 `SIGHUP` 信号，也就不会终止。
+
+- **&**：表示将程序放在后台运行（这种进程可由 jobs 命令查看到），输出进程 ID。终端可继续执行其他命令。然而，这种进程依然会对终端进行输出，这可以通过重定向来避免。例如：
+
+  ```
+  nohup jupyter-lab --allow-root > jupyter.log 2>&1 &
+  ```
+
+  备注：这里的 `> jupyter.log 2>&1` 即为重定向，其中 `> jupyter.log` 是 `1 > jupyter.log` 的简写，表示将标准输出（stdout）重定向至 `jupyter.log` 文件中，而 `2>&1` 表示将标准错误（stderr）重定向至标准输出中，而前者已被重定向，因此全部被重定向至 `jupyter.log` 中。此处的 `2>&1` 中的 `&` 如果不写，则表示将标准输出重定向到一个名为 `1` 的文件中
+
+- **jobs**：`jobs` 命令用于查看当前终端放入后台运行的进程的运行情况。
+
+  ```bash
+  $ python sigint.py  # 使用ctrl+Z发送SIGSTOP信号
+  12^Z
+  $ jobs  # 此处的1为job_id，后续可借由这个值将
+  $ # jobs -l 可以查看到这些job的进程id
+  [1]+  Stopped                 python sigint.py
+  # $ bg 1  # 将job_id为1的进程放在后台继续运行
+  # $ fg 1  # 将job_id为1的进程放在前台继续运行
+  ```
+
+#### `SIGINT`、`SIGTERM`、`SIGQUIT`、`SIGKILL`：
+
+参考[博客](https://www.baeldung.com/linux/sigint-and-other-termination-signals)，大略意思如下：四者都可用于终止程序运行，`SIGKILL` 是结束进程的强制手段，程序不能改变接受到此信号的行为。而其余三者都可以由程序决定如何处置这些信号。默认行为下，推荐使用 `SIGTERM` 结束进程。
+
+### 5.2 Terminal Multiplexers (tmux)
+
+### 5.3 Alias and Dotfiles
+
+### 5.4 Remote Macheines
+
 ## Linux
 
 ### 用户相关
