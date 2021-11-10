@@ -1378,6 +1378,10 @@ sorted_x = natsorted(x)
 
 作者为 faster rcnn 的作者 Ross Girshick，用于解析 yaml 文件
 
+### timeout_decorator
+
+超时自动退出装饰器
+
 ### python炫技代码段
 
 ```python
