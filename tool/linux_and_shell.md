@@ -403,6 +403,13 @@ abc
 $ export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
 ```
 
+#### ln
+
+```bash
+$ # ln -s 原始路径 目标路径
+$ ln -s /home/to/directory /data  # 得到/data/directory
+```
+
 ### 命令例子
 
 #### 例 1：/dev/null、文件描述符

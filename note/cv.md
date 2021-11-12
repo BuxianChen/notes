@@ -373,6 +373,8 @@ txt_mask.save("a.png")
 
 备注：`PIL.ImageDraw.Draw.text` 函数的文字位置参数指的是文字的左上角坐标，而 `cv2.putText` 函数中的文字位置参数默认为文字的左下角坐标。
 
+PIL 中的子模块名都使用大写开头，且核心内容为同名的类。例如：`PIL.ImageDraw` 模块下的 `ImageDraw` 类。注意 `ImageDraw` 模块下的 `Draw` 是一个方法，返回值是一个 `ImageDraw` 对象。
+
 ### base64
 
 base64格式一般用于网络传输
@@ -1085,3 +1087,30 @@ p.terminate()
 - `trdg/background_generator.py:*`：`*` 是 `gaussian_noise`、`plain_white`、`quasicrystal`、`image` 中的一个，用于生成背景图片，注意：`image` 函数是利用用户指定的图片作为背景
 - 利用 `PIL.Image.paste` 方法将背景图片与扭曲过的图片融合，得到融合后的图片
 - 利用 `PIL` 的一些方法加上一些模糊
+
+
+
+
+
+字体：（trdg 目前不支持ttc格式，只支持ttf格式）
+
+ttc格式可以被 `PIL.ImageFont.truetype` 处理，可以通过 `index` 参数获得
+
+在`C:\Windows\Fonts` 里的arial字体，复制出来会存在
+
+```
+arial.ttf  # 常规
+ariblk.ttf  # 黑体: blk: black
+arialbd.ttf  # 粗体: bd: bold
+arialbi.ttf  # 粗斜体: bi: bold, i
+ariali.ttf  # 斜体: i: italic
+```
+
+text_color的取值为 `#181818,#282828` 或 `#181818` 这种形式，生成字体时随机从两个颜色（RGB分别随机）中取值
+
+
+
+trdg可以返回字符的mask，mask是一个与最终生成的图片同样大小的灰度图，用0表示背景，用大于0的数表示字符，但每个字符与mask的取值未必一一对应（尚不清楚为何如此），另外如果生成图片时已经进行了高斯模糊，那么mask也会受到影响
+
+
+
