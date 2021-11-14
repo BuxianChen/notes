@@ -979,6 +979,14 @@ $ sudo useradd -d /d/ -m -N -s /bin/bash someone
 $ passwd someone  # 设定用户密码
 ```
 
+### 用户登录
+
+[链接1](https://thecodecloud.in/what-happens-when-we-login-logout-in-linux/)，[链接2](https://www.stefaanlippens.net/bashrc_and_others/#:~:text=.bash_profile%20is%20for%20making%20sure%20that%20both%20the,if%20you%20would%20omit.bash_profile%2C%20only.profile%20would%20be%20loaded.)，[链接3](https://bencane.com/2013/09/16/understanding-a-little-more-about-etcprofile-and-etcbashrc/)
+
+交互式的方式登录时，首先查看 `/etc/profile` 是否存在并执行该文件，接下来，按顺序依次查找 `.bash_profile`，`.bash_login`，`.profile` 这三个文件是否存在并且有可读权限，只执行找到的第一个则停止。
+
+以非交互式的方式登录时，依次执行 `/etc/bash.bashrc`（ubuntu 为`/etc/bash.bashrc`，Red Hat 为 `/etc/bashrc`） 以及 `.bashrc`。
+
 ## 杂录（未被划分清楚的记录到这里）
 
 ### windows 上传文件中文乱码
