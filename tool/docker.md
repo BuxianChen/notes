@@ -8,7 +8,7 @@
 
 ## 针对镜像的操作命令：
 
-**docker image ls**
+### docker image ls
 
 列出本地镜像
 
@@ -18,7 +18,7 @@ REPOSITORY                  TAG                 IMAGE ID            CREATED     
 nginx                       latest              e43d811ce2f4        5 weeks ago         181.5 MB
 ```
 
-**docker pull**
+### docker pull
 
 `docker pull` 用于将远程 Docker Registry 的镜像下载到本地（对比 Git 命令：`git clone https://github.com/BuxianChen/notes.git`）
 
@@ -42,9 +42,9 @@ docker.io/library/ubuntu:18.04
 
 注意观察输出信息的最后一行的。此处不指定 Docker Registry 地址，则默认为 docker.io，此处没有指定用户名，对于 docker.io 来说，默认为 library。
 
-**docker tag**
+### docker tag
 
-`docker tag` 命令的作用是为镜像重命名
+`docker tag` 命令的作用是为镜像新增一个别名
 
 ```bash
 $ docker tag 镜像的旧名字/镜像ID 镜像的新名字
@@ -58,13 +58,13 @@ $ docker login
 $ docker push username/ubuntu:18.04
 ```
 
-**docker login**
+### docker login
 
 ```bash
 $ docker login  # 登录以获取拉取/推送镜像的权限
 ```
 
-**docker push**
+### docker push
 
 ```bash
 $ docker push 镜像ID
@@ -72,9 +72,17 @@ $ docker push 镜像ID
 
 将镜像推送至远端 Docker Registry。
 
+### docker rmi
+
+```bash
+$ docker rmi 镜像ID
+```
+
+删除镜像
+
 ## 针对容器的操作命令
 
-**docker run**
+### docker run
 
 `docker run` 用于利用已有的本地镜像创建容器并运行容器。容器具有运行和终止两种状态。命令形式为：
 
@@ -112,7 +120,7 @@ $ docker run -d ubuntu:18.04 /bin/sh -c "while true; do echo hello world; sleep 
 
 使用 `-v` 参数可以实现宿主机与容器内部目录的挂载，注意挂载的目录在执行 `docker commit` 命令时不会被保存。
 
-**docker container ls**
+### docker container ls
 
 使用 `-d` 参数启动后会返回一个唯一的 id，也可以通过 `docker container ls` 命令来查看容器信息。
 
@@ -122,9 +130,9 @@ CONTAINER ID  IMAGE         COMMAND               CREATED        STATUS       PO
 77b2dc01fe0f  ubuntu:18.04  /bin/sh -c 'while tr  2 minutes ago  Up 1 minute        agitated_wright
 ```
 
-**docker container logs**
+### docker container logs
 
-要获取容器的输出信息，可以通过 `docker container logs` 命令。
+要获取容器的输出信息，可以通过 `docker container logs` 命令。这条命令尤其适用于使用了 `-d` 参数进行启动的容器。
 
 ```bash
 $ docker container logs [container ID or NAMES]
@@ -134,7 +142,7 @@ hello world
 ...
 ```
 
-**docker container start/restart/stop**
+### docker container start/restart/stop
 
 重新启动已经终止的容器/将一个运行态的容器关闭并重新启动它/将一个运行态的容器终止
 
@@ -144,7 +152,7 @@ $ docker container restart [container ID or NAMES]
 $ docker container stop [container ID or NAMES]
 ```
 
-**docker attach/exec**
+### docker attach/exec
 
 进入一个正在运行的容器。
 
@@ -166,7 +174,7 @@ root@69d137adef7a:/#
 
 注意：使用 `docker exec` 时，该容器不会因为终端的退出而终止。
 
-**docker stats**
+### docker stats
 
 以下命令用于查看容器的内存占用等情况
 
@@ -174,7 +182,7 @@ root@69d137adef7a:/#
 $ docker stats 容器ID
 ```
 
-**docker commit**
+### docker commit
 
 ```bash
 $ docker commit -a "author_name" -m "description" 容器ID 镜像名
@@ -198,7 +206,7 @@ $ docker commit 自定义容器名字 镜像名
 
 ## 使用 Dockerfile 制作镜像
 
-**例子**
+### 例子
 
 假定本机的 ngnix 镜像如下：
 
@@ -242,3 +250,99 @@ $ docker run --name web3 -d -p 81:80 nginx:v3
 这样可以使用浏览器访问 `<宿主机IP地址>/81`。
 
 备注：`docker run` 实际等效于 `docker start` 加上 `docker exec` 两条命令
+
+### 利用已有镜像反推 Dockerfile
+
+参考 [CSDN](https://blog.csdn.net/qq_43228739/article/details/115718191)
+
+```bash
+$ docker history --format {{.CreatedBy}} --no-trunc=true <镜像ID> |sed "s?/bin/sh\ -c\ \#(nop)\ ??g"|sed "s?/bin/sh\ -c?RUN?g" | tac
+```
+
+### 例子：深度学习 Dockerfile
+
+#### 标准镜像规划
+
+| 标签                                                   | Python/Conda | cuda&cudnn | nvcc&gcc | pytorch | 用途                                                  |
+| ------------------------------------------------------ | ------------ | ---------- | -------- | ------- | ----------------------------------------------------- |
+| official-nvidia-cuda-10.1-cudnn7-devel-ubuntu18.04     | no           | yes        | yes      | no      | 暂无，开发时不必从头安装python                        |
+| official-nvidia-cuda-10.1-cudnn7-runtime-ubuntu18.04   | no           | yes        | no       | no      | 最小体积上线，pytorch版本不在下面的列表中时用这个上线 |
+| official-pytorch-pytorch-1.6.0-cuda10.1-cudnn7-devel   | yes(conda)   | yes        | yes      | yes     | 用于开发（官方镜像）                                  |
+| official-pytorch-pytorch-1.6.0-cuda10.1-cudnn7-runtime | yes(conda)   | yes        | no       | yes     | 用于上线代码（Pytorch版本最好不要动）                 |
+| official-pytorch-pytorch-1.9.0-cuda10.1-cudnn7-devel   | yes(conda)   | yes        | yes      | yes     | 用于开发（官方镜像）                                  |
+| official-pytorch-pytorch-1.9.0-cuda10.1-cudnn7-runtime | yes(conda)   | yes        | no       | yes     | 用于上线代码（Pytorch版本最好不要动）                 |
+
+备注：上述 devel 均包含有 nvcc 及 gcc，而 runtime 均不包含这些编译工具。所有镜像均不包含 vim，git 等软件。
+
+使用说明：
+
+- 为追求最小体积上线，上线时可以直接用官方镜像，将代码复制进去即可（若想
+- 开发环境可以使用一些脚本
+
+
+
+#### shell 脚本 & Dockerfile
+
+**shell script（待补充：`./docker/dl/plus.sh`）**
+
+**Dockerfile（待补充：`./docker/dl/Dockerfile`）**
+
+下面是细节：
+
+**更改时区（似乎不是必要的）**
+
+参考 [stackoverflow](https://stackoverflow.com/questions/44331836/apt-get-install-tzdata-noninteractive) 问答
+
+**vim 与 git**
+
+备注：pytorch 官方镜像包含 conda
+
+```
+RUN apt update && apt -y upgrade && apt install -y vim git tmux
+```
+
+**更改 pip/conda/apt 源**
+
+待补充
+
+**安装 pre-commit**
+
+待补充
+
+**代码支持中文注释**
+
+在 `/etc/vim/vimrc` 中添加
+
+```
+set encoding=UTF-8
+"set langmenu=zh_CN.UTF-8
+"language message zh_CN.UTF-8
+set fileencoding=UTF-8
+```
+
+```
+RUN echo -e "set encoding=UTF-8\nset fileencoing=UTF-8" > /etc/vim/vimrc
+```
+
+**环境变量**
+
+官方镜像设置的 cuda 相关的环境变量似乎有些诡异，例如：`$LD_LIBRARY_PATH` 里显示的路径不存在，可能需要修改。
+
+#### 实操
+
+待补充
+
+若要使用 GPU：Windows 下使用 WSL2 需要去 [Nvidia](https://developer.nvidia.com/cuda/wsl) 官网下载驱动即可。之后启动镜像时需要增加参数 `--gpus all` 即可：
+
+```
+docker run -it --rm --gpus all pytorch/pytorch:1.9.0-cuda10.2-cudnn-devel /bin/bash
+```
+
+## 杂录
+
+### Docker Desktop (Windows 11) 使用记录
+
+安装基本是傻瓜式的，从略。配置镜像加速可以注册一个阿里云账号，搜索“容器镜像加速服务”按上面的指引修改 Docker Desktop 的配置即可。
+
+
+

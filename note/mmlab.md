@@ -18,8 +18,9 @@ cmd_class = {'build_ext': torch.utils.cpp_extension.BuildExtension.with_options(
 
 随后使用如下命令进行安装
 
-```
-MMCV_WITH_OPS=1 pip install -e .
+```bash
+MMCV_WITH_OPS=1 pip install -e .  # 开发模式安装
+MMCV_WITH_OPS=1 python setup.py install  # 安装
 ```
 
 ## 典型用法（此处补充一个 mmdet 的例子）：
@@ -681,15 +682,13 @@ DETECTORS = MODELS
 
 
 
+### mmdet/../tools/train.py 脚本源码解析
+
+参见 [notebook](mmlab-src/mmdet_train_script/annotated_mmdet_train_script.ipynb) 里的注解
 
 
-```
-python tools/test.py configs/yolo/yolov3_d53_320_273e_coco.py checkpoints/yolov3_d53_320_273e_coco-421362b6.pth --show-dir temp
-```
 
 
-
-## mmdet/../tools/train.py 脚本源码解析
 
 此脚本为训练脚本，通常利用这个脚本训练模型
 
@@ -1082,3 +1081,4 @@ class A:
         return {key: self.data[key] for key in keys}
 A()[["a", "b"]]
 ```
+

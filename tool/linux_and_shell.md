@@ -981,3 +981,9 @@ $ passwd someone  # 设定用户密码
 
 ## 杂录（未被划分清楚的记录到这里）
 
+### windows 上传文件中文乱码
+
+```
+unzip -O gbk filename.zip
+```
+

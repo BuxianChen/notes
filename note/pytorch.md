@@ -856,5 +856,7 @@ torchvision.set_image_backend(backend)
 # backend可以选择"PIL"或者"accimage"
 ```
 
-## 范例（待补充）
+## Docker
+
+devel 与 runtime 的主要区别在于后者没有 nvcc
 
