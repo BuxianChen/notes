@@ -1082,3 +1082,25 @@ class A:
 A()[["a", "b"]]
 ```
 
+### 图像读取与变换
+
+mmdetction 使用 opencv 进行图像的读取，变换。对于变换，借用了一些 albumentation 包（针对的是 opencv 格式的数据）的函数。但在进行完图像增强后，会将 BGR 格式转为 RGB 格式进行 Normalize。这是为了和 Torchvision 的预训练模型对齐。例如下面的配置：
+
+```python
+# mmdet 2.18.0 configs/faster_rcnn/faster_rcnn_r50_fpn_1x_coco.py
+img_norm_cfg = dict(
+    mean=[123.675, 116.28, 103.53], std=[58.395, 57.12, 57.375], to_rgb=True)
+
+train_pipeline = [
+    dict(type='LoadImageFromFile'),
+    dict(type='LoadProposals', num_max_proposals=2000),
+    dict(type='LoadAnnotations', with_bbox=True),
+    dict(type='Resize', img_scale=(1333, 800), keep_ratio=True),
+    dict(type='RandomFlip', flip_ratio=0.5),
+    dict(type='Normalize', **img_norm_cfg),
+    dict(type='Pad', size_divisor=32),
+    dict(type='DefaultFormatBundle'),
+    dict(type='Collect', keys=['img', 'proposals', 'gt_bboxes', 'gt_labels']),
+]
+```
+

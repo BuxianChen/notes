@@ -232,10 +232,12 @@ cv2.circle(img, (100, 20), 2, (0, 0, 255), thickness=2)
 
 #### 添加文字（非英文会乱码）
 
+关于bottomLeftOrigin的有错，待补充
+
 ```python
-cv2.putText(image, text, org, font, fontScale, color, thickness=1, lineType=cv2.LINE_8, bottomLeftOrigin=True)
+cv2.putText(image, text, org, font, fontScale, color, thickness=1, lineType=cv2.LINE_8, bottomLeftOrigin=False)
 # org是坐标,font是字体,fontScale是字体
-# 当bottomLeftOrigin为True时,表示org是文字的左下角坐标,取值为False时表示org为文字的右下角坐标
+# 当bottomLeftOrigin为True时,表示org是文字的左下角坐标,取值为False时（默认值）表示org为文字的左上角坐标,取值为True时表示org为文字的左下角坐标
 cv2.putText(image, "mark", (100, 200), cv2.FONT_HERSHEY_COMPLEX, 5, (0, 0, 255), thickness=2, bottomLeftOrigin=True)
 ```
 
