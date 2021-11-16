@@ -670,7 +670,7 @@ w.grad
 
 #### torch/distributed/run.py 与 torchrun
 
-在 1.0.0-1.8.1 版本中，均使用 `torch/distributed/launch.py`（简称 `launch.py`）来启动。但在 1.9.0 及 1.9.1 版本中，官方文档中说 `torch/distributed/launch.py`（简称 `run.py`）已被弃用，推荐用 `run.py` 来启动，而 1.9.0 与 1.9.1 版本的 `launch.py` 改为了调用 `run.py` 内的相关函数。而在 1.10.0 版本中，`setup.py` 文件引进了一项改动，又变为使用脚本 `torchrun` 进行启动，但实质上与 `run.py` 是一样的。而 1.9.0 版本的 `run.py` 本质上是调用了合并自 `TorchElastic` 的 `torch.distributed.elastic` 子模块下的内容。
+在 1.0.0-1.8.1 版本中，均使用 `torch/distributed/launch.py`（简称 `launch.py`）来启动。但在 1.9.0 及 1.9.1 版本中，官方文档中说 `torch/distributed/run.py`（简称 `run.py`）已被弃用，推荐用 `run.py` 来启动，而 1.9.0 与 1.9.1 版本的 `launch.py` 改为了调用 `run.py` 内的相关函数。而在 1.10.0 版本中，`setup.py` 文件引进了一项改动，又变为使用脚本 `torchrun` 进行启动，但实质上与 `run.py` 是一样的。而 1.9.0 版本的 `run.py` 本质上是调用了合并自 `TorchElastic` 的 `torch.distributed.elastic` 子模块下的内容。
 
 ??-1.9.1 版本的 `setup.py` 文件关于 `entry_points` 的写法：
 
