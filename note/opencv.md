@@ -341,6 +341,16 @@ src_x\\src_y\\0
 $$
 #### cv2 图像旋转（待补充）
 
+```python
+# bbox: (k, 2) np.array
+center_point, w_h, angle = cv2.minAreaRect(bbox)
+# angle表示旋正后的图片需要逆时针旋转多少度才能变换到bbox
+# w_h: 最小矩形的宽和高
+# center_point：bbox的中心点
+```
+
+
+
 ### 图像修复
 
 cv2.inpaint
