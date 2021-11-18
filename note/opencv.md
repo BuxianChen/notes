@@ -339,17 +339,83 @@ b_0&a_0&b_1\\
 src_x\\src_y\\0
 \end{bmatrix}
 $$
-#### cv2 图像旋转（待补充）
+#### cv2.minAreaRect
 
 ```python
 # bbox: (k, 2) np.array
 center_point, w_h, angle = cv2.minAreaRect(bbox)
-# angle表示旋正后的图片需要逆时针旋转多少度才能变换到bbox
+# angle表示bbox需要绕center_point逆时针旋转多少度才能变换到旋正后的矩形,矩形的宽高分别为w_h
 # w_h: 最小矩形的宽和高
 # center_point：bbox的中心点
 ```
 
+#### cv2.getRotateMatrix2D
 
+![](./opencv-src/figures/getRotateMatrix2D.png)
+
+此函数用于获取绕某一中心点旋转后的变换矩阵
+$$
+\begin{bmatrix}
+dstx_1\\dsty_1
+\end{bmatrix}=\cdots=\alpha
+\begin{bmatrix}
+cos\theta&sin\theta\\
+-sin\theta&cos\theta
+\end{bmatrix}
+\begin{bmatrix}
+x_1-x_0\\
+y_1-y_0
+\end{bmatrix}+
+\begin{bmatrix}
+x_0\\
+y_0
+\end{bmatrix}
+$$
+故变换矩阵为：
+$$
+M=[\alpha M_0,(I-\alpha M_0)\begin{bmatrix}x_0\\y_0\end{bmatrix}]\in\mathbb{R}^{2\times3}
+$$
+
+```python
+M = cv2.getRotationMatrix2D(center, angle, scale)
+# M是形状为(2, 3)的np.array数组, center即为上例的(x0,y0), angle即为theta, scale即为alpha
+```
+
+#### cv2.warpAffine
+
+$$
+[dst_x,dst_y]^T=M[:,:-1][x,y]^T+M[:,:-1]
+$$
+
+```python
+dst = cv.warpAffine(src, M, dsize[, dst[, flags[, borderMode[, borderValue]]]])
+# M是一个2*3的数组, src为图像, dsize为目标图像dst的大小(w,h), flags表示插值方式
+```
+
+逆变换方式可以推算为
+$$
+(x,y)=M[:,:-1]^{-1}(dst_x,dst_y)-M[:,:-1]^{-1}M[:,-1]
+$$
+
+#### cv2.getPespectiveTransform（待补充）
+
+与findHomography, warpPerspective, perspectiveTransform相关
+
+求解如下方程
+$$
+\begin{bmatrix}
+t_ix_i'\\t_iy_i'\\t_i
+\end{bmatrix}=M
+\begin{bmatrix}
+x_i\\y_i\\1
+\end{bmatrix}
+\quad i=0,1,2,3
+$$
+
+```python
+M = cv.getPerspectiveTransform(src, dst[, solveMethod])
+# src, dst均为(4, 2)数组, 求解的M为3*3数组
+```
 
 ### 图像修复
 
