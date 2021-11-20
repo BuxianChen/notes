@@ -344,12 +344,13 @@ $$
 ```python
 # bbox: (k, 2) np.array
 center_point, w_h, angle = cv2.minAreaRect(bbox)
-# angle表示bbox需要绕center_point逆时针旋转多少度才能变换到旋正后的矩形,矩形的宽高分别为w_h
+# angle表示旋正后的矩形需要绕center_point逆时针旋转多少度才能变换到bbox,矩形的宽高分别为w_h
 # w_h: 最小矩形的宽和高
 # center_point：bbox的中心点
+# 备注：bbox里的点的顺序可以是任意的，得到的结果是一致的
 ```
 
-#### cv2.getRotateMatrix2D
+#### cv2.getRotationMatrix2D
 
 ![](./opencv-src/figures/getRotateMatrix2D.png)
 
