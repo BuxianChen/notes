@@ -255,6 +255,50 @@ git diff # 显示工作区相对于暂存区的修改
 git diff --staged # 显示暂存区相对最近一次提交的修改
 ```
 
+如果需要查看两个 commit 中某个文件的差异，可以使用如下
+
+```
+git diff <source_commit_id> <target_commit_id> -- <filename>
+```
+
+例子及解释如下
+
+- source_commit_id 的行用 `-` 进行标识，target_commit_id 的行用 `+` 进行标识，没有变化的行用空格进行标识。
+
+- 显示方式按差异块的形式呈现：
+
+  ```
+  @@ -6,12 +6,8 @@ from ..modules import Module
+  ```
+
+  表示的是 source_commit_id 的第 [6, 6+12-1] 行的内容与 target_commit_id 的第 [6, 6+8-1] 行的内容有差异。
+
+```bash
+$ # pytorch 源码
+$ git diff v1.9.1 v1.6.0 -- torch/nn/parallel/data_parallel.py
+diff --git a/torch/nn/parallel/data_parallel.py b/torch/nn/parallel/data_parallel.py
+index d85d871a5d..86d2cf801d 100644
+--- a/torch/nn/parallel/data_parallel.py
++++ b/torch/nn/parallel/data_parallel.py
+@@ -6,12 +6,8 @@ from ..modules import Module
+ from .scatter_gather import scatter_kwargs, gather
+ from .replicate import replicate
+ from .parallel_apply import parallel_apply
+-from torch._utils import (
+-    _get_all_device_indices,
+-    _get_available_device_type,
+-    _get_device_index,
+-    _get_devices_properties
+-)
++from torch.cuda._utils import _get_device_index
++
+
+ def _check_balance(device_ids):
+     imbalance_warn = """
+```
+
+
+
 ### git add/rm
 
 `git add` 的作用是为工作区产生变化的文件生成 blob，并将这些文件添加至暂存区

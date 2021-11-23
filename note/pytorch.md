@@ -843,6 +843,126 @@ target = source.clone().detach()
 target = source.clone().detach().to("cuda:1").requires_grad_(True)
 ```
 
+## `torch.nn.Module` 源码剖析
+
+- 版本：torch 1.6.0
+- 相关代码：`torch/nn/modules/module.py`
+
+### register 与 hook 机制
+
+可以使用如下方式使得每次调用 `nn.Module` 的 forward 函数时，都将输入打印出来。
+
+```python
+import torch
+from torch.nn.modules.module import register_module_forward_pre_hook
+def custom_pre_forward_hook(module, input):
+    print(input)
+
+register_module_forward_pre_hook(custom_pre_forward_hook)
+
+class A(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.count = 0
+    def forward(self, x):
+        self.count += 1
+        return x
+x = A()(torch.rand([2]))
+```
+
+这种影响全局的注册 hook 的方法有如下几个：
+
+- register_module_forward_pre_hook
+- register_module_forward_hook
+- register_module_backward_hook
+
+而在 `nn.Module` 的代码中，存在如下与 hook 或 register 有关的函数
+
+- register_buffer
+- register_parameter
+- register_backward_hook
+- register_forward_pre_hook
+- register_forward_hook
+- _register_state_dict_hook
+- _register_load_state_dict_pre_hook
+
+### `__init__` 函数
+
+自定义模型都要继承自 `nn.Module`，并且在子类中一般都有如下操作
+
+```python
+class CustomModule(nn.Module):
+	def __init__(self):
+        super().__init__()
+```
+
+相关源码如下：
+
+```python
+def __init__(self):
+    """
+    Initializes internal Module state, shared by both nn.Module and ScriptModule.
+    """
+    torch._C._log_api_usage_once("python.nn_module")
+	
+    # 与相关的实例方法的对应关系为
+    self.training = True  # train, eval
+    self._parameters = OrderedDict()  # register_parameter
+    self._buffers = OrderedDict()  # register_buffer
+    self._non_persistent_buffers_set = set()
+    self._backward_hooks = OrderedDict()  # register_backward_hook
+    self._forward_hooks = OrderedDict()  # register_forward_hook
+    self._forward_pre_hooks = OrderedDict()  # register_forward_pre_hook
+    self._state_dict_hooks = OrderedDict()  # _register_state_dict_hook
+    self._load_state_dict_pre_hooks = OrderedDict()  # _register_load_state_dict_pre_hook
+    self._modules = OrderedDict()
+```
+
+### `__call__`
+
+源码如下：
+
+```python
+__call__ : Callable[..., Any] = _call_impl
+
+def _call_impl(self, *input, **kwargs):
+    # 先调用全局的hook，后调用特有的hook
+    for hook in itertools.chain(
+            _global_forward_pre_hooks.values(),  # _global_forward_pre_hooks是一个OrderedDict
+            self._forward_pre_hooks.values()):
+        result = hook(self, input)
+        if result is not None:
+            if not isinstance(result, tuple):
+                result = (result,)
+            input = result
+    if torch._C._get_tracing_state():
+        result = self._slow_forward(*input, **kwargs)
+    else:
+        result = self.forward(*input, **kwargs)
+    for hook in itertools.chain(
+            _global_forward_hooks.values(),
+            self._forward_hooks.values()):
+        hook_result = hook(self, input, result)
+        if hook_result is not None:
+            result = hook_result
+    if (len(self._backward_hooks) > 0) or (len(_global_backward_hooks) > 0):
+        var = result
+        while not isinstance(var, torch.Tensor):
+            if isinstance(var, dict):
+                var = next((v for v in var.values() if isinstance(v, torch.Tensor)))
+            else:
+                var = var[0]
+        grad_fn = var.grad_fn
+        if grad_fn is not None:
+            for hook in itertools.chain(
+                    _global_backward_hooks.values(),
+                    self._backward_hooks.values()):
+                wrapper = functools.partial(hook, self)
+                functools.update_wrapper(wrapper, hook)
+                grad_fn.register_hook(wrapper)
+    return result
+```
+
 ## Tricks and Discusions
 
 ### 为什么 torchvision 使用 PIL 而非 CV2？

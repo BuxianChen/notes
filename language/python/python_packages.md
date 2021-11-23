@@ -89,13 +89,34 @@ os.path.abspath(os.path.realpath(os.path.expanduser("~/a.link")))
 
 typing 模块用于注解
 
-`Sized` 表示有一个具有 `__len__` 方法的对象，`Optional[Sized]` 等同于 `Union[Sized, None]`。
+**`Tuple`**
+
+- `Tuple`：元组类型
+
+- `Tuple[int, str]`：第一个元素为整数，第二个元素类型为字符串
+- `Tuple[int, ...]`：若干个整数
+- `Tuple[Any, ...]`：等价于 `Tuple`
+
+**`Optional`**
+
+`Optional[Sized]` 等同于 `Union[Sized, None]`。
+
+**`Sized`**
+
+`Sized` 表示有一个具有 `__len__` 方法的对象，
 
 ```python
 from typing import Optional, Sized
 def foo(a: Optional[Sized]):
 	pass
 ```
+
+**`Callable`**
+
+- `Callable[[int], str]`：输入是 int 类型，输出是 str 类型的函数
+- `Callable[..., str]`：输出是 str 类型的函数，对输入不加约束
+
+**`overload`**
 
 ```python
 from typing import overload
