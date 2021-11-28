@@ -746,7 +746,11 @@ class MyDecisionGate(torch.nn.Module):    def forward(self, x):        return x 
 
 ## Pytorch Internal
 
-### inplace = True
+### out=xxx
+
+参考 [stackoverflow](https://discuss.pytorch.org/t/whats-the-benefit-of-using-out-parameter-in-tensor-operations/31728) 问答
+
+### inplace=True
 
 pytorch 中某些函数允许使用 inplace=True，但前提条件是这个 tensor 在反向求导时是不需要的：
 
