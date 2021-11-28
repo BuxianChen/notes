@@ -1830,6 +1830,16 @@ xxx
 
 ## 附录 1
 
+### 骚操作
+
+来源：torch/cuda/amp/grad_scaler.py，`GradScaler:scale` 函数
+
+```
+type((1, 2))([1, 2, 3])
+```
+
+
+
 ### 不能实例化的类
 
 ```python

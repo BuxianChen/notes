@@ -74,6 +74,8 @@ for x in dl:
 
 ## AutoGrad、计算图、自定义算子
 
+### 自定义算子
+
 参考：[pytorch 官方文档](https://pytorch.org/tutorials/intermediate/custom_function_conv_bn_tutorial.html)
 
 例子1：自己实现二维卷积
@@ -104,6 +106,143 @@ class Conv2D(torch.autograd.Function):
 weight = torch.rand(5, 3, 3, 3, requires_grad=True, dtype=torch.double)
 X = torch.rand(10, 3, 7, 7, requires_grad=True, dtype=torch.double)
 torch.autograd.gradcheck(Conv2D.apply, (X, weight))  # 梯度检查
+```
+
+### 梯度惩罚
+
+参考 [amp](https://pytorch.org/docs/stable/notes/amp_examples.html)
+
+```python
+for epoch in epochs:
+    for input, target in data:
+        optimizer.zero_grad()
+        output = model(input)
+        loss = loss_fn(output, target)
+
+        # Creates gradients
+        grad_params = torch.autograd.grad(outputs=loss,
+                                          inputs=model.parameters(),
+                                          create_graph=True)
+
+        # Computes the penalty term and adds it to the loss
+        grad_norm = 0
+        for grad in grad_params:
+            grad_norm += grad.pow(2).sum()
+        grad_norm = grad_norm.sqrt()
+        loss = loss + grad_norm
+
+        loss.backward()
+
+        # clip gradients here, if desired
+
+        optimizer.step()
+```
+
+此处直接调用了 `torch.autograd.grad` 得到需要计算的梯度，并使用了 `create_graph=True`，这与普通的 `Tensor.backward` 的差异在于：
+
+- `grad_params` 即为求得的所有参数的梯度，但此时所有参数的 `grad` 属性依旧为 `None`。`create_grad=True` 表示为计算梯度所需的算子也将建立计算图
+- `loss.backward()` 的作用是求得所有参数的梯度，并更新至它们的 `grad` 属性上，并且销毁整个计算图
+
+从源码上看
+
+```python
+# torch/tensor.py
+class Tensor:
+    def backward(self, gradient=None, retain_graph=None, create_graph=False):
+        torch.autograd.backward(self, gradient, retain_graph, create_graph)
+# torch/autograd/__init__.py
+def backward(
+    tensors: _TensorOrTensors,
+    grad_tensors: Optional[_TensorOrTensors] = None,
+    retain_graph: Optional[bool] = None,
+    create_graph: bool = False,
+    grad_variables: Optional[_TensorOrTensors] = None,
+    inputs: Optional[_TensorOrTensors] = None,
+) -> None:
+    if grad_variables is not None:
+        warnings.warn("'grad_variables' is deprecated. Use 'grad_tensors' instead.")
+        if grad_tensors is None:
+            grad_tensors = grad_variables
+        else:
+            raise RuntimeError("'grad_tensors' and 'grad_variables' (deprecated) "
+                               "arguments both passed to backward(). Please only "
+                               "use 'grad_tensors'.")
+    if inputs is not None and len(inputs) == 0:
+        raise RuntimeError("'inputs' argument to backward() cannot be empty.")
+
+    tensors = (tensors,) if isinstance(tensors, torch.Tensor) else tuple(tensors)
+    inputs = (inputs,) if isinstance(inputs, torch.Tensor) else \
+        tuple(inputs) if inputs is not None else tuple()
+
+    grad_tensors_ = _tensor_or_tensors_to_tuple(grad_tensors, len(tensors))
+    grad_tensors_ = _make_grads(tensors, grad_tensors_)
+    if retain_graph is None:
+        retain_graph = create_graph
+
+    Variable._execution_engine.run_backward(
+        tensors, grad_tensors_, retain_graph, create_graph, inputs,
+        allow_unreachable=True, accumulate_grad=True)  # allow_unreachable flag
+```
+
+```python
+# torch/autograd/__init__.py
+def grad(
+    outputs: _TensorOrTensors,
+    inputs: _TensorOrTensors,
+    grad_outputs: Optional[_TensorOrTensors] = None,
+    retain_graph: Optional[bool] = None,
+    create_graph: bool = False,
+    only_inputs: bool = True,
+    allow_unused: bool = False
+) -> Tuple[torch.Tensor, ...]:
+    outputs = (outputs,) if isinstance(outputs, torch.Tensor) else tuple(outputs)
+    inputs = (inputs,) if isinstance(inputs, torch.Tensor) else tuple(inputs)
+    overridable_args = outputs + inputs
+    if has_torch_function(overridable_args):
+        return handle_torch_function(
+            grad,
+            overridable_args,
+            outputs,
+            inputs,
+            grad_outputs=grad_outputs,
+            retain_graph=retain_graph,
+            create_graph=create_graph,
+            only_inputs=only_inputs,
+            allow_unused=allow_unused,
+        )
+
+    if not only_inputs:
+        warnings.warn("only_inputs argument is deprecated and is ignored now "
+                      "(defaults to True). To accumulate gradient for other "
+                      "parts of the graph, please use torch.autograd.backward.")
+
+    grad_outputs_ = _tensor_or_tensors_to_tuple(grad_outputs, len(outputs))
+    grad_outputs_ = _make_grads(outputs, grad_outputs_)
+
+    if retain_graph is None:
+        retain_graph = create_graph
+
+    return Variable._execution_engine.run_backward(
+        outputs, grad_outputs_, retain_graph, create_graph,
+        inputs, allow_unused, accumulate_grad=False)
+```
+
+因此在本质上，`Tensor.backward` 实际上就是 `torch.autograd.backward`，它与 `torch.autograd.grad` 都是调用 `Variable._execution_engine.run_backward` 函数，只不过前者调用方式为：
+
+```python
+# 注意这个结果不被返回, 而是直接累积到叶子节点的梯度上
+Variable._execution_engine.run_backward(
+    tensors, grad_tensors_, retain_graph, create_graph, inputs,
+    allow_unreachable=True, accumulate_grad=True)  # allow_unreachable flag
+```
+
+后者的调用方式为
+
+```python
+# 注意这个结果被返回, 但不累积到叶子节点的梯度上
+Variable._execution_engine.run_backward(
+    outputs, grad_outputs_, retain_graph, create_graph,
+    inputs, allow_unused, accumulate_grad=False)
 ```
 
 ## torch.nn.Module
