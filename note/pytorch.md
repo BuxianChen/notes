@@ -514,6 +514,19 @@ step:        READY/UNSCALED -> STEPPED
 
 总结: update, unscale\_, step函数的顺序不能乱
 
+**原理**
+
+```python
+with autocast():
+	output = model(input)  # model, input: all float32
+    loss = loss_fn(output, target)  # maybe float32 or float16
+scaler.scale(loss).backward()  # grad always float32
+# unscale_调用torch._amp_non_finite_check_and_unscale_
+scaler.unscale_(optimizer)  # 缩小倍数, 并记录是否存在inf/nan的情况
+scaler.step(optimizer)  # 若上一步记录发现inf/nan, 则跳过step
+scaler.update()  # 根据inf/nan的情况以及迭代次数来更新_scale
+```
+
 ## cuda and distributed
 
 ### 入门
