@@ -23,6 +23,11 @@ Pytorch
 - Apex（timm中可以选择的并行方式）
 - ~~基础分类的 Demo Code：Dataset，DataLoader，transformers（图像增强），Optimizers，Scheduler，梯度剪裁，Loss，DistributeDataParallel~~（已完成）
 - Pytorch 笔记完善
+- scatter/gather
+  - mmcv/parallel/scatter_gather.py
+  - srgocr/core/parallel/scatter_gather.py
+  - torch/nn/parallel/scatter_gather.py
+  - torch/distributed/distributed_c10d.py
 
 多进程库的使用
 
