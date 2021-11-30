@@ -908,6 +908,280 @@ mmdet.MODELS = Registry('models', parent=mmcv.MODELS)
 BACKBONES=NECKS=HEADS=mmdet.MODELS
 ```
 
+## FP16 训练
+
+使用方法：配置文件顶级位置加上即可
+
+```python
+# pytorch >= 1.6.0
+fp16=dict(loss_scale='dynamic')
+
+# pytorch < 1.6.0
+fp16=dict(loss_scale=512.)
+```
+
+实现原理如下：
+
+- pytorch>=1.6.0 且配置 fp16 参数，此时的 `Fp16OptimizerHook` 的 `before_run` 函数已经事先将模型的 `fp16_enabled` 设置为 `True`， 在每轮迭代时，`@auto_fp16` 装饰器内部首先将输入转为 fp16，然后在 `torch.cuda.amp.autocast` 下运行模型，此时无所谓输入是 fp16 还是 fp32，皆可正常运行。
+- pytorch<1.6.0 且配置 fp16 参数, 此时的 `Fp16OptimizerHook` 的 `before_run` 函数已经事先将模型转为 `fp16`，在每轮迭代时，`@auto_fp16` 装饰器内部会将输入转换为 fp16，因此模型能正常运行
+- 不配置 fp16 参数时，将不会使用 `Fp16OptimizerHook`，因此模型将不会被设置 `fp16_enabled=True`，因此 `@auto_fp16` 将不会对输入做任何变换，即此时该装饰器完全无效
+
+为理解原理，关键代码如下：
+
+```python
+@HOOKS.register_module()
+class Fp16OptimizerHook(OptimizerHook):
+	def before_run(self, runner):   # 重点
+		pass
+		# wrap_fp16_model   # 重点
+	def after_train_iter(self, runner):  # 重点
+        # pass
+
+class BaseDetector(BaseModule, metaclass=ABCMeta):
+    @auto_fp16(apply_to=('img', ))  # 重点
+    def forward(self, img, img_metas, return_loss=True, **kwargs):
+        pass
+```
+
+```python
+class Runner:
+	def train(self, data_loader, **kwargs):
+        self.model.train()
+        self.mode = 'train'
+        self.data_loader = data_loader
+        self._max_iters = self._max_epochs * len(self.data_loader)
+        self.call_hook('before_train_epoch')
+        time.sleep(2)  # Prevent possible deadlock during epoch transition
+        for i, data_batch in enumerate(self.data_loader):
+            self._inner_iter = i
+            self.call_hook('before_train_iter')
+            self.run_iter(data_batch, train_mode=True, **kwargs)
+            self.call_hook('after_train_iter')
+            self._iter += 1
+
+        self.call_hook('after_train_epoch')
+        self._epoch += 1
+    def run_iter(self, data_batch, train_mode, **kwargs):
+        if self.batch_processor is not None:
+            outputs = self.batch_processor(
+                self.model, data_batch, train_mode=train_mode, **kwargs)
+        elif train_mode:
+            # train_step在BaseDetector中定义, 且未被TwoStageDetector覆盖
+            outputs = self.model.train_step(data_batch, self.optimizer,
+                                            **kwargs)
+        else:
+            outputs = self.model.val_step(data_batch, self.optimizer, **kwargs)
+        if not isinstance(outputs, dict):
+            raise TypeError('"batch_processor()" or "model.train_step()"'
+                            'and "model.val_step()" must return a dict')
+        if 'log_vars' in outputs:
+            self.log_buffer.update(outputs['log_vars'], outputs['num_samples'])
+        self.outputs = outputs
+    
+ class BaseDetector(BaseModule, metaclass=ABCMeta):
+    # ...
+	def train_step(self, data, optimizer):
+        losses = self(**data)  # 调用 forward
+        loss, log_vars = self._parse_losses(losses)
+        outputs = dict(
+            loss=loss, log_vars=log_vars, num_samples=len(data['img_metas']))
+        return outputs
+    @auto_fp16(apply_to=('img', ))  # 重点
+    def forward(self, img, img_metas, return_loss=True, **kwargs):
+        pass
+```
+
+图解：
+
+![](./mmlab-src/figures/mmdet_fp16.png)
+
+更详细的代码如下（待整理）
+
+```python
+def wrap_fp16_model(model):
+    """Wrap the FP32 model to FP16.
+
+    If you are using PyTorch >= 1.6, torch.cuda.amp is used as the
+    backend, otherwise, original mmcv implementation will be adopted.
+
+    For PyTorch >= 1.6, this function will
+    1. Set fp16 flag inside the model to True.
+
+    Otherwise:
+    1. Convert FP32 model to FP16.
+    2. Remain some necessary layers to be FP32, e.g., normalization layers.
+    3. Set `fp16_enabled` flag inside the model to True.
+
+    Args:
+        model (nn.Module): Model in FP32.
+    """
+    if (TORCH_VERSION == 'parrots'
+            or digit_version(TORCH_VERSION) < digit_version('1.6.0')):
+        # convert model to fp16
+        model.half()
+        # patch the normalization layers to make it work in fp32 mode
+        patch_norm_fp32(model)
+    # set `fp16_enabled` flag
+    for m in model.modules():
+        if hasattr(m, 'fp16_enabled'):
+            m.fp16_enabled = True   
+            # 这个flag用在
+            # @auto_fp16(apply_to=('img', ))
+    		# def forward(self, img, img_metas, return_loss=True, **kwargs):
+            # 这个auto_fp16装饰器如果检测到模型fp16_enabled=True, 则自动对输入进行转换
+
+ 
+# auto_fp16的关键代码如下: 此处args为fp32类型, new_args为fp16类型
+# if not (hasattr(args[0], 'fp16_enabled') and args[0].fp16_enabled):
+#     return old_func(*args, **kwargs)
+# if (TORCH_VERSION != 'parrots' and
+#     digit_version(TORCH_VERSION) >= digit_version('1.6.0')):
+#     with autocast(enabled=True):
+#         output = old_func(*new_args, **new_kwargs)#在autocast下,无所谓输入为fp16与fp32
+# else:
+#     output = old_func(*new_args, **new_kwargs)#
+
+# pytorch >= 1.6.0
+@HOOKS.register_module()
+class Fp16OptimizerHook(OptimizerHook):
+	def before_run(self, runner):
+        """Preparing steps before Mixed Precision Training."""
+        # wrap model mode to fp16
+        wrap_fp16_model(runner.model)
+        # resume from state dict
+        if 'fp16' in runner.meta and 'loss_scaler' in runner.meta['fp16']:
+            scaler_state_dict = runner.meta['fp16']['loss_scaler']
+            self.loss_scaler.load_state_dict(scaler_state_dict)
+    def after_train_iter(self, runner):
+        """Backward optimization steps for Mixed Precision Training. For
+        dynamic loss scaling, please refer to
+        https://pytorch.org/docs/stable/amp.html#torch.cuda.amp.GradScaler.
+
+        1. Scale the loss by a scale factor.
+        2. Backward the loss to obtain the gradients.
+        3. Unscale the optimizer’s gradient tensors.
+        4. Call optimizer.step() and update scale factor.
+        5. Save loss_scaler state_dict for resume purpose.
+        """
+        # clear grads of last iteration
+        runner.model.zero_grad()
+        runner.optimizer.zero_grad()
+
+        self.loss_scaler.scale(runner.outputs['loss']).backward()
+        self.loss_scaler.unscale_(runner.optimizer)
+        # grad clip
+        if self.grad_clip is not None:
+            grad_norm = self.clip_grads(runner.model.parameters())
+            if grad_norm is not None:
+                # Add grad norm to the logger
+                runner.log_buffer.update({'grad_norm': float(grad_norm)},
+                                         runner.outputs['num_samples'])
+        # backward and update scaler
+        self.loss_scaler.step(runner.optimizer)
+        self.loss_scaler.update(self._scale_update_param)
+
+        # save state_dict of loss_scaler
+        runner.meta.setdefault(
+            'fp16', {})['loss_scaler'] = self.loss_scaler.state_dict()
+```
+
+
+
+```python
+@RUNNERS.register_module()
+class EpochBasedRunner(BaseRunner):
+    """Epoch-based Runner.
+
+    This runner train models epoch by epoch.
+    """
+
+    def run_iter(self, data_batch, train_mode, **kwargs):
+        if self.batch_processor is not None:
+            outputs = self.batch_processor(
+                self.model, data_batch, train_mode=train_mode, **kwargs)
+        elif train_mode:
+            # train_step在BaseDetector中定义, 且未被TwoStageDetector覆盖
+            outputs = self.model.train_step(data_batch, self.optimizer,
+                                            **kwargs)
+        else:
+            outputs = self.model.val_step(data_batch, self.optimizer, **kwargs)
+        if not isinstance(outputs, dict):
+            raise TypeError('"batch_processor()" or "model.train_step()"'
+                            'and "model.val_step()" must return a dict')
+        if 'log_vars' in outputs:
+            self.log_buffer.update(outputs['log_vars'], outputs['num_samples'])
+        self.outputs = outputs
+
+    def train(self, data_loader, **kwargs):
+        self.model.train()
+        self.mode = 'train'
+        self.data_loader = data_loader
+        self._max_iters = self._max_epochs * len(self.data_loader)
+        self.call_hook('before_train_epoch')
+        time.sleep(2)  # Prevent possible deadlock during epoch transition
+        for i, data_batch in enumerate(self.data_loader):
+            self._inner_iter = i
+            self.call_hook('before_train_iter')
+            self.run_iter(data_batch, train_mode=True, **kwargs)
+            self.call_hook('after_train_iter')
+            self._iter += 1
+
+        self.call_hook('after_train_epoch')
+        self._epoch += 1
+
+    @torch.no_grad()
+    def val(self, data_loader, **kwargs):
+        pass  # omit
+        
+    def run(self, ...):
+        self.call_hook('before_run')
+            for i, flow in enumerate(workflow):
+				# call `self.train` or `self.eval`
+                pass
+        self.call_hook('after_run')
+```
+
+```python
+class BaseDetector(BaseModule, metaclass=ABCMeta):
+    # ...
+	def train_step(self, data, optimizer):
+        losses = self(**data)  # 调用 forward
+        loss, log_vars = self._parse_losses(losses)
+        outputs = dict(
+            loss=loss, log_vars=log_vars, num_samples=len(data['img_metas']))
+        return outputs
+   	def val_step(self, data, optimizer=None):
+        losses = self(**data)  # 调用 forward
+        loss, log_vars = self._parse_losses(losses)
+        outputs = dict(
+            loss=loss, log_vars=log_vars, num_samples=len(data['img_metas']))
+        return outputs
+    
+    @auto_fp16(apply_to=('img', ))
+    def forward(self, img, img_metas, return_loss=True, **kwargs):
+        """Calls either :func:`forward_train` or :func:`forward_test` depending
+        on whether ``return_loss`` is ``True``.
+
+        Note this setting will change the expected inputs. When
+        ``return_loss=True``, img and img_meta are single-nested (i.e. Tensor
+        and List[dict]), and when ``resturn_loss=False``, img and img_meta
+        should be double nested (i.e.  List[Tensor], List[List[dict]]), with
+        the outer list indicating test time augmentations.
+        """
+        if torch.onnx.is_in_onnx_export():
+            assert len(img_metas) == 1
+            return self.onnx_export(img[0], img_metas[0])
+
+        if return_loss:
+            return self.forward_train(img, img_metas, **kwargs)
+        else:
+            return self.forward_test(img, img_metas, **kwargs)
+```
+
+
+
+
+
 
 
 ## 一些相对独立的底层代码
