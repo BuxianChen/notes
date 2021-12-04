@@ -471,6 +471,52 @@ git clone git@github.com:username/repository_name.git -b dev
 
 ### git remote
 
+
+
+### git submodule
+
+参考：[pro-git 7.11](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
+
+有时候，项目开发时需要引入另一个项目，并希望同时保留两个项目各自的提交历史，此时需要使用 git submodule 命令
+
+例如：在项目 `a` 中需要引入 `https://github.com/example/b.git` 作为子模块，可以使用：
+
+```bash
+# 当前目录 a/
+git submodule add https://github.com/example/b.git
+```
+
+此时，`a/` 目录下会多出一个 `.gitmodules` 文件，并且多出一个 `a/b` 文件夹，文件目录类似如下：
+
+```
+a/
+  - .git/
+  - .gitmodules
+  - ...
+  - b/
+    - .git/
+    - ...
+```
+
+此时 `a/.git` 目录不记录 `b` 目录的具体修改（只关心在对 `a` 提交时 `a/b` 的 commit id 是否发生变化）。`git` 命令在 `a/` 目录与 `a/b` 目录下分别只对 `a/.git` 与 `a/b/.git` 进行修改，并且只关心各自部分的文件修改历史。
+
+如果需要克隆一个带有 submodule 的仓库，可以使用如下几种方式进行：
+
+```bash
+# 一步步操作
+git clone https://github.com/example/a
+cd a
+git submodule init
+git submodule update
+# 后两步也可以合为一步
+# git submodule update --init
+
+# 一步到位
+git clone --recurse-submodules https://github.com/example/a
+```
+
+
+
 ### git fetch/pull/push
 
 ```bash
