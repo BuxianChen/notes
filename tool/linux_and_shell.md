@@ -199,6 +199,117 @@ IFS （internal field separator，内部字段分隔符）环境变量默认为�
 
 ### shell 命令记录
 
+#### sed（待补充完整）
+
+sed 命令是用来处理文本行的
+
+> `sed` is a [stream editor](http://man7.org/linux/man-pages/man1/sed.1.html) that works on piped input or files of text
+
+以例子说明其用法
+
+文件内容如下：`a.py`
+
+```
+def fizz_buzz(limit):
+    for i in range(1, limit+1):
+        if i % 3 == 0:
+            print('fizz', end="")
+        if i % 5 == 0:
+            print('fizz', end="")
+        if i % 3 and i % 5:
+            print(i)
+def main():
+    fizz_buzz(10)
+if __name__ == "__main__":
+    main()
+```
+
+**例子 1：使用正则表达式做文本替换**
+
+此处的 `s/to/do/` 表示将 `to` 替换为 `do`，`s` 表示 substitute（替换）。
+
+```bash
+$ echo howto | sed "s/to/do/"
+howdo
+```
+
+**例子 2：挑选指定行**
+
+此处表示挑选第 4 至第 5 行打印，在默认情况下 sed 命令会将每行都打印出来，使用 `-n` 选项可以抑制这一行为，`4,5p` 中的 `p` 表示 print（打印）。
+
+```bash
+$ sed -n "4,5p" a.py
+            print('fizz', end="")
+        if i % 5 == 0:
+```
+
+可以使用 `-e` 选项选择多个行，注意到第 2 行与第 3 行打印了两次
+
+```bash 
+$ sed -n -e "1,4p" -e "2,3p" a.py
+def fizz_buzz(limit):
+    for i in range(1, limit+1):
+    for i in range(1, limit+1):
+        if i % 3 == 0:
+        if i % 3 == 0:
+            print('fizz', end="")
+```
+
+可以使用 `5~3p` 这种写法表示从第 5 行开始每隔 3 行进行打印
+
+```bash
+$ sed -n -e '5~3p' a.py
+        if i % 5 == 0:
+            print(i)
+if __name__ == "__main__":
+```
+
+**例子 3：文本替换**
+
+只替换第一个匹配
+
+```bash
+$ sed -n 's/=/!/p' a.py
+        if i % 3 != 0:
+            print('fizz', end!"")
+        if i % 5 != 0:
+            print('fizz', end!"")
+if __name__ != "__main__":
+```
+
+替换所有匹配
+
+```bash
+$ sed -n 's/=/!/gp' a.py
+        if i % 3 !! 0:
+            print('fizz', end!"")
+        if i % 5 !! 0:
+            print('fizz', end!"")
+if __name__ !! "__main__":
+```
+
+另外也可以进一步将 `gp` 换成 `gip`，其中 `i` 表示忽略大小写（case insensitive），另外 `gip` 三个字母的顺序可以随意调换
+
+取前四行，将连续多个空格替换为一个空格
+
+```bash
+$ sed -n '1,4s/  */ /gp' a.py
+def fizz_buzz(limit):
+ for i in range(1, limit+1):
+ if i % 3 == 0:
+ print('fizz', end="")
+```
+
+多个替换规则，两种写法均可，注意到第 2 行没有任何模式被匹配上，由于 `-n` 参数的原因没有被打印出来。
+
+```bash
+$ sed -n -e '1,4s/zz/aa/gp' -e '1,4s/==/!=/gp' a.py
+$ sed -n '1,4s/zz/aa/gp;1,4s/==/!=/gp' a.py
+def fiaa_buaa(limit):
+        if i % 3 != 0:
+            print('fiaa', end="")
+```
+
 #### dirname
 
 ```bash
