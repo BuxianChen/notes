@@ -999,6 +999,68 @@ target = source.clone().detach()
 target = source.clone().detach().to("cuda:1").requires_grad_(True)
 ```
 
+## 易错记录
+
+### torch.std 与 torch.var
+
+这两个函数均计算的是无偏估计，以一维数据为例，即 `x` 的形状为 `(d,)`，`torch.std(x)` 的计算公式为：
+$$
+x.std(x)=torch.std(x)=\sqrt\frac{\sum_{i=1}^{d}(x_i-\bar{x}_i)^2}{d-1}
+$$
+`torch.var(x)` 的计算方式与 `torch.std(x)` 是一致的，即：
+$$
+x.var(x)=torch.var(x)=\frac{\sum_{i=1}^{d}(x_i-\bar{x}_i)^2}{d-1}
+$$
+
+### torch.nn.LayerNorm（附手动实现）
+
+以二维数据为例，即 `x` 的形状为 `(B, C)`，调用方法为：
+
+```python
+# 还原计算过程
+import torch
+B, C = 3, 4
+x = torch.rand([B, C])
+weight = torch.rand([C])
+bias = torch.rand([C])
+eps = 1e-5
+
+out1 = torch.nn.functional.layer_norm(x, (C,), weight, bias, eps=eps)
+
+# 手动计算
+mean = x.mean(axis=1)
+var = x.var(axis=1)
+# 注意此处用的是有偏估计
+out2 = (x - mean.view(-1, 1)) / torch.sqrt(var.view(-1, 1)*(C-1)/C+1e-5)
+out2 = out2 * weight + bias
+```
+
+更复杂的情形可以按如下方式手动实现 `layer_norm`
+
+```python
+import torch
+B, L, C1, C2 = 1, 2, 4, 3
+normalized_shape=[C1, C2]
+x = torch.rand([B, L, C1, C2])
+weight = torch.rand(normalized_shape)
+bias = torch.rand(normalized_shape)
+eps = 1e-5
+
+
+out1 = torch.nn.functional.layer_norm(x, normalized_shape, weight, bias, eps=eps)
+
+dims = len(normalized_shape)
+features = 1
+for num in normalized_shape:
+    features *= num
+mean = x.mean(dim=[-i for i in range(1, dims+1)], keepdim=True)
+var = x.var(dim=[-i for i in range(1, dims+1)], keepdim=True)
+out2 = (x - mean) / torch.sqrt(var*(features-1)/features+1e-5)
+out2 = out2 * weight + bias
+
+(out1-out2).abs().sum()
+```
+
 ## `torch.nn.Module` 源码剖析
 
 - 版本：torch 1.6.0

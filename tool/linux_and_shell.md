@@ -972,6 +972,15 @@ do
 done
 ```
 
+#### 例 4：修改文件后缀
+
+```bash
+for file in $1/*.dat;
+do
+	mv "$file" "${file%.*}.txt";
+done
+```
+
 ## 第 5 课：命令行环境
 
 ### 5.1 Job Control
