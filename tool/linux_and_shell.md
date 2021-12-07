@@ -1082,6 +1082,25 @@ nohup python main.py &
 
 ### 5.2 Terminal Multiplexers (tmux)
 
+`ctrl+b` + `alt+方向键`：控制面板大小
+
+`ctrl+b` + `z`：将当前面板扩大到整个窗口（或退出这一模式）
+
+#### 命令环境
+
+按下 `ctrl+b` 后，按下 `:` 进入底线命令模式
+
+```
+:resize-pane -D 10  # 向下减少10个单元
+:resize-pane -U 10  # 向上增加10个单元
+:resize-pane -R 10  # 向右增加10个单元
+:resize-pane -L 10  # 向左增加10个单元
+```
+
+
+
+
+
 ### 5.3 Alias and Dotfiles
 
 ### 5.4 Remote Macheines

@@ -56,15 +56,23 @@ import argparse
 parser = argparse.ArgumentParser()
 
 # --base 1 表示base=1，不传表示base=21
-parser.add_argument("--base", type=int, default=21)
+parser.add_argument("-b", "--base", type=int, default=21)
 
 #  --op1 表示op1=2，不传表示op1=None，--op1 20 表示op1=20
+# 当nargs指定为"?"时, 默认值用const参数进行指定而非default参数
 parser.add_argument("--op1", type=int, nargs="?", const=2)
 # nargs取值可以为整数/"?"/"*"/"+", 分别表示传入固定数量的参数，传入0/1个参数，传入0个或多个参数，传入1个或多个参数
 
 # --a 表示a=True，不传表示a=False
 parser.add_argument("--a", action="store_true")
 # 更一般的，可以自定义一个类继承argparse.Action类，然后将这个自定义类名传入action
+
+# 以下表示--use-a与--use-b至多只能选择一个
+group = parser.add_mutually_exclusive_group()
+group.add_argument("--use-a", action="store_true", default=False)
+group.add_argument("--use-b", action="store_true", default=False)
+
+args = parser.parse_args()
 ```
 
 ### os
