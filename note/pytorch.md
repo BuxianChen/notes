@@ -992,14 +992,14 @@ torch.nn.functional.normalize(input, p=2.0, dim=1, eps=1e-12,out=None)
 normalize(torch.tensor([[6, 8]])) # [[0.6, 0.8]]
 ```
 
-pytorch 复制 tensor 的推荐姿势
+## 易错记录
+
+### clone、detach
 
 ```python
 target = source.clone().detach()
 target = source.clone().detach().to("cuda:1").requires_grad_(True)
 ```
-
-## 易错记录
 
 ### torch.std 与 torch.var
 
