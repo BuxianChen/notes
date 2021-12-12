@@ -1181,19 +1181,6 @@ def _call_impl(self, *input, **kwargs):
     return result
 ```
 
-## Tricks and Discusions
-
-### 为什么 torchvision 使用 PIL 而非 CV2？
-
-可参考[stackoverflow问答](https://stackoverflow.com/questions/61346009/why-is-pil-used-so-often-with-pytorch)
-
-目前 torchvision 也可以选择图像处理的后端，按官方说法：accimage 一般比 PIL 要快一些，但支持的操作不完善
-
-```python
-torchvision.set_image_backend(backend)
-# backend可以选择"PIL"或者"accimage"
-```
-
 ## Docker
 
 devel 与 runtime 的主要区别在于后者没有 nvcc
@@ -1304,3 +1291,26 @@ reduce的含义是规约，即多个数据规约为一个数据，例如求和�
 - 时间成本
 
   假定所有机器处理速度完全相同时，花费时间为：12个数据通信时间，3次加法时间，3次覆盖时间
+
+## Tricks and Discusions
+
+### 为什么 torchvision 使用 PIL 而非 CV2？
+
+可参考[stackoverflow问答](https://stackoverflow.com/questions/61346009/why-is-pil-used-so-often-with-pytorch)
+
+目前 torchvision 也可以选择图像处理的后端，按官方说法：accimage 一般比 PIL 要快一些，但支持的操作不完善
+
+```python
+torchvision.set_image_backend(backend)
+# backend可以选择"PIL"或者"accimage"
+```
+
+### pytorch 与 cuda/cudnn 的对应
+
+[pytorch 论坛](https://discuss.pytorch.org/t/how-to-check-if-torch-uses-cudnn/21933/4) 的解答中有如下解释
+
+> Yes, you just need to install the NVIDIA drivers and the binaries will come with the other libs.
+> If you want to build from source, you would need to install CUDA, cuDNN etc.
+
+如果采用二进制的形式安装（pip install 属于这一类），那么只需要事先安装好显卡驱动即可，安装包里已经内置了 CUDA 与 cuDNN。这也可能解释了为什么 pytorch 的官方 Docker 镜像例如 `pytorch/pytorch:1.9.0-cuda10.2-cudnn7-runtime` 标签名写的是 cudnn 7 而实际上包含的 cudnn_version.h 里显示的是 8.2.1 版本。
+

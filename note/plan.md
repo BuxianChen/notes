@@ -90,6 +90,14 @@ missing semester 第5课（记录在shell and linux中即可）
 - dotfile 配置
 - remote
 
+## 学习计划
+
+- Jekyll 模板的摸索与 GitHub Pages 的探索
+- 《linux shell scripting cookbook (2ed)》
+- missing semester 全部课程及作业
+- CPython Internals (随缘)
+- CUDA C 基础学习，oneflow、pytorch 选学
+
 ## 杂项
 
 数据转换：COCO-YOLOv5互转，mxnet RECORD格式，lmdb格式

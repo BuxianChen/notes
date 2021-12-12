@@ -411,7 +411,31 @@ pip install --no-index --find-links=<your_offline_packages_dir> <package_name>
 pip install --no-index --find-links=<your_offline_packages_dir> -r requirements.txt
 ```
 
+### 疑难杂症
+
+在 Windows 下有时会因为权限问题，在执行
+
+```
+c
+```
+
+时，因为没有安装权限，导致原有的 `pip` 被卸载而更新的 `pip` 又不能正常安装。此时可以使用如下方式恢复
+
+```
+python -m ensurepip
+```
+
+之后保证权限后正常更新 pip 即可
+
+```
+pip install --upgrade pip
+# 备用方法
+# python -m pip install -U --force-reinstall pip
+```
+
 ## conda 使用
+
+### 基本操作
 
 创建环境
 
@@ -431,6 +455,43 @@ conda env remove --name <env_name>
 
 ```bash
 conda env list
+```
+
+### 不同环境设定不同的环境变量
+
+以设定 cuda 相关的环境变量为例，以 Windows 为例，linux 类似。相关的官方文档参见[此处](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)。只需手动增加两个文件即可：
+
+例如：`CONDA_ROOT` 为 anaconda 的安装路径，例如 `D:/anaconda3`，而 `ENV_NAME` 为环境名，例如：`tf2.7`。例如：`tf2.7` 表明此环境下需要安装 tensorflow 2.7.0 版本。其依赖关系从官网上可以查到，依赖：
+
+- 支持 cuda 11.2 以上版本的显卡驱动
+
+- cuda 11.2
+- cudnn 8.1.0
+
+为此，需要手动安装好相应版本的 cuda 与 cudnn，两者均可以安装多个版本。为了使得进入 `tf2.7` 环境时，自动选择 cuda 11.2 及相应版本的 cudnn，只需要配置如下两个文件即可。作用时进入 `tf2.7` 环境时，设定好 `%PATH%` 变量，退出时恢复原本的 `%PATH%`。
+
+`${CONDA_ROOT}/envs/${ENV_NAME}/etc/conda/activate.d/activate.bat`
+
+```shell
+@echo off
+set OLDPATH=%PATH%
+set CUDA_VERSION=v11.2
+set CUDNN_VERSION=cudnn-11.3-windows10-x64-v8.2.1.32
+
+set CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\%CUDA_VERSION%
+set NVCUDASAMPLES_ROOT=C:\ProgramData\NVIDIA Corporation\CUDA Samples\%CUDA_VERSION%
+set OTHER_CUDA_PATH=C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\%CUDA_VERSION%\bin;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\%CUDA_VERSION%\extras\CUPTI\lib64;C:\Program Files\NVIDIA GPU Computing Toolkit\CUDA\%CUDA_VERSION%\include;C:\cudnn\%CUDNN_VERSION%\cuda\bin
+
+set PATH=%CUDA_PATH%;%NVCUDASAMPLES_ROOT%;%OTHER_CUDA_PATH%;%OLDPATH%
+echo set CUDA_VERSION=%CUDA_VERSION%, CUDNN_VERSION=%CUDNN_VERSION%
+```
+
+`${CONDA_ROOT}/envs/${ENV_NAME}/etc/conda/deactivate.d/deactivate.bat`
+
+```shell
+@echo off
+set PATH=%OLDPATH%
+echo recover PATH
 ```
 
 ## Ipython在终端的使用
