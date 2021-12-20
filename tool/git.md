@@ -360,6 +360,13 @@ git branch -D <待删除的分支名>  # 强制删除，即使被删除的分支
 git branch --set-upstream-to <远程仓库名>/<远程仓库分支名> <本地分支名>
 ```
 
+类似地，可以使用如下命令来新建本地分支，并与远程分支建立联系。同样地，后续也可以不加参数地使用 git pull/push/fetch
+
+```
+git branch --track dev origin/dev  # 新建本地分支 dev，并建立与远程origin/dev分支间的联系
+git branch --track origin/dev  # 将当前分支与远程的origin/dev关联
+```
+
 ### git stash
 
 git stash 用于暂存一些文件，但不进行提交。参见例 4。
@@ -386,6 +393,14 @@ git checkout --detach <branch_name/commit_id>
 ```
 
 注意两条命令只有一些微妙的区别：第一条命令如果切换后 HEAD 与现有的某个分支名的指向一致，则 HEAD 的状态为非 detached 状态，否则为 detached 状态；第二条命令切换后必然处于 detached 状态。所谓 detached 状态指的是切换后相当于处于匿名分支上，如果在匿名分支上发生了提交，之后又切换到别的分支，如果还想切换回匿名分支，那么只能用 commit_id 来切换回去。
+
+当工作目录发生了修改，但此时希望切换到另一个分支，并且要切换到的分支与当前工作目录的版本存在冲突时，使用 `git checkout` 命令将会失败，此时如果使用
+
+```bash
+git checkout --force brach_name
+```
+
+那么等效于先丢弃工作区的全部修改，再进行分支切换
 
 **git checkout 用于文件版本切换**
 
@@ -477,6 +492,8 @@ git clone git@github.com:username/repository_name.git -b dev
 
 参考：[pro-git 7.11](https://git-scm.com/book/en/v2/Git-Tools-Submodules)
 
+参考：[git-tower](https://ww.git-tower.com/learn/git/ebook/en/command-line/advanced-topics/submodules)（一个不错的教程，感觉比 pro-git 还要清晰）
+
 有时候，项目开发时需要引入另一个项目，并希望同时保留两个项目各自的提交历史，此时需要使用 git submodule 命令
 
 例如：在项目 `a` 中需要引入 `https://github.com/example/b.git` 作为子模块，可以使用：
@@ -515,8 +532,6 @@ git submodule update
 git clone --recurse-submodules https://github.com/example/a
 ```
 
-
-
 ### git fetch/pull/push
 
 ```bash
@@ -526,6 +541,18 @@ git push <远程主机名> <本地分支名>:<远程分支名>
 # 例子：git push origin release:dev
 git push -u <远程主机名> <本地分支名>:<远程分支名>
 # 之后可以直接使用 git push，不加其余参数
+```
+
+git pull 的具体行为是：首先 git fetch 指定远程分支的更新，之后在指定的本地分支上进行 git merge 的操作，如果当前的 HEAD 刚好位于指定的本地分支上，则移动 HEAD 的指向到 merge 后的位置。
+
+git fetch 命令只会将远程分支的修改更新到 `.git` 目录内部，但不会新建分支，也不会对本地的工作目录进行修改。
+
+参考 [stackoverflow](https://stackoverflow.com/questions/10312521/how-to-fetch-all-git-branches) 问答，可以按如下方式拉取所有远程分支的更新：
+
+```bash
+git branch -r | grep -v '\->' | while read remote; do git branch --track "${remote#origin/}" "$remote"; done  # 建立与远程分支同名的本地分支，并一一关联
+git fetch --all  # 等价于 git remote update, 作用是拉取全部分支的远程更新
+git pull --all  # 更新全部的本地分支
 ```
 
 ### * git cat-file
