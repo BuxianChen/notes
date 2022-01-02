@@ -34,6 +34,42 @@ $ . /ect/profile  # 无需重启
 setup(..., scripts = ["tools/pdf2txt.py", "tools/dumppdf.py"], ...)
 ```
 
+## Ubuntu apt 安装 Python
+
+```bash
+apt clean && apt update && apt upgrade -y
+apt install -y software-properties-common 
+# python3 available (python3 ~> python3.6)
+# python3.6 -m pip, pip, pip3 not available
+
+add-apt-repository ppa:deadsnakes/ppa -y
+apt update
+apt install -y python3.8  # 3.8.12 installed
+# python3.8 -m pip, pip, pip3 not available
+
+apt install -y python3-pip
+python3.8 -m pip install --upgrade pip
+```
+
+在 Linux 上，时常会出现多个 python，尤其是在不熟悉的机器上，可能会发现
+
+```
+python
+python3
+python3.6
+python3.7
+python2.7
+```
+
+这些命令同时存在，此时可以使用 update-alternatives 命令对其进行管理，作为最佳实践，会将 python 2.x版本全部”绑定“到 `/usr/bin/python` 上，将 python 3.x 版本全部绑定到 `/usr/bin/python3` 上。具体过程如下
+
+```bash
+update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 1
+update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 2
+```
+
+这样便形成了一个软链接 `/usr/bin/python3 -> /etc/alternatives/python3`，并且 python 3.7 的优先级高于 python 3.6。此时 python3 代表的就是 python3.7 了。关于 update-alternatives 的具体说明参考 [update-alternatives](https://linuxhint.com/update_alternatives_ubuntu/)。
+
 ## Python 程序的运行方式
 
 [参考链接\(realpython.com\)](https://realpython.com/run-python-scripts/)
@@ -100,15 +136,15 @@ __main__
 除此以外，使用 `python -m b.b` 运行时还有两个特殊之处：
 
 - 如果 `b.b` 是已经用 `pip install` 安装的包名，则可以在任意目录使用该方式运行脚本，无论该脚本是否被加入 `setup.py` 文件的 `setup.py` 的 `entry_points` 参数中。
-
+  
   例如：
-
+  
   torch 1.9.0 版本可以用如下方式启动多卡运行脚本
-
+  
   ```bash
   python -m torch.distributed.launch --nproc_per_node=2 --nnodes=1 --node_rank=0 --master_addr 127.0.0.1 --master_port 29500 train.py
   ```
-
+  
   ```python
   # setup.py(torch源码中entry_point并无此脚本)
   entry_points = {
@@ -120,13 +156,13 @@ __main__
   ```
 
 - 以 `python -m b.b` 运行时，`b/b.py` 中的相对路径导入可以部分起作用，例如：`from .s import s`，但不能使用 `from ..c import c`，否则会报错
-
+  
   ```
   ValueError: attempted relative import beyond top-level package
   ```
-
+  
   若切换到 `b` 目录，以 `python b.py` 而言，即使使用 `from .s import s`，仍然会直接报错
-
+  
   ```
   ImportError: attempted relative import with no known parent package
   ```
@@ -166,15 +202,15 @@ pdb 调试
 
 ### 1. 命名规范
 
-| 用途          | 命名原则 | 例子 |
-| :------------ | :------- | :--- |
-| 类            |          |      |
-| 函数/类的方法 |          |      |
-| 模块名        |          |      |
-| 变量名        |          |      |
-|               |          |      |
-|               |          |      |
-|               |          |      |
+| 用途      | 命名原则 | 例子  |
+|:------- |:---- |:--- |
+| 类       |      |     |
+| 函数/类的方法 |      |     |
+| 模块名     |      |     |
+| 变量名     |      |     |
+|         |      |     |
+|         |      |     |
+|         |      |     |
 
 ### 2. 其他
 
@@ -285,11 +321,11 @@ foo(10)
 - 在与 `.git` 目录同级的目录下新建一个 `.pre-commit-config.yaml`
 
 - 在与 `.git` 目录同级的目录下运行
-
+  
   ```
   pre-commit install
   ```
-
+  
   这条命令将对 `.git/hooks` 目录新创建一个 `pre-commit` 文件，其内容是一个可执行脚本
 
 - 执行 `git commit` 时会自动触发上述钩子
@@ -466,6 +502,7 @@ conda env list
 - 支持 cuda 11.2 以上版本的显卡驱动
 
 - cuda 11.2
+
 - cudnn 8.1.0
 
 为此，需要手动安装好相应版本的 cuda 与 cudnn，两者均可以安装多个版本。为了使得进入 `tf2.7` 环境时，自动选择 cuda 11.2 及相应版本的 cudnn，只需要配置如下两个文件即可。作用时进入 `tf2.7` 环境时，设定好 `%PATH%` 变量，退出时恢复原本的 `%PATH%`。
@@ -539,7 +576,7 @@ jupyter-notebook # jupyter-lab
 
 ```
 {
-	"python.formatting.provider": "yapf"
+    "python.formatting.provider": "yapf"
 }
 ```
 
