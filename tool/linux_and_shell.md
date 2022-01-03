@@ -1107,7 +1107,44 @@ nohup python main.py &
 
 ## Linux
 
-### 用户相关
+### Linux 目录结构
+
+Linux 发行版的目录结构由 [Filesystem Hierarchy Standard](https://en.wikipedia.org/wiki/Filesystem_Hierarchy_Standard) 所规定，以 Ubuntu 18.04 为例，大致如下：
+
+```
+/
+  - bin/
+  - sbin/
+  - usr/ 
+  	- local/
+  	  - bin/
+  	  - sbin/
+  	- bin/
+  	- sbin/
+  - root/
+  - home/
+  - dev/  # 设备文件, 例如硬盘：/dev/disk0
+  - lib/
+  - include/
+  - etc/  # editable text config, 存放软件的配置文件
+  - var/  # 在使用过程中一直在发生变化的文件，例如日志，临时文件等
+  - boot/  # 系统启动所需的文件
+  - opt/  # 可选的软件
+  - tmp/  # 系统重启时将不被保留的文件
+  - proc/  # 一个虚拟的目录, 不被存在磁盘上, 可用于查看进程的信息
+```
+
+说明：
+
+- 默认的 `PATH` 环境变量的值通常情况下为
+
+  ```
+  /usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+  ```
+
+  其中，`bin` 与 `sbin` 的区别在于前者适用于所有用户，后者适用于普通用户。而 `/bin` 目录存放的应该是系统所必须的命令或软件，`/usr/bin` 存放的是非系统必须的软件，一般而言，Linux 发行版的“软件商店”（例如 Ubuntu 的apt）里的软件会安装在此处。手动编译或者通过其他渠道获取的适用于所有用户的软件一般放在 `/usr/local/bin` 目录下。
+
+### 管理用户相关
 
 ```bash
 $ sudo useradd -m -N -s /bin/bash someone
@@ -1122,9 +1159,13 @@ $ passwd someone  # 设定用户密码
 
 [链接1](https://thecodecloud.in/what-happens-when-we-login-logout-in-linux/)，[链接2](https://www.stefaanlippens.net/bashrc_and_others/#:~:text=.bash_profile%20is%20for%20making%20sure%20that%20both%20the,if%20you%20would%20omit.bash_profile%2C%20only.profile%20would%20be%20loaded.)，[链接3](https://bencane.com/2013/09/16/understanding-a-little-more-about-etcprofile-and-etcbashrc/)
 
-交互式的方式登录时，首先查看 `/etc/profile` 是否存在并执行该文件，接下来，按顺序依次查找 `.bash_profile`，`.bash_login`，`.profile` 这三个文件是否存在并且有可读权限，只执行找到的第一个则停止。
+交互式的方式登录时，首先查看 `/etc/profile` 是否存在并执行该文件，接下来，按顺序依次查找 `~/.bash_profile`，`~/.bash_login`，`~/.profile` 这三个文件是否存在并且有可读权限，只执行找到的第一个则停止。
 
 以非交互式的方式登录时，依次执行 `/etc/bash.bashrc`（ubuntu 为`/etc/bash.bashrc`，Red Hat 为 `/etc/bashrc`） 以及 `.bashrc`。
+
+## Ubuntu
+
+
 
 ## 杂录（未被划分清楚的记录到这里）
 

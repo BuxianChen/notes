@@ -10,25 +10,25 @@ sudo apt install build-essential zlib1g-dev libncurses5-dev libgdbm-dev libnss3-
 wget https://www.python.org/ftp/python/3.7.4/Python-3.7.4.tgz
 tar -xf Python-3.7.4.tgz
 cd Python-3.7.4
-./configure --enable-optimizations --prefix=/usr/python3.7
+./configure --enable-optimizations --prefix=/usr/local/python3.7
 make -j 8
 sudo make altinstall
-ln -s /usr/python3.7/bin/python3.7 /usr/bin/python3.7
-ln -s /usr/python3.7/bin/pip3.7 /usr/local/bin/pip3.7
+ln -s /usr/local/python3.7/bin/python3.7 /usr/local/bin/python3.7
+ln -s /usr/local/python3.7/bin/pip3.7 /usr/local/bin/pip3.7
 ```
 
 可以在 `~/.bashrc` 或 `/etc/profile` 中添加 Python 安装的可执行文件到 PATH 环境变量。
 
 ```bash
-export PATH="$PATH:/usr/python3.7/bin/"
+export PATH="$PATH:/usr/local/python3.7/bin/"
 ```
 
 ```bash
 $ . ~/bashrc  # 需重启
-$ . /ect/profile  # 无需重启
+$ . /etc/profile  # 无需重启
 ```
 
-某些用 pip 安装的包会在 `setup.py` 文件中的 `setup` 函数中指定 `scripts` 参数，这些脚本将被复制到 `/usr/python3.7/bin` 目录下。例如：pdfminer 的源码中
+某些用 pip 安装的包会在 `setup.py` 文件中的 `setup` 函数中指定 `scripts` 参数，这些脚本将被复制到 `/usr/local/python3.7/bin` 目录下。例如：pdfminer 的源码中
 
 ```
 setup(..., scripts = ["tools/pdf2txt.py", "tools/dumppdf.py"], ...)
@@ -64,11 +64,15 @@ python2.7
 这些命令同时存在，此时可以使用 update-alternatives 命令对其进行管理，作为最佳实践，会将 python 2.x版本全部”绑定“到 `/usr/bin/python` 上，将 python 3.x 版本全部绑定到 `/usr/bin/python3` 上。具体过程如下
 
 ```bash
-update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.6 1
-update-alternatives --install /usr/bin/python3 python3 /usr/bin/python3.7 2
+update-alternatives --install /usr/local/bin/python3 python3 /usr/bin/python3.6 1
+update-alternatives --install /usr/local/bin/python3 python3 /usr/bin/python3.7 2
 ```
 
-这样便形成了一个软链接 `/usr/bin/python3 -> /etc/alternatives/python3`，并且 python 3.7 的优先级高于 python 3.6。此时 python3 代表的就是 python3.7 了。关于 update-alternatives 的具体说明参考 [update-alternatives](https://linuxhint.com/update_alternatives_ubuntu/)。
+这样便形成了一个软链接 `/usr/local/bin/python3 -> /etc/alternatives/python3`，并且 python 3.7 的优先级高于 python 3.6。此时 python3 代表的就是 python3.7 了。关于 update-alternatives 的具体说明参考 [update-alternatives](https://linuxhint.com/update_alternatives_ubuntu/)。
+
+备注：此处推荐将目标地址设定在 `/usr/local/bin/python3` 而不在 `/usr/bin/python3`，因为按 Linux 的目录结构规范，`/usr/bin` 目录应该由包管理器 apt 来管理，而 `/usr/local/bin` 是由 root 用户来手动管理的。
+
+备注：python 2.x 的官方维护期限为2020年1月1号，因此新版本的系统上可能不会再使用 python 2.x 了，因此也可以用 update-alternatives 将 python 3.x 管理起来后，再 `/usr/local/bin/python` 直接软链接到 `/usr/local/bin/python3`。
 
 ## Python 程序的运行方式
 
