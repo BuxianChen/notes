@@ -715,6 +715,16 @@ ls b > tmp2.txt
 diff tmp1.txt tmp2.txt
 ```
 
+#### `&&`、`||`、`;`
+
+这三者统称为 list operators for separating shell commands
+
+```
+command1 && command2  # command1正常执行时, command2才被执行
+command1 || command2  # command1执行异常时, command2才被执行
+command1 ; command2   # 无论command1执行是否正常, command2d
+```
+
 ## 第 2 课：shell 脚本
 
 ### 基础语法
