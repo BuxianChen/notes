@@ -563,7 +563,7 @@ curl 命令用来请求 Web 服务器。其名字的含义即为客户端（clie
 
 grep 的 `-i` 参数表示匹配时忽略大小写
 
-cut 命令用于切分字符串，有若干种用法：取出第 $$m$$ 个到第 $$n$$ 个字符；按分隔符取出第 $$k$$ 个字符串。此处 cut 命令之前的
+cut 命令用于切分字符串，有若干种用法：取出第 $$m$$ 个到第 $$n$$ 个字符；按分隔符取出第 $$k$$ 个字符串。此处 cut 命令中用 `--delimiter=' '` 指定分割符为空格，`-f2` 表示取出以该分割符分割产生的第二项
 
 #### 例 3：source、export
 
@@ -642,6 +642,26 @@ ROOT
 ```bash
 $ echo 5000 | sudo tee /sys/class/backlight/intel_backlight/brightness
 # 不能使用 sudo echo 5000 > /sys/class/backlight/intel_backlight/brightness
+```
+
+#### 例 8：依据 csv 格式文件执行命令（read 命令）
+
+`cpfiles.txt` 文件如下，希望按照 csv 进行文件拷贝
+
+```
+a.txt,a1.txt
+b.txt,b1.txt
+```
+
+```bash
+$ cat cpfiles.txt | while IFS="," read src dst; do cp $src $dst; done
+$ cat cpfiles.txt | while IFS="," read -a row; do cp ${row[0]} ${row[1]}; done
+```
+
+#### 例 9：生成序列（seq 命令）
+
+```bash
+$ for i in $(seq 100000); do echo ${i} >> x.txt; done
 ```
 
 ### 杂录
