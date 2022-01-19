@@ -156,6 +156,11 @@ CLI \(command-line interface\) 命令行接口
 
 wildcards 通配符
 
+## Linux动态链接库搜索规则
+参考 [csdn博客](https://blog.csdn.net/winycg/article/details/80572735)
+
+默认动态链接库的访问使用缓存机制，存放在 `/etc/ld.so.cache` （二进制格式），搜索路径保存在 `/etc/ld.so.conf` 中。当安装了其他的动态链接库时，需要使用 `ldconfig` 命令更新。
+
 ## 关于机器的进程数
 
 ```bash
