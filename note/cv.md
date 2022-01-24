@@ -428,6 +428,7 @@ for image_name in image_names:
     with open(image_name, "rb") as fr:
         bs = fr.read()  # byte
     txn.put(key=image_name.encode("utf-8"）, value=bs) 
+txn.commit()
 env.close()
 ```
 
