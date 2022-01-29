@@ -1256,6 +1256,33 @@ class BaseModule(nn.Module, metaclass=ABCMeta):
 ```
 ```
 
+### mask 标注
+
+#### mmdet/core/mask/structures.py：PolygonMasks
+
+通常一个物体的标注文件格式类似于：
+
+```json
+{
+    ...
+    "box": [],
+    "mask": [多边形的顶点, ..., 多边形的顶点]  // 多边形顶点表示为(x1, y1, x2, y2,..., x_n, y_n)形式
+}
+```
+
+```python
+from mmdet.core.mask.structures import PolygonMasks
+import numpy as np
+poly1 = [np.array([2, 2, 5, 2, 5, 5, 2, 5])]  # 一个矩形的四个点，对应与一个物体
+poly2 = [np.array([3, 3, 5, 3, 5, 5, 3, 5]), np.array([1, 1, 3, 1, 3, 3, 1, 3])]  # 两个矩形，对应于一个物体
+h, w = 8, 10
+masks = PolygonMasks([poly1, poly2], h, w).to_tensor(float, "cpu")  # mask.shape为[2, 8, 10], 各元素取值为0或1
+```
+
+#### mmdet/core/mask/structures.py：NitMapMasks
+
+待续
+
 ## 记录
 
 ### mmdetction 2.16.0

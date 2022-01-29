@@ -992,6 +992,14 @@ torch.nn.functional.normalize(input, p=2.0, dim=1, eps=1e-12,out=None)
 normalize(torch.tensor([[6, 8]])) # [[0.6, 0.8]]
 ```
 
+`torch.Tensor.type_as` 函数
+
+```python
+x = torch.tensor([1., 2.], device="cuda:0")
+y = torch.tensor([1, 2])
+z = y.type_as(x)  # 同时转换float与device
+```
+
 ## 易错记录
 
 ### clone、detach
