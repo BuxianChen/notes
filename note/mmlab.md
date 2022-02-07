@@ -1359,7 +1359,34 @@ else:
 
 ### mmcv 1.3.16
 
+### mmocr 0.5.0
 
+`KIEDataset.__getitem__`: (before pipeline)
+
+```json
+{
+    "img_info":
+    {
+        "filename": "假路径",
+        "height": 480,  // 整数
+        "width": 600 // 整数
+    },
+    "ann_info":  // 由[{"box": [8个整数], "text": "xdf", "label": 3}] 转换而来
+    {
+        "bboxes": (n, 4) float32 array,
+        "relations": (n, n, 5) float32 array,
+        "texts": (n, max(image_text)) int32 array 补齐方式为补-1,
+        "ori_texts": ["text1", "text2", ...] 原始字符串标注,
+        "labels": (n, 1+n) int32 array // 第一列为框的标注, 后面为edge, 默认情况下为对角线为-1的全1矩阵
+    }
+    "img_prefix": "前缀", // 所有标注都一样
+    "bbox_fields": [],  // 初始化为空列表
+    "ori_texts": "...", // ann_info.ori_texts
+    "filename": "真路径",  // 前缀拼接 img_info.filename
+    "ori_filename": "假路径", // img_info.filename
+    "img": np.array([0, 0, 0], dtype=np.uint8)  // 占位符
+}
+```
 
 ## Tricks and Discussion and Have Fun
 
