@@ -1189,9 +1189,68 @@ $ passwd someone  # 设定用户密码
 
 [链接1](https://thecodecloud.in/what-happens-when-we-login-logout-in-linux/)，[链接2](https://www.stefaanlippens.net/bashrc_and_others/#:~:text=.bash_profile%20is%20for%20making%20sure%20that%20both%20the,if%20you%20would%20omit.bash_profile%2C%20only.profile%20would%20be%20loaded.)，[链接3](https://bencane.com/2013/09/16/understanding-a-little-more-about-etcprofile-and-etcbashrc/)
 
-交互式的方式登录时，首先查看 `/etc/profile` 是否存在并执行该文件，接下来，按顺序依次查找 `~/.bash_profile`，`~/.bash_login`，`~/.profile` 这三个文件是否存在并且有可读权限，只执行找到的第一个则停止。
+#### 各种类型的 shell
 
-以非交互式的方式登录时，依次执行 `/etc/bash.bashrc`（ubuntu 为`/etc/bash.bashrc`，Red Hat 为 `/etc/bashrc`） 以及 `.bashrc`。
+根据 [链接4](https://linuxize.com/post/bashrc-vs-bash-profile/) 中所指出的，
+
+> A shell can be interactive or non-interactive
+
+所谓的 interactive shell 即为与用户进行交互的 shell。而 non-interactive shell 指的是不会与用户进行交互的 shell，例如在 shell 中执行
+
+```bash
+sh run.sh
+```
+
+其执行逻辑是新开一个 non-interactive shell，在该 shell 中执行 `run.sh` 中的命令
+
+进一步，interactive shell 又分为 interactive login shell 与 interactive non-login shell，例子是：使用 `ssh` 远程连接时得到的 shell，使用 `--login` 参数启动的 `bash` 是 login shell；而 non-login shell 则必须在 login shell 中才能打开，例如在一个 shell 中直接输入
+
+```
+bash
+```
+
+那么将会进入一个全新的 non-login shell（虽然可能不容易察觉，但使用 `ctrl+D` 快捷键便可以退出这个 non-login shell，从而回到原来的 shell）。
+
+备注：各种类型的 shell 也可以在 `/etc/passwd` 文件中可见一斑：
+
+```
+buxian:x:1000:1000:buxian,,,:/home/buxian:/bin/bash
+systemd-coredump:x:999:999:systemd Core Dumper:/:/usr/sbin/nologin
+nvidia-persistenced:x:127:134:NVIDIA Persistence Daemon,,,:/nonexistent:/usr/sbin/nologin
+```
+
+**总结如下**
+
+- non-interactive shell：不接受交互式操作的 shell；
+- interactive shell：交互式 shell；
+  - login shell：需要登陆的shell，例如使用 ssh 登陆；
+  - non-login shell：不需要登陆的shell，例如在一个交互式（login 或者 non-login）的 shell 中输入 bash 所得到的 shell。
+
+#### shell 的配置文件
+
+对于 login shell，则登陆时首先查看 `/etc/profile` 是否存在并执行该文件，接下来，按顺序依次查找 `~/.bash_profile`，`~/.bash_login`，`~/.profile` 这三个文件是否存在并且有可读权限，只执行找到的第一个则停止。
+
+对于 non-login shell，依次执行 `/etc/bash.bashrc`（ubuntu 为`/etc/bash.bashrc`，Red Hat 为 `/etc/bashrc`） 以及 `.bashrc`。
+
+【存疑】：对于 non-interactive shell，以上所有的配置文件均不会被执行
+
+备注：
+
+（1）一般而言，`~/.bash_profile` 里会包含这种语句
+
+```
+if [ -f ~/.bashrc ]; then
+	. ~/.bashrc
+fi
+```
+
+（2）`~/.bash_profile` 仅仅适用于 bash shell，而 `~/.profile` 适用于所有的 shell。
+
+备注：bash 的 manpage 中节选如下：
+
+>     When bash is invoked as an interactive login shell, or as a non-interactive shell with the --login option, it first reads and executes commands from the file /etc/profile, if that file exists. After reading that file, it looks for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from the first one that exists and is readable. The --noprofile option may be used when the shell is started to inhibit this behavior.
+>     
+>     When an interactive shell that is not a login shell is started, bash reads and executes commands from /etc/bash.bashrc and ~/.bashrc, if these files exist. This may be inhibited by using the --norc option. The --rcfile file option will force bash to read and execute commands from file instead of /etc/bash.bashrc and ~/.bashrc.
 
 ## Ubuntu
 
