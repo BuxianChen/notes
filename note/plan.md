@@ -107,3 +107,10 @@ Python自带的数据库：sqlite3
 代码文档自动生成：[MkDocs](https://www.mkdocs.org/)，使用例子：[Spektral](https://github.com/danielegrattarola/spektral/)
 
 JPG 与 PNG 格式详解（可以看看冈萨雷斯的书上是否有记录）
+
+## Blog Update Plan
+
+- Jekyll、html/css/javascript 简介
+- Swin Transformer
+- HMM 语音识别模型（含 EM 算法）
+- MFCC 具体解释
