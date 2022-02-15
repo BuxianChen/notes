@@ -582,6 +582,13 @@ git update-index --assume-unchanged [<file> ...]
 git update-index --no-assume-unchanged [<file> ...]
 ```
 
+关于代理引发的 git clone 失败问题，参考[链接](https://blog.csdn.net/shaopeng568/article/details/114919318)
+
+```
+git config --global  --unset https.https://github.com.proxy
+it config --global  --unset http.http://github.com.proxy
+```
+
 ## 详例
 
 注意, 测试2.1与2.2表示的是在测试1的基础上尝试两种做法的结果
