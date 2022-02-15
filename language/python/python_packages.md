@@ -1339,6 +1339,34 @@ outputs = model.generate(inputs, max_length=40, num_beams=4, early_stopping=True
 print(tokenizer.decode(outputs[0]))
 ```
 
+#### 离线模型下载实例
+
+`EncoderClassifier` 中有如下注释：
+
+```
+classifier = EncoderClassifier.from_hparams(
+    ...     source="speechbrain/spkrec-ecapa-voxceleb",
+    ...     savedir=tmpdir,
+    ... )
+```
+
+##### 离线下载模型步骤如下：
+
+```
+# 需要先安装git-lfs
+git clone https://huggingface.co/speechbrain/spkrec-ecapa-voxceleb
+# 将hyperparams.yaml中的pretrained_path修改为/home/buxian/Desktop/spkrec-ecapa-voxceleb
+```
+
+这样便可以直接使用如下方式导入模型（完全绕过默认路径 `~/.cache/huggingface/hub`）
+
+```
+from speechbrain.pretrained import EncoderClassifier
+classifier = EncoderClassifier.from_hparams(source="/home/buxian/Desktop/spkrec-ecapa-voxceleb")
+```
+
+备注：此处的 git clone 这一方法在离线下载时具有通用性，而修改 `pretrain_path` 是 `speechbrain` 包的内部的逻辑造成的。如果不修改 `pretrain_path`，将无法绕过默认下载路径 `~/.cache/huggingface/hub`。
+
 ### 读写excel\(xlsxwriter与pandas\)
 
 pandas与xlsxwriter均支持给输出的excel自定义格式.
