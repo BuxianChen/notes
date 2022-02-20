@@ -8,16 +8,18 @@
 
 ```python
 import logging
-logger = logging.getLogger()
+logname = "xx.py"
+filename = "x.log"
+logger = logging.getLogger(logname)  # logname为可选参数
 
 fh = logging.FileHandler(filename, mode="w")
-fh.setFormatter(logging.Formatter(fmt="%(message)s"))
+fh.setFormatter(logging.Formatter(fmt="%(asctime)s %(filename): %(levelname): %(message)s"))
 fh.setLevel(logging.INFO)
 logger.addHandler(fh)
 
 ch = logging.StreamHandler(sys.stdout)
-ch.setLevel(self.slevel)
-ch.setFormatter(self.formatter)
+ch.setLevel(logging.INFO)
+ch.setFormatter(fmt="%(asctime)s: %(message)s")
 logger.addHandler(ch)
 
 logger.setLevel(logging.INFO)
