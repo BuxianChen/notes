@@ -425,7 +425,7 @@ abstract与final不能一起用
 * 实例内部类，类似实例变量
 * 局部内部类，类似局部变量，匿名内部类属于局部内部类
 
-使用内部类可读性差, 尽量不用
+使用内部类可读性差，尽量不用
 
 ```java
 class Test{
@@ -469,6 +469,221 @@ public class Main{
 高级用法
 
 ### 异常
+
+### 多线程（待完善）
+
+#### 线程
+
+**概念**
+
+java 中有两类线程：
+
+- 用户线程：例如主线程（以及下面所写各种线程）
+- 守护线程（后台线程）：例如垃圾回收线程，所有用户线程结束后，守护线程将自动结束。守护线程一般都是些死循环
+
+**语法：定义**
+
+```java
+// 方法一：继承java.lang.Thread类
+class MyThread extends Thread{
+    @override
+    void run(){
+        Thread t = Thread.CurrentThread();
+        System.out.println(t.getName());
+    }
+}
+// 方法二：实现java.lang.Runable接口（更为推荐）
+class MyRunable implements Runnable{
+    void run(){
+        Thread t = Thread.CurrentThread();
+        System.out.println(t.getName());
+    }
+}
+
+// 守护线程(定义的语法上与普通线程无异)
+class DeamonThread extends Thread{
+    @override
+    void run(){
+        while(true){
+            try {
+                Thread.sleep(1000);
+                // 备份数据代码
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+    }
+}
+```
+
+**语法：使用**
+
+线程生命周期：
+
+新建状态：new 执行后进入此状态
+
+就绪状态：start 执行完后进入此状态
+
+运行状态：抢到CPU时间片后由就绪状态进入运行状态，时间片结束后回到就绪状态
+
+阻塞状态：遇到阻塞状态例如调用 `Thread.sleep(1000)` 时进入此状态，阻塞结束后回到就绪状态
+
+死亡状态：整个 run 函数执行完毕
+
+```java
+class Test{
+    public static void main() {
+        MyThread t1 = new MyThread();
+        MyRunable r = new MyRunable();
+        Thread t2 = new Thread(r);
+        DeamonThread t3 = new DeamonThread();
+        t3.setDeamon(true);  // 设置守护线程
+        t3.start();
+        
+        t1.start();
+        t1.join();  // 等待t1线程的run函数结束
+        t2.start();
+    }
+}
+```
+
+#### 线程同步（synchronized）
+
+语法
+
+```java
+// 给obj加锁
+synchronized (obj) {
+    // code
+}
+
+// 修饰实例方法，表示给this加锁
+synchronized void foo() {
+    // code
+}
+
+// 修饰静态方法，表示给类加锁
+synchronized static void foo() {
+    // code
+}
+```
+
+java 中的三种变量类型：
+
+|          | 存储位置 |                      |
+| -------- | -------- | -------------------- |
+| 实例变量 | 堆       | 线程之间可能是共享的 |
+| 静态变量 | 方法区   | 线程之间可能是共享的 |
+| 局部变量 | 栈       | 不共享               |
+
+#### 死锁
+
+```java
+// DeadLock.java
+package com.xxx.java.deadlock;
+public class DeadLock{
+    public static void main(String[] args){
+        Object o1 = new Object();
+        Object o2 = new Object();
+        MyThread1 t1 = new MyThread1(o1, o2);
+        MyThread2 t2 = new MyThread2(o1, o2);
+        t1.start();
+        t2.start();
+    }
+}
+
+class MyThread1 extends Thread{
+    Object o1;
+    Object o2;
+    public MyThread1(Object o1, Object o2){
+        this.o1 = o1;
+        this.o2 = o2;
+    }
+    public void run(){
+        synchronized (o1){
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            synchronized (o2){
+            }
+        }
+    }
+}
+
+class MyThread2 extends Thread{
+    Object o1;
+    Object o2;
+    public MyThread2(Object o1, Object o2){
+        this.o1 = o1;
+        this.o2 = o2;
+    }
+    public void run(){
+        synchronized (o2){
+            try {
+                Thread.sleep(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+            synchronized (o1){
+            }
+        }
+    }
+}
+```
+
+上述代码必然发生死锁现象
+
+规避死锁的 rule of thumber：不要嵌套使用 synchronized。
+
+#### 例子：定时器
+
+实现定时器可以手动使用 `Thread.sleep` 来实现，或使用内置的 `java.util.Timer`，或 Spring 框架中的 SpringTask 等等。下面简述 `java.util.Timer` 的使用方法
+
+```java
+// TimerTest.java
+import java.text.SimpleDate
+```
+
+
+
+### 内置数据结构
+
+#### String、StringBuffer、StringBuilder
+
+| 类名                    |        |                               |
+| ----------------------- | ------ | ----------------------------- |
+| java.lang.String        | 不可变 |                               |
+| java.lang.StringBuffer  | 可变   | 线程安全（synchronized 修饰） |
+| java.lang.StringBuilder | 可变   | 非线程安全                    |
+
+```java
+String a = "ab";  // "ab"这个String对象被放在方法区的字符串常量池中
+// "ac"也在字符串常量池中, 并且堆中有一个String对象
+String b = new String("ac");
+String c = "ab";
+String d = new String("ac")
+System.out.println(a == c); // true
+System.out.println(b == d); // false
+// 推荐写法
+System.out.println("ab".equals(a));  // true
+```
+
+#### 八种基本数据类型的包装类
+
+JDK 1.5 之后，自动装箱拆箱：
+
+```Java
+Integer i = 100;  // 自动装箱
+int j = i;  // 自动拆箱
+Integer.MAX_VALUE;
+Integer.MIN_VALUE;
+```
+
+int, byte, short, long, float, double, boolean, char
+
+Integer, Byte, Short, Long, Float, Double, Boolean, Character
 
 ### 杂录
 
@@ -627,7 +842,7 @@ Date[] a = new Date[N];
 double[][] a = new double[M][N]
 ```
 
-占用内存为$24+32M+8MN$, 首先数组需要24字节, 数组的每个元素都是一个数组, 每个需要8字节的引用, 所以需要$8M$字节, 而每个内层数组double \[N\]需要$24+8N$的大小, 所以总共需要$24+8M+M\(24+8N\)=24+32M+8MN$字节
+占用内存为$24+32M+8MN$, 首先数组需要24字节, 数组的每个元素都是一个数组, 每个需要8字节的引用, 所以需要$8M$字节, 而每个内层数组double \[N\]需要$24+8N$的大小, 所以总共需要$24+8M+M(24+8N)=24+32M+8MN$字节
 
 例子7:
 

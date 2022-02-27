@@ -180,6 +180,65 @@ export LD_LIBRARY_PATH=/u/dev/foo:$LD_LIBRARY_PATH
 
 ### 1.2 基础语法及原理查漏补缺
 
+#### lambda
+
+```cpp
+#include<iostream>
+
+int main() {
+    int id = 23;
+    auto func = [id]() mutable {
+        std::cout << "inside lambda, id = " << id << std::endl;
+        ++id;
+    };
+    
+	id = 0;
+    func(); // 23
+    std::cout << "outside lambda, id = " << id << std::endl;  // 0
+    func();  // 24
+    std::cout << "outside lambda, id = " << id << std::endl;  // 0
+    return 0;
+}
+```
+
+上述 `lambda` 函数**基本**等价于
+
+```cpp
+// 在其他位置定义
+class Func{
+private:
+	int id;  // mutable表示给了修改权限
+public:
+    Func(int id) {this->id = id;}  // [id]为[=id]的简写
+    // 如果改为[&id], 则相当于将此处改为
+    // Func(int &id) {this->id = id;}
+    // 那么外部的id也将被修改
+	void operator() (){
+        std::cout << "inside lambda, id = " << id << std::endl;
+        ++id;
+    }
+}
+
+// 这一行相当于那行lambda的定义
+func = Func(id);  // id的值为23, 由于传递方式为传值, 所以后续的修改不影响外部的id
+```
+
+备注：
+
+- 如下两种写法均会报错
+
+  ```cpp
+  int id = 23;
+  auto func = [id]() {...};
+  // error: increment of read-only variable ‘id’
+  
+  const int 23;
+  auto func = [&id]() mutable {...};
+  // error: increment of read-only reference ‘id’
+  ```
+
+  
+
 #### 通过指针修改某块内存的值
 
 下面的程序段演示了数组的诸多问题，这些都没有很好的解决方案，用C++有时就是这么麻烦，可能还需要查看以下别的包例如opencv，gmp加深体会
@@ -267,6 +326,15 @@ char *p = "asd"; // 报错
 char a[] = "asd"; // 正常
 //typeid("asd").name()的输出结果为char const [4]
 ```
+
+#### 函数声明时展示抛出的异常类型
+
+```
+// 返回类型 函数名(形参列表) throw() {函数体}
+void check(void) throw (std::out_of_range);
+```
+
+
 
 #### 运算符优先级
 
@@ -1007,13 +1075,55 @@ s1.push_back('a');
 
 #### 哈希表，集合，字典
 
-2.面向对象编程
+### 2.2 算法、仿函数、lambda
 
-可见性，继承，多态
+实现 `numpy` 的 `argsort` 函数
 
-3.其他
+```cpp
+//argsort.cpp
+#include<vector>
+#include<random>
+#include<iostream>
+#include<algorithm>
 
-命名空间与作用域
+template<typename T>
+class Compare {
+private:
+    std::vector<T> arr;
+public:
+    Compare(const std::vector<T> &arr) {this->arr = arr;}
+    bool operator()(int v1, int v2) { return arr[v1] < arr[v2]; }
+};
 
-复杂变量类型
+template<typename T> std::vector<int> argsort(const std::vector<T>& array) {
+    const int array_len(array.size());
+    std::vector<int> array_index(array_len, 0);
+    std::vector<int> numpy_index(array_len, 0);
+    for (int i = 0; i < array_len; i++) {array_index[i] = i;}
+    auto func = [&array](int pos1, int pos2) {return (array[pos1] < array[pos2]);};
+    // std::sort(array_index.begin(), array_index.end(), Compare<(array)); // 可以用仿函数实现
+    std::sort(array_index.begin(), array_index.end(), func);  // 用c++11新特性lambda实现
+    for (int i = 0; i < array_len; i++) {numpy_index[array_index[i]] = i;}
+    //return array_index; // array_index[0] = 6 表示最小的数为array[6]
+    return numpy_index;  // numpy_index[0] = 1 表示array[0]为第二小的数
+}
+
+int main() {
+    std::default_random_engine generator;
+    std::uniform_int_distribution<int> distribution(1, 20);
+    std::vector<int> vec_data;
+    for (int i = 0; i < 10; ++i)
+        vec_data.push_back(distribution(generator));
+    for (int item : vec_data)
+        std::cout << item << "\t";
+    std::cout << std::endl;
+    std::vector<int> index = argsort(vec_data);
+    for (int item: index)
+        std::cout << item << "\t";
+    std::cout << std::endl;
+    return 0;
+}
+```
+
+
 
