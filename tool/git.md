@@ -329,11 +329,43 @@ git commit 命令表示将当前的暂存区放入版本库中，前者会打开
 
 ### git reset
 
-回退版本
+参考 [Pro Git 7.7 节](http://git-scm.com/book/en/v2/Git-Tools-Reset-Demystified#_git_reset)
+
+`git reset` 操作当前分支的三种操作如下
 
 ```bash
-git reset HEAD readme.txt  # 将暂存区对于HEAD的修改
-git reset readme.txt  # 与上一条命令含义相同
+# commit_id 可以是git commit id或者分支名，或者用类似HEAD^来代表
+git reset --soft <commit_id>
+git reset --mixed <commit_id>  # 加不加--mixed都一样
+git reset --hard <commit_id>
+```
+
+下面分别说明上面三条命令在做什么，首先假定当前分支为 `foo`，那么此时 `HEAD` 也指向了 `foo`。
+
+- `git reset --soft HEAD^` 表示的意思是将 `foo` 的指针指向次新一次的提交，而 `HEAD` 依然指向 `foo`
+- `git reset --mixed HEAD^` 表示的意思是在上一步的基础上，使用 `foo` 指向的提交更新暂存区
+- `git reset --hard HEAD^` 表示在执行前两步后，用暂存区的内容再更新工作区，这样三个区域便完全一致了
+
+备注：这里有一个用法可以用在代码审查中，不确定是否为最佳实践。
+
+VSCode中**工作区相对于暂存区**的修改在代码行的左侧有 gutter indicators 进行标识，现在假设原始仓库的地址为：`https://github.com/base/project`，而开发者foo将此代码库进行了 fork 操作，仓库地址为：`https://github.com/foo/project`。经过代码修改过，首先更新了自己仓库的 `feature` 分支，之后提出 Pull Request 合并至原始仓库的 `dev` 分支。此时可以用如下方式在本地看出代码修改了哪些部分
+
+```bash
+# git clone https://github.com/base/project  # 原始仓库
+git checkout dev  # 注意严格地说这里需要切换到与PR相匹配的远程dev分支的commit处
+git checkout -b foo-feature dev  # 建立新的分支，并切换至foo-feature分支
+# 备注：这种方式代码审查人可以自己手动将PR中不合理的地方进行改正
+git pull https://github.com/foo/project feature  # 将PR分支并入本地foo-feature
+
+# 如果只希望利用VSCode的gutter indicators查看修改处，则可以临时使用如下命令
+git reset dev  # 将foo-feature直接回退至dev分支，并且暂存区也将更新
+
+# 确认/修改后先回到原始的PR状态
+git reset <origin_feature_commit>  # 可以通过git reflog命令查询
+
+# git add and commit ...
+
+# 审查完后可以将foo-feature删除
 ```
 
 ### git branch
