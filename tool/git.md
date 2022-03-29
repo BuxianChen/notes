@@ -476,7 +476,7 @@ git merge --continue  # 填写好提交信息后就完成了合并
 # 或者直接使用 git commit 也是ok的
 ```
 
-### git rebase
+### git rebase（待研究）
 
 **原理**
 
@@ -506,6 +506,15 @@ c1 <- c2 <- c6 <- c7 <- c3 <- c4 <- c5
 ```
 
 个人理解：所谓 rebase 的直观含义是将 f1 的“基” 从 c2 修改为了 dev 分支的 c7。使用变基得到的另一个好处是切换回 dev 分支后将 f1 分支进来就不用解决冲突了。
+
+### git cherry-pick
+
+```
+# git checkout dev
+git cherry-pick <commit-id>
+```
+
+上述命令的作用是，将 `<commit-id>` 相对于它前一次提交的修改，作用到当前分支 `dev` 上，并形成一次新的提交。注意：假设 `<commit-id>` 对应于另一个分支例如 `master`，新的提交依旧可能与 `master` 分支有合并冲突。
 
 ### git clone
 
