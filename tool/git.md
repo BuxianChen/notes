@@ -485,27 +485,54 @@ git merge --continue  # 填写好提交信息后就完成了合并
 假定分支情况为：
 
 ```
-c1 <- c2 <- c3 <- c4 <- c5  # f1分支
+c1 <- c2 <- c3 <- c4 <- c5  # master分支
          <- c6 <- c7  # dev分支
 ```
 
 使用 `git rebase` 的流程为：
 
 ```bash
-git checkout f1
-git rebase dev
+git checkout dev
+git rebase master
 # 手动解决冲突
 git add xxx
 git rebase --continue
+# git checkout master
+# git merge dev  # fast-forward
 ```
 
-效果是 f1 分支的提交历史变为
+效果是 dev 分支的提交历史变为
 
 ```
-c1 <- c2 <- c6 <- c7 <- c3 <- c4 <- c5
+c1 <- c2 <- c3 <- c4 <- c5 <- c6’ <- c8
 ```
 
-个人理解：所谓 rebase 的直观含义是将 f1 的“基” 从 c2 修改为了 dev 分支的 c7。使用变基得到的另一个好处是切换回 dev 分支后将 f1 分支进来就不用解决冲突了。
+所谓 rebase 的直观含义是将 dev 的“基” 从 c2 修改为了 master分支的 c5。使用变基得到的另一个好处是切换回 master 分支后将 dev 分支合进来就不用解决冲突（不产生任何 git object，仅仅是修改了 git ref）
+
+**rebase 与 merge 的区别**
+
+上述过程如果只用 merge，流程为
+
+```bash
+git checkout dev
+git merge master
+# 手动解决冲突
+git add xxx
+git merge --continue
+# git checkout master
+# git merge dev  # fast-forward
+```
+
+效果是
+
+```
+c1 <- c2 <- c3 <- c4 <- c5  <- c8(dev/master)
+         <- c6 <- c7		
+```
+
+实际上，merge c5 和 c7 的过程为，对 c5 和 c7 对应的 tree 进行合并，解决冲突后使用 `git add` 命令时，会得到一些新的 blob，使用 `git merge --continue` 时，会用 `.git/INDEX`（暂存区）里对应的 tree 写入 `.git/objects` 目录，并得到一个新的 commit 对象 c8，也写入 `.git/objects` 目录。注意：c8 这个 commit 对象的 parent 有两个，即 c5 和 c7。
+
+而 rebase 的过程为：对 c5 和 c7 进行合并后得到的 commit 对象 c8 的 parent 仅有 c5 一个。另外，还会产生一个新的 commit 对象 c6’，其提交信息与 c6 一致，但其 parent 与 c6 不同，并且所对应的 tree 对象也有所不同。
 
 ### git cherry-pick
 
