@@ -521,6 +521,33 @@ $ # ln -s 原始路径 目标路径
 $ ln -s /home/to/directory /data  # 得到/data/directory
 ```
 
+#### command
+
+command 用于 shell 脚本中，忽略脚本定义的函数，而直接去寻找同名的命令
+
+```shell
+function ls() {
+  echo "haha"
+}
+command ls  # 输出: 当前路径下的文件(夹)
+# 使用PATH环境搜索ls
+command -p ls  # 输出: 当前路径下的文件(夹)
+```
+
+另一种情况更加常见：在 `~/.bashrc` 中为 `ls` 定义了 alias
+
+```shell
+alias ls='ls --color=auto'  # 自动按文件类型及权限显示目录内容
+```
+
+这种情况下
+
+```shell
+command -p ls  # 输出不带颜色
+command -V ls  # 输出: ls is aliased to `ls --color=auto`
+command -v ls  # 输出: alias ls='ls --color=auto'
+```
+
 ### 命令例子
 
 #### 例 1：/dev/null、文件描述符
@@ -599,6 +626,8 @@ $ source a.sh
 # 也等价于
 $ . a.sh
 ```
+
+备注：对于 `source a.sh` 这种执行方式来说，脚本中的 `$0` 为终端本身，例如：`/bin/bash`，而 `./a.sh` 这种执行方式，脚本中的 `$0` 将会是 `./a.sh`
 
 #### 例 4：带颜色的终端输出
 
@@ -922,6 +951,25 @@ else
 	echo '$num is not less than 9'
 fi
 ```
+
+类似于 `[[ -f $file ]]` 这种写法：
+
+- `[ -a FILE ]`: 如果 FILE 存在则为真
+- `[ -d FILE ]`: 如果 FILE 存在且为目录则为真
+- `[ -r FILE ]`: 如果 FILE 存在且为可读文件则为真
+- `[ -w FILE ]`: 如果 FILE 存在且为可写文件则为真
+- `[ -x FILE ]`: 如果 FILE 存在且为可执行文件则为真
+- `[ -z STRING]`: 如果 STRING 的长度为 0 为真
+- `[ -n STRING]`: 如果 STRING 的长度大于 0 为真
+- `[ STRING ]`: 字符串不空为真, 类似于 -n
+- `[ INT1 -le INT2 ]`: 数值上 INT1 小于 INT2 为真
+- `[ ! EXPR ]`: 非
+- `[ EXPR1 -a EXPR2]`: 与
+- `[ EXPR1 ] && [ EXPR2 ]`: 与
+- `[ EXPR1 -o EXPR2]`: 或
+- `[ EXPR1 ] || [ EXPR2 ]`: 或
+
+备注：双圆括号一般用于数值比较，写法上更方便，例如：`[ 1 -le 2 ]` 等价于 `(( 1<2 ))`；双中括号有时也是为写法的便利，例如：`[[ $a != 1 || $b = 2 ]]` 这种写法等价于 `[ $a != 1 ] || [ $b = 2 ]`，注意前者必须用双中括号而不能用单中括号。另外，注意要在**中括号内部的左右两边各留一个空格**。
 
 #### 循环语句
 

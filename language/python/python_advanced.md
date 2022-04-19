@@ -1469,7 +1469,37 @@ a = A()  # a是一个可迭代对象(Iterable)
 iter(a)  # 返回的是一个生成器(特殊的迭代器)
 ```
 
-## 14. python代码打包
+## 14. 写一个 Python 包
+
+### github
+
+对照几份源码进行学习
+
+- pip: 
+- numpy: https://github.com/numpy/numpy
+- pytorch: https://github.com/pytorch/pytorch
+
+可以使用 `git clone <url>.git` 的方式克隆源代码，这里的 url 的形式为 `https://github.com/<username or groupname>/<projectname>`。而以 numpy 为例，其简化版目录结构如下：
+
+```
+ROOT/
+    numpy/
+    doc/
+    setup.py
+    README.md
+```
+
+大体上讲，平时使用 `pip install numpy` 实际发生的事情是，将此处的目录 `numpy` 放到 `site-packages` 目录下，而其余的 `doc` 目录的内容将不会被安装。
+
+
+
+### 一个最简的例子
+
+目录结构如下
+```
+ROOT/  # 譬如说对应于https://github.com/<username or groupname>/<projectname>
+
+```
 
 ### 项目组织形式
 
@@ -1582,7 +1612,7 @@ foo  # python源代码
 
 **第一步：获取requirements.txt**
 
-**方法一: 只获取必要的包\(推荐使用\)**
+**方法一: 只获取必要的包（推荐使用）**
 
 ```text
 pip install pipreqs
@@ -1612,6 +1642,26 @@ pip install -r requirements.txt
 * 在一个项目中想使用另一个项目的功能: [stackoverflow的一个问题](https://stackoverflow.com/questions/14509192/how-to-import-functions-from-other-projects-in-python)
 
 一些历史, 关于`distutils`, `distutils2`, `setuptools`等, [参考链接](https://zhuanlan.zhihu.com/p/276461821). 大体来说, `distutils`是最原始的打包工具, 是Python标准库的一部分. 而`setuptools`是一个第三方库, 在`setuptools`的变迁过程中, 曾出现过一个分支`distribute`, 现在已经合并回`setuptools`, 而`distutils2`希望充分利用前述三者:`distutils`, `setuptools`, `distribute`的优点成为标准库的一部分, 但没有成功, 并且已经不再维护了. 总之, `distutils`是标准库, `setuptools`是开发者常用的第三方库, 安装好后还额外带着一个叫`easy_install`的第三方管理工具, 而`easy_install`目前用的比较少, `pip`是其改进版. 顺带提一句: python源码安装一般是下载一个压缩包\(先解压, 再编译, 再安装\), 二进制安装一般是下载一个`.egg`或者`.whl`的二进制文件进行安装, 后者已经取代前者成为现今的通用标准. 下面仅介绍基于`setuptools`的使用, 其关键在于编写`setup.py`. 上传到PyPI的方法参考[python官方文档.](https://packaging.python.org/tutorials/packaging-projects/)
+
+
+#### `pip install` vs `python setup.py install`
+
+一般来说，参考[stackoverflow](https://stackoverflow.com/questions/15724093/difference-between-python-setup-py-install-and-pip-install)，推荐使用 `pip install`.
+
+- pip 会自动安装依赖包，使用 setup.py 通常需要手动安装。（此条存疑）解释：使用 pip 安装时一般只需要 `pip install <PACKAGE_NAME>` 即可，而 setup.py 通常需要 `pip install -r requirements.txt & python setup.py install`
+- pip 会自动追踪包的 metadata, 所以在卸载包时可以使用 `pip uninstall <PACKAGE_NAME>`，但是使用 setup.py 需要手动卸载再升级
+- pip 可以不需要手动下载：`pip install xx`（PyPi），`pip install git+https://github.com/xxx/xxx.git`（github/gitlab/...），或者对压缩包或whl文件安装：`pip install xx.tar.gz`，`pip install xx.whl`。而 `setup.py` 只能下载并解压后才能安装
+
+
+备注
+
+对同一个包的安装混用 pip 与 setup 有时会出现一些难以解决的 bug。
+
+|pip|setup||
+|---|---|---|
+|pip install .|python setup.py install||
+|pip install -e .|python setup.py develop||
+
 
 #### setup.py 的编写与使用简介
 
@@ -1655,17 +1705,19 @@ pip install funniest
 
 #### setup.py 的 setup 函数的各个参数详解
 
-**已经弃用的参数**
-
-| 已弃用的参数 | 替代品             | 含义                     |
-| :----------- | :----------------- | :----------------------- |
-| `requires`   | `install_requires` | 指定依赖包               |
-| `data_files` | `package_data`     | 指定哪些数据需要一并安装 |
-
-将非代码文件加入到安装包中，注意：这些非代码文件需要放在某个包（即`packages` 列表）下，使用以下两种方式之一即可
-
-* 使用`MANIFEST.in`文件\(放在与`setup.py`同级目录下\), 并且设置`include_package_data=True`, 可以将非代码文件一起安装
-* `package_data`参数的形式的例子为：`{"package_name":["*.txt", "*.png"]}`
+**xx_requires**
+```python
+setup(
+    install_requires=['numpy'],  # 若当前环境没有,会从pypi下载并安装
+    setup_requires=['pdr'],  # setup.py本身依赖的包,通常是给setuptools的插件准备的配置,若缺少,不会自动安装, 而是会在执行pip install或python setup.py install时直接报错
+    tests_require=['pytest>=3.3.1', 'pytest-cov>=2.5.1'],  # 执行python setup.py test时h会自动安装的库
+    extras_require={
+        "PDF": ["pdfplumber"],
+        "Excel": ["pandas==1.0.0"]
+    },  # 不会自动安装, 在深度使用时, 需要手动安装
+    python_requires='>=3.7, <=3.10'
+)
+```
 
 **entry_points 参数**
 
@@ -1683,6 +1735,23 @@ entry_points={
 **scripts 参数**
 
 似乎不推荐使用
+
+**其他参数**
+|参数 |含义|
+|:-----------|:-----------------------|
+|zip_safe|设置为`False`表示以文件夹的形式安装(方便调试), 设置为`True`表示安装形式为一个`.egg`压缩包|
+
+**已经弃用的参数**
+
+| 已弃用的参数 | 替代品             | 含义                     |
+| :----------- | :----------------- | :----------------------- |
+| `requires`   | `install_requires` | 指定依赖包               |
+| `data_files` | `package_data`     | 指定哪些数据需要一并安装 |
+
+将非代码文件加入到安装包中，注意：这些非代码文件需要放在某个包（即`packages` 列表）下，使用以下两种方式之一即可
+
+* 使用`MANIFEST.in`文件\(放在与`setup.py`同级目录下\), 并且设置`include_package_data=True`, 可以将非代码文件一起安装
+* `package_data`参数的形式的例子为：`{"package_name":["*.txt", "*.png"]}`
 
 **例子 1**
 
