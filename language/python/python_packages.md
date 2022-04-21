@@ -50,6 +50,41 @@ log1.error('log1: error')
 log2.info('log2: info')
 ```
 
+备注：要产生不同的logger，要传递不同的logger_name，例如如下情况得到的两个logger会是一样的：
+
+```python
+import logging
+import sys
+import os
+
+def get_logger(filename):
+    os.makedirs(os.path.dirname(os.path.abspath(filename)), exist_ok=True)
+    logger = logging.getLogger()
+
+    fh = logging.FileHandler(filename, mode="w")
+    fh.setFormatter(logging.Formatter(fmt="%(asctime)s: %(message)s"))
+    fh.setLevel(logging.INFO)
+    logger.addHandler(fh)
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.INFO)
+    ch.setFormatter(logging.Formatter(fmt="%(asctime)s: %(message)s"))
+    logger.addHandler(ch)
+
+    logger.setLevel(logging.INFO)
+    return logger
+
+logger = get_logger("log.txt")
+logger.info("x")
+
+logger2 = get_logger("log2.txt")
+logger2.info("y")
+
+logger.info("z")
+
+print(id(logger), id(logger2))
+```
+
 ### argparse
 
 ```python
