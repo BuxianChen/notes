@@ -481,7 +481,12 @@ $ # apt install nmap
 $ nmap 127.0.0.1
 ```
 
-#### ${varname:-"abc"}
+#### Shell-Parameter-Expansion
+
+[man官方文档](https://www.gnu.org/software/bash/manual/bash.html#Shell-Parameter-Expansion)
+
+
+** `${varname:-"abc"}` **
 
 这种语法表示给变量设定缺省值，若 `varname` 未被定义，则 `varname` 将被赋值为 `abc`，否则该条语句不起作用。例如：
 
@@ -513,6 +518,46 @@ abc
 ```bash
 $ export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
 ```
+
+** `${!arr[@]}`，`${!arr@}`，`${!var}` **
+
+- `${!arr[@]}` 用于返回数组下标，例如：
+
+  ```bash
+  arr=(h0 h1)
+  for i in ${!arr[@]}; do echo $i; done  # 输出0 1
+  arr[10]=h10
+  for i in ${!arr[@]}; do echo $i; done  # 输出0 1 10
+  ```
+
+- `${!arr@}` 表示输出以"arr"开头的变量名，例如：
+  ```bash
+  arr1=1
+  arr2=2
+  arr=3
+  for i in ${!arr@}; do echo $i; done  # 输出arr1 arr2 arr
+  ```
+- `${!var}` 表示取出以var变量的值命名的变量的值（类似于C语言中的指针），例如：
+  ```bash
+  tmp=/path/to/temp
+  path=tmp
+  echo ${path}  # 输出/path/to/temp
+  ```
+
+** 字符串替换：`` **
+
+参考 [stackoverflow](https://stackoverflow.com/questions/13210880/replace-one-substring-for-another-string-in-shell-script)
+
+- `${parameter/pattern/string}` 表示将 `parameter` 变量中**第一次**出现的 `pattern` 替换为 `string`，例如：
+  ```bash
+  var="data-clean-100"
+  echo ${var/-1/_1} # data-clean_100
+  ```
+- `${parameter/pattern/string}` 表示全部替换，例如：
+  ```bash
+  var="data-clean-100"
+  echo ${var/-/_} # data_clean_100
+  ```
 
 #### ln
 
@@ -1003,6 +1048,19 @@ fname(){
 fname;  # 无参数
 fname arg1 arg2;  # 带参数
 ```
+
+#### set
+
+`set` 命令用于改变 shell 脚本的一些执行逻辑，一般写在脚本的开头。例如在默认情况下，遇到未定义的变量名，shell脚本不会报错，而是使用空字符串代替，为此，可以在脚本的最开头设置：`set -u`，使得当在使用未定义的变量时将会直接报错，并退出脚本。类似地，在 `bats` 测试中（参考[博客](https://sipb.mit.edu/doc/safe-shell/#:~:text=%20set%20-o%20pipefail%20causes%20a%20pipeline%20%28for,exit%20if%20any%20command%20in%20a%20pipeline%20errors.)）：
+
+```bash
+set -euo pipefail
+```
+
+- `set -e` 表示 shell 脚本遇到出错的命令就立刻中止脚本运行（备注：存在一些例外情况，见前面的链接或man手册），如果在设置了需要允许某行命令报错也能正常执行，则可以使用 `<error-command> || true` 或者 `<error-command> || :` 来使得命令出错时也能继续运行。
+- `set -u` 表示 shell 脚本在使用未定义的变量时就报错并中止运行
+- `set -o` 表示打开特殊选项，对应地，`set +o` 表示关闭特殊选项，此处 `set -o pipefail` 是针对 shell 的一个诡异行为（`set -e` 的例外情况）：在使用管道时，只有在管道的最后一条命令出错时，才认为整条命令出错。而使用了 `set -o pipefail` 表示在管道的任意位置出错则报错
+- `set -x` 表示执行时会打印出脚本中的每条语句，并且变量名将被替换为其实际内容（debug 时推荐使用）
 
 ### 脚本例子
 
