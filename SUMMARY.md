@@ -23,7 +23,5 @@
 * [CV](note/cv.md)
   * [mmlab](note/mmlab.md)
   * [opencv](note/opencv.md)
+* [Audio](note/audio.md)
 * [draft](note/draft.md)
-
-- [炼丹](note/dl.md)
-
