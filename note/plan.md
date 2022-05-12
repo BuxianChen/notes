@@ -1,5 +1,11 @@
 # TODO LIST
 
+## Papers
+
+- [PyTorch Distributed: Experiences on Accelerating Data Parallel Training](https://arxiv.org/abs/2006.15704)
+- [Integer Quantization for Deep Learning Inference: Principles and Empirical Evaluation](https://arxiv.org/abs/2004.09602)
+- [Learning to Navigate for Fine-grained Classification](https://arxiv.org/abs/1809.00287): 细粒度分类
+
 ## Python Tools
 
 wandb：类似于 Tensorboard 的东西，待探索这类可视化工具对做实验是否有实际价值

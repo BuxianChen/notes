@@ -129,6 +129,18 @@ os.path.abspath(os.path.realpath(os.path.expanduser("~/a.link")))
 ```
 
 
+### colections
+
+递归定义 `defaultdict`: 参考 (stackoverflow)[https://stackoverflow.com/questions/20428636/how-to-convert-defaultdict-to-dict]
+
+```python
+from collections import defaultdict
+recurddict = lambda: defaultdict(recurddict)
+data = recurddict()
+data["hello"] = "world"
+data["good"]["day"] = True
+```
+
 
 ### typing
 
@@ -1031,6 +1043,21 @@ inspect.signature
 inspect.stack
 
 用于返回当前的函数调用栈
+
+inspect.isclass(obj)
+
+用于判断 obj 是否为一个类
+
+输出一个实例的完整类名
+```bash
+import numpy as np
+arr = np.array([1, 2])
+cls = arr.__class__  # <class numpy.ndarray>
+module: str = cls.__module__
+name: str = cls.__qualname__  # 优于__name__
+```
+
+备注：`__name__` vs `__qualname__`: [stackoverflow](https://stackoverflow.com/questions/58108488/what-is-qualname-in-python)
 
 ## 2. 常用包
 
