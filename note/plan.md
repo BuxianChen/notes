@@ -2,9 +2,10 @@
 
 ## Papers
 
-- [PyTorch Distributed: Experiences on Accelerating Data Parallel Training](https://arxiv.org/abs/2006.15704)
-- [Integer Quantization for Deep Learning Inference: Principles and Empirical Evaluation](https://arxiv.org/abs/2004.09602)
-- [Learning to Navigate for Fine-grained Classification](https://arxiv.org/abs/1809.00287): 细粒度分类
+- [PyTorch Distributed: Experiences on Accelerating Data Parallel Training](https://arxiv.org/pdf/2006.15704.pdf): Pytorch DDP 实现
+- [Integer Quantization for Deep Learning Inference: Principles and Empirical Evaluation](https://arxiv.org/pdf/2004.09602.pdf): 量化(结合微信收藏看)
+- [Learning to Navigate for Fine-grained Classification](https://arxiv.org/pdf/1809.00287.pdf): 细粒度分类
+- [Conformer: Convolution-augmented Transformer for Speech Recognition](https://arxiv.org/pdf/2005.08100.pdf): 语音conformer(视觉也有一篇重名了)
 
 ## Python Tools
 
