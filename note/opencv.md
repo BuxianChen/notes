@@ -418,6 +418,17 @@ M = cv.getPerspectiveTransform(src, dst[, solveMethod])
 # src, dst均为(4, 2)数组, 求解的M为3*3数组
 ```
 
+### opencv 处理视频
+
+```python
+import cv2
+cap = cv2.VideoCapture("xx.mp4")
+total_frames: float = cap.get(cv2.CAP_PROP_FRAME_COUNT)  # 总帧数
+fps: float = cap.get(cv2.CAP_PROP_FPS)  # 每秒的帧数
+cap.set(cv2.CAP_PROP_POS_FRAMES, 3)  # 取第三帧
+succeed: bool, frame: np.ndarray = cap.read()  # 取第三帧, frame即为(H, W, 3) uint8, BGR cv2格式的图片
+```
+
 ### 图像修复
 
 cv2.inpaint
