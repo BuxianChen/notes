@@ -6,6 +6,7 @@
 - [Integer Quantization for Deep Learning Inference: Principles and Empirical Evaluation](https://arxiv.org/pdf/2004.09602.pdf): 量化(结合微信收藏看)
 - [Learning to Navigate for Fine-grained Classification](https://arxiv.org/pdf/1809.00287.pdf): 细粒度分类
 - [Conformer: Convolution-augmented Transformer for Speech Recognition](https://arxiv.org/pdf/2005.08100.pdf): 语音conformer(视觉也有一篇重名了)
+- [Pushing the Limit of Semi-Supervised Learning for Automatic Speech Recognition](https://arxiv.org/pdf/2010.10504)
 
 ## Python Tools
 
