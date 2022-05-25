@@ -652,9 +652,16 @@ git update-index --no-assume-unchanged [<file> ...]
 
 关于代理引发的 git clone 失败问题，参考[链接](https://blog.csdn.net/shaopeng568/article/details/114919318)
 
+重置代理
 ```
 git config --global  --unset https.https://github.com.proxy
-it config --global  --unset http.http://github.com.proxy
+git config --global  --unset http.http://github.com.proxy
+```
+
+根据实际端口情况修改
+```
+git config --global http.https://github.com.proxy http://127.0.0.1:7890
+git config --global https.https://github.com.proxy https://127.0.0.1:7890
 ```
 
 ## 详例
