@@ -22,6 +22,7 @@ seconds = (os.path.getsize(wav_path) - 44) / 2 / n_channels / sr
 - librosa
 - torchaudio
 - wavefile
+- wave
 
 依赖关系及安装：
 （1）torchaudio (0.11.0) 当前可以选用 soundfile 与 sox_io 作为 backend
@@ -86,4 +87,21 @@ librosa读取数据与soundfile一样一般会做归一化，但多通道情况�
 ```python
 # librosa.read源码
 y = sf_desc.read(frames=frame_duration, dtype=dtype, always_2d=False).T
+```
+
+### wave
+
+```python
+import wave
+import contextlib
+with contextlib.closing(wave.open(path, "rb")) as wf:
+    num_channels = wf.getnchannels()  # 获取通道数
+    sample_width = wf.getsampwidth()  # 每个sample需要的字节数, 例如通常用2个字节存储一个采样点
+    sample_rate = wf.getframerate()  # 采样率(1s钟多少个采样点)
+    nframes = wf.getnframes()  # 采样点数, 即采样率乘以秒数
+    pcm_data = wf.readframes(nframes)  # 字节
+# 对于单通道数据
+import struct
+# <表示little-endian, 2表示读两个数字, H表示数据类型为uint16
+struct.unpack("<2H", pcm_data[:4])  # 获取前两个采样点的值
 ```
