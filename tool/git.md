@@ -637,6 +637,13 @@ git cat-file -p 24c5735c3e8ce8fd18d312e9e58149a62236c01a  # 查看 objects 目�
 git ls-files -s  # 查看当前缓冲区内容, 即 .git/index 文件中的内容
 ```
 
+### git lfs
+
+```
+# 不下载大文件的方式进行下载
+GIT_LFS_SKIP_SMUDGE=1 git clone xxx.git
+```
+
 ## 疑难杂症
 
 ```bash
@@ -655,7 +662,7 @@ git update-index --no-assume-unchanged [<file> ...]
 重置代理
 ```
 git config --global  --unset https.https://github.com.proxy
-git config --global  --unset http.http://github.com.proxy
+git config --global  --unset http.https://github.com.proxy
 ```
 
 根据实际端口情况修改

@@ -112,6 +112,34 @@ group.add_argument("--use-b", action="store_true", default=False)
 args = parser.parse_args()
 ```
 
+备注：parse_args 函数存在 prefix-match的特性, 具体可参考[官方文档](https://docs.python.org/3/library/argparse.html#prefix-matching)的如下例子:
+
+```
+>>> parser = argparse.ArgumentParser(prog='PROG')
+>>> parser.add_argument('-bacon')
+>>> parser.add_argument('-badger')
+>>> parser.parse_args('-bac MMM'.split())
+Namespace(bacon='MMM', badger=None)
+>>> parser.parse_args('-bad WOOD'.split())
+Namespace(bacon=None, badger='WOOD')
+>>> parser.parse_args('-ba BA'.split())
+usage: PROG [-h] [-bacon BACON] [-badger BADGER]
+PROG: error: ambiguous option: -ba could match -badger, -bacon
+```
+
+有些情况下，可以只解析一部分的命令行参数，而其余参数用其他逻辑进行处理，此时可以使用 `parse_known_args` 函数。备注：`parse_known_args` 函数也适用于 prefix-match 规则。
+
+```python
+# test.py
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('-c', '--config', type=str, required=True)
+args, unknown_args = parser.parse_known_args()
+# python test.py -c a.py -d cpu
+# args: Namespace(config='a.py'), unknown_args=['-d', 'cpu']
+```
+
+
 ### os
 
 ```python
