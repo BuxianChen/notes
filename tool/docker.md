@@ -80,6 +80,14 @@ $ docker rmi 镜像ID
 
 删除镜像
 
+### docker image history
+
+```bash
+$ docker image history 镜像ID --no-trunc
+```
+
+查看镜像是怎么创建的(Dockerfile)
+
 ## 针对容器的操作命令
 
 ### docker run
