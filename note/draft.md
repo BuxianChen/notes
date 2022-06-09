@@ -1037,6 +1037,15 @@ Test.h
 Triple.h
 ```
 
+## 一些python包资源
+
+### 英文正则化(上撇号缩写等)
+
+```python
+import contractions
+contractions.fix("I'm")  # "I am"
+```
+
 ## 杂录
 
 ### callback
