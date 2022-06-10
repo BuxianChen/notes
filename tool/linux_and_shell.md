@@ -566,6 +566,13 @@ $ # ln -s 原始路径 目标路径
 $ ln -s /home/to/directory /data  # 得到/data/directory
 ```
 
+#### file -i
+
+```bash
+$ file -i 文件名  # 查看编码格式
+```
+
+
 #### command
 
 command 用于 shell 脚本中，忽略脚本定义的函数，而直接去寻找同名的命令
