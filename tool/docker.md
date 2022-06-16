@@ -42,6 +42,8 @@ docker.io/library/ubuntu:18.04
 
 注意观察输出信息的最后一行的。此处不指定 Docker Registry 地址，则默认为 docker.io，此处没有指定用户名，对于 docker.io 来说，默认为 library。
 
+备注：执行 docker pull 的时候，本地有镜像但由于各种原因（例如跟镜像库网络不通）无法读取镜像库时，docker pull 会报错。猜想原因可能是 docker pull 需要校验镜像库的镜像ID与本地的镜像ID，如果本地存在此ID，则不进行拉取。因此总是需要查远程库，所以会报错，而不会因为本地存在同名镜像而什么都不做。
+
 ### docker tag
 
 `docker tag` 命令的作用是为镜像新增一个别名
