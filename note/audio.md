@@ -40,7 +40,7 @@ pip install audioread
 
 ### scipy.io.wavfile
 
-只能读写 wav 格式
+只能读写 wav 格式，且 format 只能是 `32-bit floating-point`，`32-bit PCM`，`16-bit PCM`，`8-bit PCM`
 
 ```python
 from scipy.io import wavfile
@@ -48,6 +48,16 @@ path = "x.wav"
 # rate为采样率(int), 多通道情况下x为的形状为:(Nsamples, Nchannels), 单通道时为:(Nsamples,)
 # 读取的数据不会做任何归一化
 rate, x = wavfile.read(path)
+```
+
+注意：写文件时需要先将对音频resample好，才能写入
+
+```python
+from scipy.io import wavfile
+path = "x.wav"
+rate, x = wavfile.read(path) # rate=8000, len(x)=16000
+wavfile.write("y.wav", 16000, x)  # 错误, 需要预先将音频resample好
+rate, y = wavfile.read("y.wav")  # rate=16000, len(x)=16000
 ```
 
 ### soundfile

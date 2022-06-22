@@ -559,6 +559,35 @@ $ export CMAKE_PREFIX_PATH=${CONDA_PREFIX:-"$(dirname $(which conda))/../"}
   echo ${var/-/_} # data_clean_100
   ```
 
+**获取文件扩展名**
+
+```bash
+filename="/a/b/c.train.json"
+echo ${filename%.*}  # /a/b/c.train  从右到左非贪心匹配".*"并剪切掉
+echo ${filename%%.*}  # /a/b/c  从右到左非贪心匹配".*"并剪切掉
+echo ${filename#*.}  # train.json  从左到右非贪心匹配并剪切掉
+echo ${filename##*.}  # json  从左到右贪心匹配并剪切掉
+```
+
+实例
+
+```bash
+cat amiBuild-75723-Wed-Jun-22-2022.wget.sh | grep -v '#'|awk '{print $3" "$4}'|while read -r x y ; do echo $x/${y##*/}>>all.txt; done
+```
+
+输入：
+```
+#xxxx
+wget    -P amicorpus/ES2002a/audio https://groups.inf.ed.ac.uk/ami/AMICorpusMirror//amicorpus/ES2002a/audio/ES2002a.Mix-Headset.wav --no-check-certificate
+wget    -P amicorpus/ES2002b/audio https://groups.inf.ed.ac.uk/ami/AMICorpusMirror//amicorpus/ES2002b/audio/ES2002b.Mix-Headset.wav --no-check-certificate
+```
+
+输出：
+```
+amicorpus/ES2002a/audio/ES2002a.Mix-Headset.wav
+amicorpus/ES2002b/audio/ES2002b.Mix-Headset.wav
+```
+
 #### ln
 
 ```bash
