@@ -348,6 +348,78 @@ RUN echo -e "set encoding=UTF-8\nset fileencoing=UTF-8" > /etc/vim/vimrc
 docker run -it --rm --gpus all pytorch/pytorch:1.9.0-cuda10.2-cudnn-devel /bin/bash
 ```
 
+## docker compose
+
+旧版本的使用方式为 `docker-compose ...`, 新版本的使用方式为 `docker compose ...`，docker compose的作用是管理一组容器来实现某个功能。例如一个应用需要依赖于一个数据库，正确的做法是将应用程序代码放在一个容器中，而数据库用另一个容器启动，并且通过建立网络使得这两个容器能进行互相访问。docker compose 可以通过写一个配置文件自动进行搭建网络，构建所需要的镜像，并启动相应的镜像。docker compose 的实现逻辑是调用了 Docker 服务提供的 API 来对容器进行管理。
+
+### 一个示例
+
+例子摘录自 [Docker从入门到实践](https://yeasy.gitbook.io/docker_practice/compose/usage) 并在此基础上完善
+
+```
+learn-docker
+    web/
+        app.py
+        Dockerfile
+    docker-compose.yml
+```
+
+各文件内容如下
+```python
+# web/app.py
+from flask import Flask
+from redis import Redis
+
+app = Flask(__name__)
+redis = Redis(host='redis', port=6379)
+
+@app.route('/')
+def hello():
+    count = redis.incr('hits')
+    return 'Hello World! 该页面已被访问 {} 次。\n'.format(count)
+
+if __name__ == "__main__":
+    app.run(host="0.0.0.0", debug=True)
+```
+
+```dockerfile
+# web/Dockerfile
+FROM python:3.6-alpine
+ADD . /code
+WORKDIR /code
+RUN pip install redis flask
+CMD ["python", "app.py"]
+```
+
+```yaml
+version: '3'
+services:
+
+  web:
+    build:  # 也可以直接写"build: ./web", 后面的context与dockerfile可省略不写
+      context: ./web
+      dockerfile: Dockerfile  # 注意此处的dockerfile是相对于context而言的
+    image: "web_web:v1"
+    ports:
+      - "5000:5000"
+
+  redis:
+    image: "redis:alpine"  # 注意此处并未将6379端口映射出去,但web容器是可以访问该端口的,但无法在本机直接访问数据库
+```
+
+运行方法为
+```bash
+# -f docker-compose.yml可省略不写
+# docker compose up是先打镜像(如果没有), 再建立网络, 最后启动容器
+docker compose -f docker-compose.yml up
+```
+
+docker compose 命令的一般格式为
+```
+docker compose [-f docker-compose.yml文件路径] 命令
+```
+
+
 ## 杂录
 
 ### Docker Desktop (Windows 11) 使用记录

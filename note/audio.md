@@ -25,7 +25,7 @@ seconds = (os.path.getsize(wav_path) - 44) / 2 / n_channels / sr
 - wave
 
 依赖关系及安装：
-（1）torchaudio (0.11.0) 当前可以选用 soundfile 与 sox_io 作为 backend
+（1）torchaudio (0.11.0) 当前可以选用 soundfile 与 sox_io 作为 backend，其中sox_io只适用于linux
 （2）librosa (v0.7以后) 使用 soundfile 与 audioread 作为 backend 来读写音频。特别的，默认使用 soundfile 进行读写，特别地：mp3 格式的文件 soundfile 无法读取，librosa 会用 audioread 进行读写。
 （3）soundfile 的安装步骤为：
 ```bash
@@ -101,6 +101,7 @@ y = sf_desc.read(frames=frame_duration, dtype=dtype, always_2d=False).T
 
 ### wave
 
+代码参考自 [webrtcvad](https://github.com/wiseman/py-webrtcvad/blob/master/example.py)
 ```python
 import wave
 import contextlib
@@ -114,4 +115,21 @@ with contextlib.closing(wave.open(path, "rb")) as wf:
 import struct
 # <表示little-endian, 2表示读两个数字, H表示数据类型为uint16
 struct.unpack("<2H", pcm_data[:4])  # 获取前两个采样点的值
+```
+
+### torchaudio
+
+读音频
+
+
+```python
+x, sr = torchaudio.load(
+    filepath: str,
+    frame_offset: int = 0,  # 从第几个采样点开始读
+    num_frames: int = -1,  # 一共读取多少个采样点, -1表示全读
+    normalize: bool = True,  # 设为False则会根据原始存储数据类型读取, 类似于librosa
+    channels_first: bool = True,
+    format: Optional[str] = None)
+# 默认情况下, 读入的x的形状为(C, L), 无论原始音频为单轨还是多轨
+# normalize为True时,且原始数据类型为int16时, 归一化方式为直接除以32768
 ```
