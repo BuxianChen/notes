@@ -412,6 +412,9 @@ services:
 # -f docker-compose.yml可省略不写
 # docker compose up是先打镜像(如果没有), 再建立网络, 最后启动容器
 docker compose -f docker-compose.yml up
+
+# docker compose build  # 可强制重新打镜像
+# docker compose up
 ```
 
 docker compose 命令的一般格式为
