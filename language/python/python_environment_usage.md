@@ -497,6 +497,12 @@ conda env remove --name <env_name>
 conda env list
 ```
 
+进入终端后自动激活conda base环境
+```bash
+conda init bash  # 自动激活
+conda config --set auto_activate_base false  # 取消自动激活
+```
+
 ### 不同环境设定不同的环境变量
 
 以设定 cuda 相关的环境变量为例，以 Windows 为例，linux 类似。相关的官方文档参见[此处](https://docs.conda.io/projects/conda/en/latest/user-guide/tasks/manage-environments.html)。只需手动增加两个文件即可：

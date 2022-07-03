@@ -405,6 +405,7 @@ git stash 用于暂存一些文件，但不进行提交。参见例 4。
 
 ```bash
 git stash  # 暂存
+git stash list  # 查看已暂存的东西
 git stash pop stash@{0}  # 将暂存的东西取出, 并且不保留该份存储
 git stash drop stash@{0}  # 丢弃某份存储
 git stash apply stash@{0}  # 将暂存的东西取出, 并且保留该份存储
