@@ -1396,7 +1396,24 @@ fi
 
 ## Ubuntu
 
+## 工具
 
+### ranger
+
+安装
+```
+apt install ranger
+```
+使用
+```
+ranger
+```
+按上下键在当前目录浏览，enter键进入，esc键退出文件。q键退出ranger
+
+
+### screenkey
+
+将按键显示在屏幕上
 
 ## 杂录（未被划分清楚的记录到这里）
 
