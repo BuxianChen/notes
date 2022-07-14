@@ -251,6 +251,38 @@ Successfully built 44aa4490ce2c
 
 备注：构建命令的最后一个 `.` 被称为上下文路径，其作用与准确理解参见[这里](https://yeasy.gitbook.io/docker_practice/image/build)。
 
+<details>
+<summary>
+上下文路径
+</summary>
+
+所有的Dockerfile命令均相对于上下文路径，目录树假设为
+
+<pre>
+- BASE
+  - test
+    y.py
+    Dockerfile
+  x.py
+</pre>
+
+Dockerfile文件内容为
+<pre>
+FROM ubuntu:18.04
+COPY . /app
+</pre>
+
+如下两种方式均可在 /app 目录下看到全部目录
+
+<pre>
+cd <BASE> && docker build -t test:v0 -f test/Dockerfile .
+cd <BASE>/test && docker build -t test:v0 ..
+</pre>
+
+即：上下文路径是相对执行docker build的当前目录而言的，而不是相对Dockerfile的位置
+
+</details>
+
 可以用如下命令以刚刚创建的镜像构建一个容器并运行该容器，并将这个运行的容器取名为 `web3`，`-p 81:80` 表示将宿主机的端口 `81` 与容器端口 `80` 进行映射，`-d` 表示保持容器在后台一直运行。
 
 ```bash
