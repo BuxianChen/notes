@@ -1391,6 +1391,29 @@ https://github.com/explosion/spacy-models/releases/download/de_core_news_sm-3.0.
 pip install xxx.tar.gz
 ```
 
+更为详细的解释如下（spacy2.1.9版本源码分析）
+
+执行 `python -m spacy download en_core_web_sm` 实际调用 `site-packages/spacy/__main__.py`。之后调用了
+
+```python
+# res = requests.get("https://raw.githubusercontent.com/explosion/spacy-models/master/shortcuts-v2.json")
+# res.json()
+
+# 确定下载的模型版本
+res = requests.get("https://raw.githubusercontent.com/explosion/spacy-models/master/compatibility.json")
+version = res.json()["spacy"]["2.1.9"]['en_core_web_sm']  # 2.1.0为2.1.9版本相匹配的en_core_web_sm模型
+
+# 最后实际调用了
+# python -m pip install --no-cache-dir --no-deps <download-url>
+
+download_url = "https://github.com/explosion/spacy-models/releases/download/"
++ "en_core_web_sm-2.1.0/en_core_web_sm-2.1.0.tar.gz#egg=en_core_web_sm==2.1.0"
+
+m = "en_core_web_sm"
+v = "2.1.0"
+format = "{m}-{v}/{m}-{v}.tar.gz#egg={m}=={v}"
+```
+
 ### huggingface transformers
 
 #### 基本使用
