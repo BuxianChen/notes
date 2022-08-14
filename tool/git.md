@@ -672,6 +672,21 @@ git config --global http.https://github.com.proxy http://127.0.0.1:7890
 git config --global https.https://github.com.proxy https://127.0.0.1:7890
 ```
 
+在 terminal 中提示当前所在分支，将如下代码段加入到 `~/.bashrc` 中即可
+
+```bash
+function git_branch {
+  branch="`git branch 2>/dev/null | grep "^\*" | sed -e "s/^\*\ //"`"
+  if [ "${branch}" != "" ]; then
+    if [ "${branch}" = "(no branch)" ]; then
+      branch="(`git rev-parse --short HRAD`...)"
+    fi
+    echo " ($branch)"
+  fi
+}
+export PS1='\[\033[01;36m\][\u@\w]\[\033[01;32m\]$(git_branch)\[\033[00m\] \$ '
+```
+
 ## 详例
 
 注意, 测试2.1与2.2表示的是在测试1的基础上尝试两种做法的结果

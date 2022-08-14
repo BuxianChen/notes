@@ -462,4 +462,20 @@ docker compose [-f docker-compose.yml文件路径] 命令
 安装基本是傻瓜式的，从略。配置镜像加速可以注册一个阿里云账号，搜索“容器镜像加速服务”按上面的指引修改 Docker Desktop 的配置即可。
 
 
+### 疑难杂症
+
+遇到如下错误：
+
+```
+Got permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock: Get "http://%2Fvar%2Frun%2Fdocker.sock/v1.24/images/json": dial unix /var/run/docker.sock: connect: permission denied
+```
+
+解决方案：
+
+```
+sudo newgroup docker
+sudo chmod 666 /var/run/docker.sock
+sudo usermod -aG docker ${USER}
+```
+
 

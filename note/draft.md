@@ -1081,3 +1081,31 @@ callback函数: call back意指"回电话". 例子: 在编写一个对数组排�
 * OpenCL: 跨GPU种类, 跨操作系统\(windows/linux\)
 * CUDA C: 只适用于Nvidia GPU, 跨操作系统\(windows/linux\)
 
+
+### WSL2
+
+前置条件：最好是 Windows 11
+
+安装步骤：
+
+- 按微软 [官方文档](https://docs.microsoft.com/en-us/windows/wsl/install) 安装 WSL2
+
+- 在微软商店中安装 Ubuntu 20.04 以及 Windows Terminal (Windows 10) 已自带
+
+后置事项：
+
+- Windows 上安装 VSCode 并安装 Remote-WSL 插件
+
+- 更换 apt 源：[清华源官网](https://mirrors.tuna.tsinghua.edu.cn/help/ubuntu/)
+
+- 文件目录：
+  - Windows 系统查看 WSL2 文件：在资源浏览器目录中输入：`\\wsl$`，或者类似这种目录 `C:\Users\{Username}\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu20.04LTS_79rhkp1fndgsc\LocalState` (不推荐)
+  - WSL2 命令行（Windows Terminal）中查看 Windows 文件目录：`/mnt/c` 表示 C 盘目录
+  - 在 WSL2 命令行中切换至相应目录执行 `code .` 即可打开 VSCode，并且打开后 VSCode 的集成终端本身也会是 WSL2 命令行
+
+- GPU（不确定）：在 Windows 11 本机将 Nvidia 显卡驱动升级至 510 以上版本，那么不做特殊设置，WSL2 中也能访问显卡，在 WSL2 命令行中可以查验：`lspci | grep -i nvidia`
+
+- Docker：可以参考 Docker 官方文档将 Docker Desktop 在 Windows 本机安装，此时 WSL2 与 Windows 本机均能使用 Docker。也可以在 WSL2 Terminal 中使用命令安装 Docker，这样 Docker 只能在 WSL2 命令行中访问
+
+- 网络：一般情况下，无需做特殊设置，WSL2 的网络与 Windows 本机的网络一般是互通的。如果使用 VPN 或代理时，可能需要进行特殊设置（不确定）。
+
