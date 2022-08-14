@@ -23,5 +23,6 @@
 * [CV](note/cv.md)
   * [mmlab](note/mmlab.md)
   * [opencv](note/opencv.md)
+* [NLP](note/nlp.md)
 * [Audio](note/audio.md)
-* [draft](note/draft.md)
+* [Draft](note/draft.md)
