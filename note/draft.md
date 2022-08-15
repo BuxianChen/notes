@@ -1126,4 +1126,6 @@ compact vdisk
 # 清理Docker Desktop
 select vdisk file="C:\Users\xyz\AppData\Local\Docker\wsl\data\ext4.vhdx"
 compact vdisk
+select vdisk file="C:\Users\xyz\AppData\Local\Docker\wsl\distro\ext4.vhdx"
+compact vdisk
 ```
