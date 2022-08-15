@@ -1109,3 +1109,21 @@ callback函数: call back意指"回电话". 例子: 在编写一个对数组排�
 
 - 网络：一般情况下，无需做特殊设置，WSL2 的网络与 Windows 本机的网络一般是互通的。如果使用 VPN 或代理时，可能需要进行特殊设置（不确定）。
 
+磁盘清理：
+
+[参考资料1](https://stephenreescarter.net/how-to-shrink-a-wsl2-virtual-disk/) [参考资料2](https://stackoverflow.com/questions/64068185/docker-image-taking-up-space-after-deletion) 使用 Windows PowerShell 输入
+
+```
+diskpart
+```
+
+在弹出的命令行中输入
+
+```powershell
+# 清理WSL2
+select vdisk file="C:\Users\xyz\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu20.04LTS_79rhkp1fndgsc\LocalState\ext4.vhdx"
+compact vdisk
+# 清理Docker Desktop
+select vdisk file="C:\Users\xyz\AppData\Local\Docker\wsl\data\ext4.vhdx"
+compact vdisk
+```
