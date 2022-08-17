@@ -758,7 +758,13 @@ ROOT
 - `grep -v` 表示排除，`'logs\|images'` 表示或的关系
 - `xargs -i` 表示将前一步的结果放在 `./src/{}` 的 `{}` 处。
 
-#### 例 6：grep
+#### 例 6：grep、xargs
+
+```bash
+find . -name "*.py" | xargs grep -n "Model"
+```
+查找当前目录及子目录下所有 `.py` 文件含有关键词 `Model` 的行及行号。
+
 
 #### 例 7：修改屏幕亮度
 
