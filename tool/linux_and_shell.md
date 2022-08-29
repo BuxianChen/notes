@@ -642,6 +642,10 @@ command -V ls  # 输出: ls is aliased to `ls --color=auto`
 command -v ls  # 输出: alias ls='ls --color=auto'
 ```
 
+#### getopt
+
+[stackoverflow](https://unix.stackexchange.com/questions/85787/invoking-shell-script-with-option-and-parameters)
+
 ### 命令例子
 
 #### 例 1：/dev/null、文件描述符
