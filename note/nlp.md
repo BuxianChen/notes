@@ -84,4 +84,15 @@ $$
 Score(q, d) = \sum_{i=1}^{n}{\frac{(k_3+1)tf(q_i, q)}{k_3 + tf(q_i, q)}\cdot\log(\frac{N-df_{q_i}+0.5}{df_{q_i}+0.5}+1)\cdot\frac{(k_1+1)tf(q_i, d)}{tf(q_i, d)+k_1(1-b+b\frac{L_d}{L_{ave}})}}
 $$
 
-其中 $tf(w, d)$ 表示 *term frequency* (单词 $w$ 在文档 $d$ 中出现的次数)，而 $df_{w}$ 在文档底库中有多少个文档包含词 $w$。
+其中 $$tf(w, d)$$ 表示 *term frequency* (单词 $$w$$ 在文档 $$d$$ 中出现的次数)，而 $$df_{w}$$ 在文档底库中有多少个文档包含词 $$w$$。
+
+# 评估指标
+
+## BLEU
+
+# 预训练模型
+
+## Tokenizer
+
+## Bert
+
