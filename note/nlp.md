@@ -94,5 +94,25 @@ $$
 
 ## Tokenizer
 
+### BPE 算法
+
+**动机**
+
+对于英文来说，词的数量可能太多。同一个词根，可以通过修改前/后缀的方式来得到动词形式，名词形式，副词形式，例如如下词表：
+
+own、owner、play、player、research、researcher、care、careful、hope、hopeful。
+
+使用词作为 embeding 的最小单位，需要 10 个向量。但如果拆解为：
+
+own、play、research、care、hope、er、ful。
+
+那么仅需要 7 个向量，且这些词根和前/后缀有着某种含义。因此 embeding 的对象为这些 word piece，似乎比较合理。这带来一个问题，上面的拆解过程是人工找的规律（需要语言学的专业知识），因此需要用一个算法来自动发现这些 word piece。BPE 算法就是一种自动发现 word piece 的算法
+
+具体算法流程参考博客：[Byte Pair Encoding](https://towardsdatascience.com/byte-pair-encoding-subword-based-tokenization-algorithm-77828a70bee0)
+
 ## Bert
+
+后续的预训练算法是对 Bert 进行的改进。因此需要对 Bert 原文进行相对忠实地解读。
+
+### Bert所用的Tokenizer
 
