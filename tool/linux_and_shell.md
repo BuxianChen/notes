@@ -797,6 +797,28 @@ $ cat cpfiles.txt | while IFS="," read -a row; do cp ${row[0]} ${row[1]}; done
 $ for i in $(seq 100000); do echo ${i} >> x.txt; done
 ```
 
+#### 例 10：打印 Git Objects
+
+```bash
+$ find .git/objects/ -type f|awk -F"/" '{print $3$4}' | while read -r obj; do echo =========; echo ${obj} $(git cat-file -t ${obj}); echo $(git cat-file -p ${obj}); done;
+```
+
+输出
+```
+=========
+08585692ce06452da6f82ae66b90d98b55536fca tree
+100644 blob 78981922613b2afb6025042ff6bd878ac1994e85 a.txt
+=========
+4b825dc642cb6eb9a060e54bf8d69288fbee4904 tree
+
+=========
+78981922613b2afb6025042ff6bd878ac1994e85 blob
+a
+=========
+db28edd91114108e88d430f317c46f87e9cb2896 commit
+tree 08585692ce06452da6f82ae66b90d98b55536fca author xxx <xxx@qq.com> 1663866229 +0800 committer xxx <xxx@qq.com> 1663866229 +0800 add a.txt
+```
+
 ### 杂录
 
 #### 大杂烩
