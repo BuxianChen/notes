@@ -59,6 +59,120 @@ export PATH=$PATH:$CUDA_HOME/bin
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib:$CUDA_HOME/lib64
 ```
 
+## 源
+
+### pip 源
+
+参考：https://mirrors.tuna.tsinghua.edu.cn/help/pypi/
+
+```
+pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
+```
+
+### anaconda 源
+
+参考：https://mirrors.tuna.tsinghua.edu.cn/help/anaconda/
+
+windows 机器先执行
+```
+conda config --set show_channel_urls yes
+```
+
+在~/.condarc中写入
+```
+channels:
+  - defaults
+show_channel_urls: true
+default_channels:
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/main
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/r
+  - https://mirrors.tuna.tsinghua.edu.cn/anaconda/pkgs/msys2
+custom_channels:
+  conda-forge: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  msys2: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  bioconda: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  menpo: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  pytorch: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  pytorch-lts: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+  simpleitk: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
+```
+
+### apt 源
+
+参考：https://mirrors.tuna.tsinghua.edu.cn/help/ubuntu/
+
+```
+sudo sed -i "s@http://.*archive.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list
+sudo sed -i "s@http://.*security.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list
+```
+
+### 时区
+
+```
+export TIME_ZONE=Asia/Shanghai
+apt install -y apt-utils tzdata
+ln -snf /usr/share/zoneinfo/$TIME_ZONE /etc/localtime && echo $TIME_ZONE > /etc/timezone
+dpkg-reconfigure -f noninteractive tzdata
+```
+
+Dockerfile中的写法
+```dockerfile
+ARG DEBIAN_FRONTEND="noninteractive"
+ENV TIME_ZONE Asia/Shanghai
+RUN apt install -y apt-utils tzdata && \
+    ln -snf /usr/share/zoneinfo/$TIME_ZONE /etc/localtime && \
+    echo $TIME_ZONE > /etc/timezone && \
+    dpkg-reconfigure -f noninteractive tzdata
+```
+
+### virtualenvwrapper
+
+安装
+```
+pip install pbr
+pip install virtualenv virtualenvwrapper
+```
+
+配置
+```
+# 仅作示例
+# ~/.bashrc
+export WORKON_HOME=$HOME/.virtualenvs
+export VIRTUALENVWRAPPER_PYTHON=/opt/conda/bin/python
+export VIRTUALENVWRAPPER_VIRTUALENV=/opt/conda/bin/virtualenv
+source /opt/conda/bin/virtualenvwrapper.sh
+```
+
+使用
+```
+mkvirtualenv env-name  # 创建
+rmvirtualenv env-name  # 移除
+workon env-name        # 激活环境
+deactivate             # 退出环境
+```
+
+### jupyter添加核
+
+```
+pip install ipykernel
+workon env-name
+python -m ipykernel install --user --name env-name --display-name env-name
+```
+
+### ssh-key
+
+```
+ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa
+```
+
+### CUDA
+
+```
+# ~/.bashrc中添加
+export LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
+export CUDA_HOME="usr/local/cuda"
+```
+
 ## 日志
 
 ```
@@ -111,9 +225,4 @@ x = torch.tensor([1, 2, np.nan])
 torch.isnan(x)
 ```
 
-## 训练
-
-iteration 1
-
-先设置一个小模型，例如：模型为一层的 LSTM；尝试过拟合一个小数据（注意去除所有例如打乱 dataset 等随机因素），优化器使用 Adam（默认参数）
 

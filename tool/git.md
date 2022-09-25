@@ -1127,3 +1127,66 @@ hooks 通常译为“钩子”，Git hooks 本质上是位于 `.git/hooks` 下�
 
 ### 
 
+## Git Internals
+
+### git reset 与 git checkout
+
+```bash
+# 显示某个commit的文件结构
+$ git ls-tree -r <commit-id>
+100644 blob 652ac0a2b320a855a5bdc6c09a5cdbcc822340f8    a.txt
+100644 blob 61780798228d17af2d34fce4cfbdf35556832472    b/b.txt
+100644 blob f2ad6c76f0115a6ba5b00456a849810e7ec0af20    b/c.tct
+100644 blob f2ad6c76f0115a6ba5b00456a849810e7ec0af20    c/c.txt
+$ git ls-tree <commit-id>
+100644 blob 652ac0a2b320a855a5bdc6c09a5cdbcc822340f8    a.txt
+040000 tree a04216f8c13a0c97348ec26ccbe5738224f1951e    b
+040000 tree cf67e9ef3a0fc6d858423fc177f2fbbe985a6f17    c
+```
+
+```bash
+# 显示暂存区的文件
+$ git ls-files -s
+100644 652ac0a2b320a855a5bdc6c09a5cdbcc822340f8 0       a.txt
+100644 61780798228d17af2d34fce4cfbdf35556832472 0       b/b.txt
+100644 f2ad6c76f0115a6ba5b00456a849810e7ec0af20 0       b/c.tct
+100644 f2ad6c76f0115a6ba5b00456a849810e7ec0af20 0       c/c.txt
+```
+
+`git add` 的时候，将新增加的文件内容加入至 `.git/objects` 目录，而不增加 `tree` 类型的 object。在 `git commit` 的时候才创建 `tree` 类型的 object，并将其添加至 `.git/objects` 目录。
+
+`git reset` 与 `git checkout` 的区别：
+
+`git reset` 的调用方式有如下几种
+
+```
+git reset --soft <commit-id>
+git reset --mixed <commit-id>
+git reset --hard <commit-id>
+git reset --mixed <commit-id> -- <file>
+git reset --hard <commit-id> -- <file>
+```
+
+其中前三条命令的执行逻辑是依次进行如下三步:
+- 将当前的 branch 指向 <commit-id>, HEAD 依旧指向 branch, 因此最终也指向 <commit-id>
+- 使用 <commit-id> 中的内容覆盖暂存区的内容
+- 使用暂存区的内容覆盖工作区的内容
+
+备注: 只有第三种被认为是危险的
+
+而后两条命令的执行逻辑是:
+- 使用 <commit-id> 中的<file>覆盖暂存区的<file>版本
+- 使用暂存区的<file>版本覆盖工作区的<file>内容
+
+
+`git checkout` 的调用方式有如下几种
+
+```
+git checkout <commit-id>
+git checkout <commit-id> -- <file>
+git checkout -b <branch_name> <commit-id>
+```
+
+第一条命令的执行逻辑是:
+- 将HEAD指针本身指向<commit-id>, 将暂存区的内容改为<commit-id>中的内容, 将<commit-id>中的内容与工作区的内容合并(如果有冲突, 命令本身会报错)
+- 

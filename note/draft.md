@@ -1108,3 +1108,39 @@ compact vdisk
 select vdisk file="C:\Users\xyz\AppData\Local\Docker\wsl\distro\ext4.vhdx"
 compact vdisk
 ```
+
+#### 远程访问WSL
+
+在WSL2的terminal中
+```bash
+sudo apt remove openssh-server
+sudo apt install openssh-server  # 选择1
+sudo vim /etc/ssg/sshd_config
+# 配置以下三项
+# Port 2222
+# PermitRootLogin yes
+# PasswordAuthentication yes
+sudo service ssh --full-restart
+ifconfig  # 查看wsl2的ipv4, 以下用<wsl2_ip>代替
+```
+
+在WSL2的Windows宿主机打开powershell以管理员权限设置端口转发
+```powershell
+netsh interface portproxy set v4tov4 listenport=3333 listenaddress=0.0.0.0 connectport=2222 connectaddress=<wsl2_ip>
+ipconfig  # 查看Windows本机ipv4, 以下用<windows_ip>代替
+```
+
+在WSL2的Windows宿主机设置防火墙规则:
+
+控制面板->防火墙->入站规则->新建规则
+
+- 端口
+- TCP, 特定本地端口, 3333
+- 允许连接
+- 全选上
+- 名称任意
+
+至此, 从局域网中另一台机器打开终端即可远程连接WSL2
+```
+ssh <wsl2_user_name>@<windows_ip> -p 3333
+```
