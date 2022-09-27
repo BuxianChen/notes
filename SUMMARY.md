@@ -13,9 +13,13 @@
 ## Tool
 
 - [Git](tool/git.md)
-* [Docker](tool/docker.md)
-* [Linux & Shell](tool/linux_and_shell.md)
-* [Vim](tool/vim.md)
+- [Docker](tool/docker.md)
+- [Linux & Shell](tool/linux_and_shell.md)
+- [Vim](tool/vim.md)
+
+## Packages
+
+- [huggingface-transformers](note/huggingface-transformers.md)
 
 ## Note
 
@@ -24,6 +28,4 @@
 - [NLP](note/nlp.md)
 - [CV](note/cv.md)
   * [mmlab](note/mmlab.md)
-  * [opencv](note/opencv.md)
-- [Audio](note/audio.md)
 - [TODO LIST](note/plan.md)
