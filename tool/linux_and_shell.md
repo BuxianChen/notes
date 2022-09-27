@@ -819,6 +819,13 @@ db28edd91114108e88d430f317c46f87e9cb2896 commit
 tree 08585692ce06452da6f82ae66b90d98b55536fca author xxx <xxx@qq.com> 1663866229 +0800 committer xxx <xxx@qq.com> 1663866229 +0800 add a.txt
 ```
 
+#### 例 11: 跳过前 k 行
+
+```
+# tail -n +<N+1> <filename>
+tail -n +3 a.txt  # 跳过前2行
+```
+
 ### 杂录
 
 #### 大杂烩

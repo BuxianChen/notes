@@ -110,9 +110,13 @@ own、play、research、care、hope、er、ful。
 
 具体算法流程参考博客：[Byte Pair Encoding](https://towardsdatascience.com/byte-pair-encoding-subword-based-tokenization-algorithm-77828a70bee0)
 
-## Bert
+# Draft
 
-后续的预训练算法是对 Bert 进行的改进。因此需要对 Bert 原文进行相对忠实地解读。
+## Causal Language Modeling (CausalLM, LM)
 
-### Bert所用的Tokenizer
+即普通的语言模型: 根据已经见到的内容预测下一个 token
+
+参考博客: https://www.projectpro.io/recipes/what-is-causal-language-modeling-transformers
+
+The task of predicting the token after a sequence of tokens is known as causal language modeling. In this case, the model is just concerned with the left context (tokens on the left of the mask).
 

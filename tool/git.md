@@ -1190,3 +1190,10 @@ git checkout -b <branch_name> <commit-id>
 第一条命令的执行逻辑是:
 - 将HEAD指针本身指向<commit-id>, 将暂存区的内容改为<commit-id>中的内容, 将<commit-id>中的内容与工作区的内容合并(如果有冲突, 命令本身会报错)
 - 
+
+## 特殊目录与文件
+
+- `.git`: Git 仓库
+- `.github`: github 网页端的 issue, pull requests 等模板
+- `.gitattribute`: Git-LFS 管理的文件信息
+- `.gitignore`: git 忽略文件
