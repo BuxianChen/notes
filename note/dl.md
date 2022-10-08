@@ -1,8 +1,13 @@
-## 环境配置
+## CUDA 环境配置
 
 说明：高版本的显卡驱动兼容各个低版本的 CUDA 与 CUDNN，但 CUDA 与 CUDNN 之间存在的对应关系。CUDA 的各个版本之间一般不存在兼容性。而CUDNN实际上是一堆头文件和库文件的集合，直接放入CUDA的头文件和库文件中即可。安装顺序为：先安装最新版本的显卡驱动，再安装CUDA，再查询相匹配版本的CUDNN，并将文件复制进CUDA中即可。
 
-### 驱动
+
+### (硬件)显卡支持
+
+显卡与CUDA版本的支持对应情况: 参考(博客)[https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/]
+
+### (系统软件)驱动
 安装驱动的方式有几种：
 - ubuntu下使用命令安装：
     ```bash
@@ -13,7 +18,11 @@
 - 去[官方nvidia驱动下载页面](https://www.nvidia.com/download/index.aspx)下载安装脚本进行安装
 - 系统级别安装CUDA时，可以将驱动也一并勾选进行安装
 
-### CUDA与CUDNN
+### (依赖软件) gcc, g++
+
+安装多个版本的 gcc/g++(ubuntu): 参考[博客](https://linuxconfig.org/how-to-switch-between-multiple-gcc-and-g-compiler-versions-on-ubuntu-20-04-lts-focal-fossa)
+
+### (安装) CUDA与CUDNN
 安装多个版本的 CUDA 及 CUDNN：
 
 - [参考链接](https://towardsdatascience.com/installing-multiple-cuda-cudnn-versions-in-ubuntu-fcb6aa5194e2)
@@ -37,7 +46,16 @@
 备注：pytorch中带着的cuda以及cudnn头文件及库文件并不是完整的cuda与cudnn库文件。并且即使系统级别安装的是别的版本的cuda与cudnn，使用pip的方式安装时，pytorch也会将其忽略。
 
 
-### cuda driver version与runtime version
+### 特例: Ubuntu 20.04 上安装 CUDA 10.2
+
+参考[博客](https://blog.csdn.net/qq757056521/article/details/109267381)
+
+```bash
+# 在希望不修改/usr/local/cuda的软连接时
+bash cuda_10.2.89_440.33.01_linux.run --librarypath=/usr/local/cuda-10.2
+```
+
+### (FAQ) cuda driver version与runtime version
 
 ```text
 nvidia-smi  # CUDA Drive Version
@@ -55,8 +73,8 @@ torch.version.cuda()  # Runtime version
 
 ```
 export CUDA_HOME=/usr/local/cuda-10.0
-export PATH=$PATH:$CUDA_HOME/bin
-export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CUDA_HOME/lib:$CUDA_HOME/lib64
+export PATH=$CUDA_HOME/bin:$PATH
+export LD_LIBRARY_PATH=$CUDA_HOME/lib:$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 ```
 
 ## 源
@@ -163,14 +181,6 @@ python -m ipykernel install --user --name env-name --display-name env-name
 
 ```
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa
-```
-
-### CUDA
-
-```
-# ~/.bashrc中添加
-export LD_LIBRARY_PATH="/usr/local/cuda/lib64:$LD_LIBRARY_PATH"
-export CUDA_HOME="usr/local/cuda"
 ```
 
 ## 日志
