@@ -90,6 +90,7 @@ c <- d
 
 ### VSCode 离线安装扩展
 
+有时会出现VSCode版本与扩展不兼容的问题, 此时需要手动下载vsix包进行下载, 下面的[问答](https://stackoverflow.com/questions/69398500/vscode-download-older-version-of-an-extension)解释了一些关于怎么下载历史版本的jupyter扩展的问题, 顺带也有介绍一些GitHub流水线的知识, 供参考.
 
 
 ### VSCode 设置项
@@ -170,9 +171,18 @@ VSCode设置`File->Preferences->Settings`中的`用户`优先级低于`工作区
 }
 ```
 
+## Kafka
+
+相关介绍可以参考[博客1](https://towardsdatascience.com/kafka-docker-python-408baf0e1088)与[博客2](https://dev.to/boyu1997/intro-to-kafka-4hn2), 简单来说就是一个存东西的地方(类似于数据库或队列), 发行版分为 `Apache kafka` 与 `Confluent kafka` 两类，区别在概念上的理解可参考[博客](https://www.cnblogs.com/fubinhnust/p/11967798.html)
+
+> 我们把Kafka比作Linux的内核,Confluent就相当于Linux的某个发行版。Confluent提供了Kafka没有的组件和功能，比如完善的跨数据中心数据备份以及集群监控解决方案。Confluent还分开源版本和企业版本,企业版本中提供了对底层Kafka集群完整的可视化监控解决方案，以及一些辅助系统帮助管理集群。Confluent的开源版本和Apache社区的Kafka并无太大区别。用户完全可以使用Confluent Open Source替代Apache Kafka。
+
+在使用上，用容器部署kafka服务，使用kafka-python包来生产和消费数据, 具体可参考[demo](draft-src/kafka/)
+
+
 ## 术语
 
-CLI \(command-line interface\) 命令行接口
+CLI (command-line interface) 命令行接口
 
 wildcards 通配符
 
