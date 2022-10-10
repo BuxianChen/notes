@@ -177,7 +177,13 @@ VSCode设置`File->Preferences->Settings`中的`用户`优先级低于`工作区
 
 > 我们把Kafka比作Linux的内核,Confluent就相当于Linux的某个发行版。Confluent提供了Kafka没有的组件和功能，比如完善的跨数据中心数据备份以及集群监控解决方案。Confluent还分开源版本和企业版本,企业版本中提供了对底层Kafka集群完整的可视化监控解决方案，以及一些辅助系统帮助管理集群。Confluent的开源版本和Apache社区的Kafka并无太大区别。用户完全可以使用Confluent Open Source替代Apache Kafka。
 
-在使用上，用容器部署kafka服务，使用kafka-python包来生产和消费数据, 具体可参考[demo](draft-src/kafka/)
+在使用上，用容器部署kafka服务，使用kafka-python包来生产和消费数据, 具体可参考[demo](draft-src/kafka/mini-demo)
+
+
+示例: 计算后将数据回写入kafka(写入过程不阻塞主服务)
+
+代码参考: [draft-src/kafka/write-kafka](draft-src/kafka/write-kafka)
+
 
 
 ## 术语
