@@ -83,3 +83,9 @@ class ThreadWithReturnValue(threading.Thread):
 ```python
 value = t.join(0.2)  # 若线程没有结束则返回None, 若线程结束则得到返回值
 ```
+
+### 捕获线程的异常
+
+参考: https://stackoverflow.com/questions/2829329/catch-a-threads-exception-in-the-caller-thread
+
+似乎不容易用普通的 `thread.Threading` 做到(需要做很多hack), 推荐使用 `concurrent.futures.ThreadPoolExecutor`
