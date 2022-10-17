@@ -11,6 +11,54 @@
 - [pytorch-lightning with huggingface transfomers](https://pytorch-lightning.readthedocs.io/en/stable/notebooks/lightning_examples/text-transformers.html)
 
 
+## 使用
+
+
+### pytorch_lightning.LightningModule
+
+
+### pytorch_lightning.LightningDataModule
+
+```python
+from 
+class MyDataset()
+
+class MyDataModule(LightningDataModule):
+
+    def __init__(
+        self,
+        model_name_or_path: str,
+        max_seq_length: int = 128,
+        train_batch_size: int = 32,
+        eval_batch_size: int = 32,
+        **kwargs,
+    ):
+        super().__init__()
+        self.model_name_or_path = model_name_or_path
+        self.max_seq_length = max_seq_length
+        self.train_batch_size = train_batch_size
+        self.eval_batch_size = eval_batch_size
+        self.tokenizer = AutoTokenizer.from_pretrained(self.model_name_or_path, use_fast=True)
+
+    def setup(self, stage: str):
+        # 此部分代码在多卡场景下会被每个进程执行, 因此可以设置变量
+        self.datasets = {
+            "train": MyDataset(...)
+            "val": MyDataset(...)
+        }
+
+    def prepare_data(self):
+        # 此部分代码仅在rank0上运行, 建议不要设置类的属性
+        # 建议做一些数据的转换工作, 例如切分数据至train/val文件夹,将数据tokenizer化保存
+        pass
+
+    def train_dataloader(self):
+        return DataLoader(self.dataset["train"], batch_size=self.train_batch_size, shuffle=True)
+
+    def val_dataloader(self):
+        return DataLoader(self.dataset["val"], batch_size=self.train_batch_size, shuffle=True)
+```
+
 
 
 ## 源码阅读

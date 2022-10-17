@@ -7,8 +7,11 @@
 - Python
   - [Python environment](language/python/python_environment_usage.md)
   - [Advanced Python](language/python/python_advanced.md)
-  - [Python Packages](language/python/python_packages.md)
+  - [Python Standard Libary](language/python/python_standard_library.md)
+  - [Python Third Party](language/python/python_third_party.md)
 - [Pytorch](note/pytorch.md)
+- [huggingface-transformers](note/huggingface-transformers.md)
+- [pytorch-lightning](note/pytorch-lightning.md)
 
 ## Tool
 
@@ -16,10 +19,6 @@
 - [Docker](tool/docker.md)
 - [Linux & Shell](tool/linux_and_shell.md)
 - [Vim](tool/vim.md)
-
-## Packages
-
-- [huggingface-transformers](note/huggingface-transformers.md)
 
 ## Note
 
