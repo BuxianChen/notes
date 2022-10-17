@@ -12,6 +12,11 @@
 ## 使用
 
 
+### 疑惑
+
+- `LightningModule` 中的 `self.log(...)` 是指什么? 似乎最终调用的是`pytorch_lightning.trainer.connectors.logger_connector.result._ResultCollection.log()`
+    - 此函数体内涉及到`lightning_utilities.core.apply_func.apply_to_collections`
+
 ### Pytorch vs Lightning
 
 - Dataset, DataLoader: 在 Lightning 可以沿用, 或者使用 `LightningDataModule`, 多卡训练时, Dataloader 所需的 DistributedSampler 在 Lightning 中无需手动写
