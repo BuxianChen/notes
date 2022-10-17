@@ -646,6 +646,21 @@ command -v ls  # 输出: alias ls='ls --color=auto'
 
 [stackoverflow](https://unix.stackexchange.com/questions/85787/invoking-shell-script-with-option-and-parameters)
 
+
+#### rsync
+
+参考[阮一峰博客](https://www.ruanyifeng.com/blog/2020/08/rsync.html)
+
+```
+rsync -anv source/ destination  # 测试, 不实际执行
+rsync -av source/ username@remote_host:destination
+rsync -av --delete source/ destination  # 确保两个目录完全一致
+```
+
+注: 
+- 此处 `source` 后面的斜杠如果省略, 则目标位置将会形成 `destination/source` 的目录结构, 这可能不是所期望的
+- rsync 命令默认会同步以 `.` 开头的隐藏目录
+
 ### 命令例子
 
 #### 例 1：/dev/null、文件描述符
