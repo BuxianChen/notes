@@ -22,6 +22,25 @@ A.bar(2)
 
 自定义装饰器
 
+例子1: 
+
+```python
+def my_decorator(func):
+    def wrapper_function(*args, **kwargs):
+        print("*"*10)
+        res = func(*args,  **kwargs)
+        print("*"*10)
+        return res
+    return wrapper_function
+@my_decorator
+def foo(a):
+    return a
+# 相当于foo=my_decorator(foo)
+x = foo(1)
+```
+
+
+例子2:
 ```python
 from functools import wraps
 def node_func(name):

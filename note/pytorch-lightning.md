@@ -14,7 +14,7 @@
 
 ### 疑惑
 
-- `LightningModule` 中的 `self.log(...)` 是指什么? 似乎最终调用的是`pytorch_lightning.trainer.connectors.logger_connector.result._ResultCollection.log()`
+- `LightningModule` 中的 `self.log(...)` 是指什么?(猜测用于传给torchmetric, 类似于tf的Metric) 似乎最终调用的是`pytorch_lightning.trainer.connectors.logger_connector.result._ResultCollection.log()`
     - 此函数体内涉及到`lightning_utilities.core.apply_func.apply_to_collections`
 
 ### Pytorch vs Lightning
@@ -189,9 +189,92 @@ class PLModule(LightningModule)
 #### current rank
 
 ```
-def train_step(self, batch, batch_idx):
+def training_step(self, batch, batch_idx):
     self.global_rank
     self.local_rank
+```
+
+#### training_step 出入参
+
+入参: 
+出参: 返回一个标量版的loss即可, 或者返回一个字典, 字典中有一个键值对为{"loss": loss}
+
+```python
+@dataclass
+class OutputResult:
+    def asdict(self) -> Dict[str, Any]:
+        raise NotImplementedError
+
+# src/pytorch_lightning/loops/optimization/optimizer_loop.py
+class OptimizerLoop(Loop[_OUTPUTS_TYPE]):
+    """Runs over a sequence of optimizers.
+
+    This loop implements what is known in Lightning as Automatic Optimization.
+    """
+
+    output_result_cls = ClosureResult
+    def _training_step(self, kwargs: OrderedDict) -> ClosureResult:
+        ...
+        # 注: training_step_output即为training_step的返回结果
+        result = self.output_result_cls.from_training_step_output(training_step_output, self.trainer.accumulate_grad_batches)
+        ...
+
+
+@dataclass
+class ClosureResult(OutputResult):
+    """A container to hold the result of a :class:`Closure` call.
+
+    It is created from the output of :meth:`~pytorch_lightning.core.module.LightningModule.training_step`.
+
+    Attributes:
+        closure_loss: The loss with a graph attached.
+        loss: A detached copy of the closure loss.
+        extra: Any keys other than the loss returned.
+    """
+
+    closure_loss: Optional[Tensor]
+    loss: Optional[Tensor] = field(init=False, default=None)
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self._clone_loss()
+
+    def _clone_loss(self) -> None:
+        if self.closure_loss is not None:
+            # the loss will get scaled for amp. avoid any modifications to it
+            self.loss = self.closure_loss.detach().clone()
+
+    @classmethod
+    def from_training_step_output(
+        cls, training_step_output: Optional[STEP_OUTPUT], normalize: int = 1
+    ) -> "ClosureResult":
+        closure_loss, extra = None, {}
+
+        if isinstance(training_step_output, dict):
+            # this should not modify the `training_step_output`, as the user could be using it after `training_step_end`
+            closure_loss = training_step_output.get("loss")
+            if closure_loss is None:
+                raise MisconfigurationException(
+                    "In automatic_optimization, when `training_step` returns a dict, the 'loss' key needs to be present"
+                )
+            extra = {k: v for k, v in training_step_output.items() if k not in ("loss", "hiddens")}
+        elif isinstance(training_step_output, Tensor):
+            closure_loss = training_step_output
+        elif training_step_output is not None:
+            raise MisconfigurationException(
+                "In automatic optimization, `training_step` must return a Tensor, "
+                "a dict, or None (where the step will be skipped)."
+            )
+
+        if closure_loss is not None:
+            # accumulate the loss. If ``accumulate_grad_batches == 1``, no effect
+            # note: avoid in-place operation `x /= y` here on purpose
+            closure_loss = closure_loss / normalize
+
+        return cls(closure_loss, extra=extra)
+
+    def asdict(self) -> Dict[str, Any]:
+        return {"loss": self.loss, **self.extra}
 ```
 
 #### training_step 伪代码(后续源码分析也可参照此)
