@@ -661,6 +661,36 @@ rsync -av --delete source/ destination  # 确保两个目录完全一致
 - 此处 `source` 后面的斜杠如果省略, 则目标位置将会形成 `destination/source` 的目录结构, 这可能不是所期望的
 - rsync 命令默认会同步以 `.` 开头的隐藏目录
 
+
+#### awk
+
+
+**示例1**
+
+注意: 如果原始数据中以`\t`作为分割符, 但某些列可能为空字符串, 则必须指定`\t`
+```
+aaaa  bbbbb
+  ccccc
+```
+
+```python
+awk -F'\t' '{print $1"\t"$2}' data.csv
+```
+
+**示例2: 引入外部变量**
+
+```python
+var="123"
+awk -v v=${var} '{print var" "$0}' data.csv
+```
+
+**示例3: if**
+```python
+awk '{if($2==23) {print $0}}' data.csv
+```
+
+
+
 ### 命令例子
 
 #### 例 1：/dev/null、文件描述符
