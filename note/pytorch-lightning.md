@@ -25,7 +25,7 @@
     - for loop: 在 Lightning 无需自己写 for loop
     - loss backward: 在 Lightning 中可以让 `training_step` 返回 loss, 自动进行 backward, 或者也可以手工写 backward 的执行过程
 - DDP, AMP: 在 Lightning 中用 `Trainer` 的初始化参数指定
-- 模型加载与保存(存疑): 最简单的用法是 Lightning 中用 `Trainer` 自动处理, 高级用法是初始化 `Trainer` 时增加 `pytorch_lightning.callbacks.ModelCheckpoint` 这个 callback, 更复杂的用法(未尝试过)是关闭 `Trainer` 的模型保存功能, 在 `LightningModule` 的 `training_epoch_end` 中检测当前的 global_rank, 只在 global_rank 为0的进程上做保存模型的工作
+- 模型加载与保存: 最简单的用法是 Lightning 中用 `Trainer` 自动处理, 高级用法是初始化 `Trainer` 时增加 `pytorch_lightning.callbacks.ModelCheckpoint` 这个 callback, 更复杂的用法是关闭 `Trainer` 的模型保存功能(`enable_checkpointing=False`), 在 `LightningModule` 的 `training_epoch_end` 或者 `validation_epoch_end` 中检测当前的 local_rank, 只在 local_rank 为0的进程上做保存模型的工作
 - 控制台打印: 可以使用 python 本身的 `logging` 模块进行, 参考[官方文档](https://pytorch-lightning.readthedocs.io/en/stable/common/console_logs.html)
 
 ### pytorch_lightning.LightningModule
@@ -373,6 +373,85 @@ def val_loop():
     on_validation_model_train()  # calls `model.train()`
     torch.set_grad_enabled(True)
 ```
+
+#### `training_step`, `validation_step`, `test_step`, `predict_step`
+
+- training_step: 训练过程, batch中应包含x与y, 被trainer.fit调用
+- validation_step: 验证过程, batch中应包含x与y, 通常的每个epoch结束后被trainer.fit调用
+- test_step: 训练过程, batch中应包含x与y, 在trainer.fit中不被调用, 被trainer.test调用
+- predict_step: 在不定义predict_step的情况下, trainer.pred会调用model.forward, 否则会调用predict_step, 因此batch中只包含x即可
+
+```python
+def training_step(batch, batch_idx, optimizer_idx, hiddens):
+    # 返回可以是三种:(1) loss tensor (2) dict, 但必须包含"loss"这个key (3) None, 跳过此次training_step的过程, 一般用于手动backward
+
+def validation_step(batch, batch_idx, dataloader_idx):
+    # 返回可以是(1)tensor (2)dict of tensor (3) None, 跳过此次validation_step
+
+def test_step(batch, batch_idx, dataloader_id):
+    # 返回可以是(1)tensor (2)dict of tensor (3) None, 跳过此次test_step
+
+def predict_step(batch, batch_idx, dataloader_id):
+    # 返回是Any
+```
+
+#### save checkpoint advanced
+
+
+**方式1**
+默认情况下, 会自动保存模型(只保存最新的), 参考[官方文档](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#enable-checkpointing)
+
+> By default Lightning saves a checkpoint for you in your current working directory, with the state of your last training epoch, Checkpoints capture the exact value of all parameters used by a model. To disable automatic checkpointing, set this to False.
+
+```python
+# default used by Trainer, saves the most recent model to a single checkpoint after each epoch
+trainer = Trainer(enable_checkpointing=True)
+
+# turn off automatic checkpointing
+trainer = Trainer(enable_checkpointing=False)
+```
+
+备注: 这种情况下默认会保存在`lightening_logs/version_n/checkpoints` 目录中, 且会保存许多其他非模型权重的东西
+
+```python
+import torch
+d = torch.load("lightening_logs/version_n/checkpoints/xxx.ckpt")
+d.keys()
+# epoch, global_step, pytorch_lightening_version, state_dict, loops, callbacks, optimizer_states, lr_schedulers
+# 其中state_dict为模型的权重
+```
+
+**方式2**
+trainer 中传入的callbacks包含一个 `ModelCheckpoint` 实例, 参考[官方文档](https://pytorch-lightning.readthedocs.io/en/latest/common/trainer.html#enable-checkpointing)。用于指定保存路径，保留多少个checkpoint，是否只保留权重，是否根据某个特定的监控值保存最优模型等
+
+```python
+from pytorch_lightning.callbacks import ModelCheckpoint
+
+# Init ModelCheckpoint callback, monitoring 'val_loss'
+checkpoint_callback = ModelCheckpoint(monitor="val_loss")
+
+# Add your callback to the callbacks list
+trainer = Trainer(callbacks=[checkpoint_callback])
+```
+
+**方式3**
+手写, 在各个hook中加上一些条件进行模型保存
+
+```python
+from pytorch_lightning import LightningModule, Trainer
+import torch
+class MyModel:
+    def __init__(self):
+        super().__init__()
+        self.layer = torch.nn.Linear(64, 32)
+    def training_epoch_end(self, training_outs):
+        if self.current_epoch in [0, 2] and self.local_rank == 0:
+            torch.save(self.layer.state_dict(), f"epoch_{self.current_epoch}.pth")
+model = MyModel()
+trainer = Trainer(max_epochs=4, gpus=2, enable_checkpointing=False)
+```
+
+**方式4(不确定): 继承ModelCheckpoint**
 
 ### pytorch_lightning.Trainer
 
