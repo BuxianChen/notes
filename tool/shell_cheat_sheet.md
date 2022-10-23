@@ -386,9 +386,9 @@ awk '{if($2==23) {print $0}}' data.csv
 ```
 
 
-## shell命令组合例子
+## Shell命令组合例子
 
-#### 例 2：管道、curl、grep、cut 结合使用
+### 例 2：管道、curl、grep、cut 结合使用
 
 ```bash
 $ curl --head --silent baidu.com | grep -i content-length | cut --delimiter=' ' -f2
@@ -403,7 +403,7 @@ grep 的 `-i` 参数表示匹配时忽略大小写
 
 cut 命令用于切分字符串，有若干种用法：取出第 $$m$$ 个到第 $$n$$ 个字符；按分隔符取出第 $$k$$ 个字符串。此处 cut 命令中用 `--delimiter=' '` 指定分割符为空格，`-f2` 表示取出以该分割符分割产生的第二项
 
-#### 例 3：source、export
+### 例 3：source、export
 
 通常情况下，执行如下语句
 
@@ -440,7 +440,7 @@ $ . a.sh
 
 备注：对于 `source a.sh` 这种执行方式来说，脚本中的 `$0` 为终端本身，例如：`/bin/bash`，而 `./a.sh` 这种执行方式，脚本中的 `$0` 将会是 `./a.sh`
 
-#### 例 4：带颜色的终端输出
+### 例 4：带颜色的终端输出
 
 ```
 echo -e "\e[44;37;5mabcs\e[0m"
@@ -454,7 +454,7 @@ echo -e "\e[44;37;5mabcs\e[0m"
 
 - `\e[0m` 表示设定回终端的默认值
 
-#### 例 5：排除某些子目录的复制
+### 例 5：排除某些子目录的复制
 
 ```bash
 $ ls ./src | grep -v 'logs\|images' | xargs -i cp -r ./src/{} ./dst
@@ -475,7 +475,7 @@ ROOT
 - `grep -v` 表示排除，`'logs\|images'` 表示或的关系
 - `xargs -i` 表示将前一步的结果放在 `./src/{}` 的 `{}` 处。
 
-#### 例 6：grep、xargs
+### 例 6：grep、xargs
 
 ```bash
 find . -name "*.py" | xargs grep -n "Model"
@@ -483,14 +483,14 @@ find . -name "*.py" | xargs grep -n "Model"
 查找当前目录及子目录下所有 `.py` 文件含有关键词 `Model` 的行及行号。
 
 
-#### 例 7：修改屏幕亮度
+### 例 7：修改屏幕亮度
 
 ```bash
 $ echo 5000 | sudo tee /sys/class/backlight/intel_backlight/brightness
 # 不能使用 sudo echo 5000 > /sys/class/backlight/intel_backlight/brightness
 ```
 
-#### 例 8：依据 csv 格式文件执行命令（read 命令）
+### 例 8：依据 csv 格式文件执行命令（read 命令）
 
 `cpfiles.txt` 文件如下，希望按照 csv 进行文件拷贝
 
@@ -504,13 +504,13 @@ $ cat cpfiles.txt | while IFS="," read src dst; do cp $src $dst; done
 $ cat cpfiles.txt | while IFS="," read -a row; do cp ${row[0]} ${row[1]}; done
 ```
 
-#### 例 9：生成序列（seq 命令）
+### 例 9：生成序列（seq 命令）
 
 ```bash
 $ for i in $(seq 100000); do echo ${i} >> x.txt; done
 ```
 
-#### 例 10：打印 Git Objects
+### 例 10：打印 Git Objects
 
 ```bash
 $ find .git/objects/ -type f|awk -F"/" '{print $3$4}' | while read -r obj; do echo =========; echo ${obj} $(git cat-file -t ${obj}); echo $(git cat-file -p ${obj}); done;
@@ -532,7 +532,7 @@ db28edd91114108e88d430f317c46f87e9cb2896 commit
 tree 08585692ce06452da6f82ae66b90d98b55536fca author xxx <xxx@qq.com> 1663866229 +0800 committer xxx <xxx@qq.com> 1663866229 +0800 add a.txt
 ```
 
-#### 例 11: 跳过前 k 行
+### 例 11: 跳过前 k 行
 
 ```
 # tail -n +<N+1> <filename>
