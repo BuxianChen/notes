@@ -1,6 +1,6 @@
 # Vim
 
-## 第 3 课：vim
+## 第一部分: VIM的基本使用(第 3 课: VIM)
 
 备注：<font color=red>按键严格区分大小写</font>
 
@@ -14,8 +14,6 @@
 - 可视化模式：进一步分为一般、行、块模式，主要是移动光标选中一大块文本
 - 命令模式：用于执行命令
 
-#### 模式的切换方式
-
 以正常模式为“中心模式”，使用 `<ESC>` 键从任何其他模式返回正常模式。在正常模式下：使用 `i` 键进入插入模式，使用 `R` 键进入替换模式，使用 `:` 键进入命令模式，使用 `v` 键进入可视化（一般）模式，使用 `V` 键进入可视化（行）模式，使用 `Ctrl+v` 进入可视化（块）模式。
 
 ### vim 界面：缓存（cache），标签页（tab），窗口（window）
@@ -26,6 +24,7 @@
 
 
 **window**
+
 `:sp [filename]` 表示在下方新建一个窗口，打开 `filename` 文件
 
 `:vsp [filename]` 表示在右边新建一个窗口，打开 `filename` 文件
@@ -43,6 +42,7 @@
 `:wq [filename]` 表示关闭当前窗口，并将当前窗口的文件更名为 `filename`
 
 **tab**
+
 `:tabnew [filename]` 表示新建一个标签页，打开 `filename` 文件
 
 切换至左边的标签页：`:-tabnext` 或 `gT` 或 `:tabp`（previous）
@@ -51,6 +51,7 @@
 
 
 **vim swap 文件**
+
 若出现多个窗口编辑同一个文件，使用 E 表示对原始文件进行编辑，此时会新建一个缓存。以编辑 `a.py` 为例，第一个缓存的名字为 `.a.py.swp`，第二个缓存的名字为 `.a.py.swo`（第三个缓存的名字为 `.a.py.swn`）。备注：若使用 `E` 进入，则表示基于 `a.py` 里的内容新建缓存 `.a.py.swo`。若使用 `R` 进入，则表示基于 `.a.py.swp` 文件新建缓存 `.a.py.swo`。
 
 - `E` 表示利用原始文件新建缓存
@@ -218,7 +219,42 @@ def foo():
 - 方法一：按`shift+v`进入可视行模式，选中两行，输入`:normal0i# `
 - 方法二：按`ctrl+v`进入可视块模式，选中两行的开头，输入`I# `，再输入`ESC`
 
+### VIM Cheatsheet
 
+本部分仅记录原生的VIM快捷键
+
+参考: https://vim.rtorr.com/
+
+#### 重复上次的命令
+
+`.`用于重复上一条命令
+
+#### 制表符
+参考[博客](https://linuxhint.com/tab-multiple-lines-vim/)
+
+普通模式下: `>>`插入一个制表符, `<<`向左侧删除一个制表符
+visual模式下(三种块模式均可):
+- 按下`>`插入一个制表符,继续按`.`插入第2个制表符
+- 按下`<`插入一个制表符,继续按`.`插入第2个制表符
+
+#### 撤销与重做
+
+普通模式下: `u`撤销上一次操作, `ctrl+r`重做操作
+
+#### 分屏
+
+`:vsp filename <CR>`: 左右分屏打开文件
+`:sp filename <CR>`: 上下分屏打开文件
+
+#### 上下移动
+
+`ctrl+u`上翻半页, `ctrl+d`下翻半页
+
+#### 大杂烩
+
+
+
+## 第二部分: 自定义VIM
 
 ### VIMRC、VIMSCRIPT
 
@@ -294,7 +330,7 @@ set smartcase
 noremap <LEADER><CR> :nohlsearch<CR>
 ```
 
-## VIM 插件
+### VIM 插件
 
 通常而言可以使用一些第三方插件管理器，然后再指定需要的插件进行安装。但其实VIM已经自带了“插件管理器”[参考博客](https://distro.tube/guest-articles/vim-plugins-without-manager.html)。在不使用第三方插件管理器的情况下，可以按如下方法安装插件：
 
@@ -305,6 +341,36 @@ cd ~/.vim/pack/default/start
 git clone https://github.com/vim-airline/vim-airline.git  # 在底部显示更多信息
 ```
 
-### vim-airline
+#### vim-airline
 
-### nerdtree
+#### nerdtree
+
+
+
+
+## 第三部分: Neovim
+
+本部分以用Neovim配合各种插件替代VSCode为主线介绍Neovim的使用
+
+
+常用快捷键:
+
+- 文件自动保存
+- 代码增加/取消注释:
+- 切换标签页:
+- 转到定义:
+- 文件夹导航窗格:
+- 在文件夹中查找关键词:
+  - VSCode: `ctrl+shift+f`
+- 在当前文件中查找关键词:
+  - VSCode: `ctrl+f`
+- 按文件名查找文件:
+  - VSCode: `ctrl+p`
+- 底部终端:
+- 端口转发:
+- git修改显示:
+- git解决冲突时选择use theirs or user ours:
+  VSCode: 高亮+鼠标选择
+- 代码缩进/取消缩进
+- markdown预览
+- 从剪切版复制内容粘贴至命令模式

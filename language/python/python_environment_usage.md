@@ -456,7 +456,7 @@ pip install --no-index --find-links=<your_offline_packages_dir> -r requirements.
 在 Windows 下有时会因为权限问题，在执行
 
 ```
-c
+pip install -U pip
 ```
 
 时，因为没有安装权限，导致原有的 `pip` 被卸载而更新的 `pip` 又不能正常安装。此时可以使用如下方式恢复
@@ -472,6 +472,8 @@ pip install --upgrade pip
 # 备用方法
 # python -m pip install -U --force-reinstall pip
 ```
+
+在使用 `pip install -e .` 时, `site-packages/easy_install.pth`中会增加一行, 如果遇到`pip uninstall`不了的情况, 可以删除掉这一行
 
 ## conda 使用
 

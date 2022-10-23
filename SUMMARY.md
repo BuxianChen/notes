@@ -18,6 +18,7 @@
 - [Git](tool/git.md)
 - [Docker](tool/docker.md)
 - [Linux & Shell](tool/linux_and_shell.md)
+  - [shell-cheet-sheet](tool/shell_cheat_sheet.md)
 - [Vim](tool/vim.md)
 
 ## Note
