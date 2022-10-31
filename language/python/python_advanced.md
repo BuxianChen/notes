@@ -1916,6 +1916,19 @@ xxx
 
 - [参考realpython](https://realpython.com/pypi-publish-python-package/#different-ways-of-calling-a-package)
 
+
+## 15. `...`在python中的作用
+
+`...` 在 python 中是一个对象, 等同于 `Ellipsis`。是一个单例模式的对象, 它没有任何方法.
+
+```python
+... is Ellipsis  # True
+... is None  # False
+```
+
+常见的作用参考[博客](https://www.geeksforgeeks.org/what-is-three-dots-or-ellipsis-in-python3/)
+
+
 ## 附录 1
 
 ### 骚操作
