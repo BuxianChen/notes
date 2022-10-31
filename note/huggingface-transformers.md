@@ -138,6 +138,7 @@ class BartForConditionalGeneration(BartPretrainedModel):
 ### ModelOutput
 
 ```python
+# src/transformers/modeling_outputs.py
 class ModelOutput(OrderedDict):
     def __post_init__(self): ...
     def __delitem__(self, *args, **kwargs): ...
@@ -149,6 +150,13 @@ class ModelOutput(OrderedDict):
     def __setitem__(self, name, value): ...
     def to_tuple(self): ...
 
+@dataclass
+class BaseModelOutput(ModelOutput):
+    last_hidden_state: torch.FloatTensor = None
+    hidden_states: Optional[Tuple[torch.FloatTensor]] = None
+    attentions: Optional[Tuple[torch.FloatTensor]] = None
+
+# 备注: 注意此处源码中直接继承自ModelOutput而非BaseModelOutput
 @dataclass
 class Seq2SeqModelOutput(ModelOutput):
     # some attrs
@@ -203,4 +211,15 @@ def pipeline(...):
     pipeline_class(model=model, framework=framework, task=task, **kwargs)
 ```
 
-`framework` 取值为 `tf` 或者 `pt`, 代表 `tensorflow` 和 `pytorch`. 一般用于指示代码的输出为 `tf.tensor` 或 `torch.tensor`. 
+`framework` 取值为 `tf` 或者 `pt`, 代表 `tensorflow` 和 `pytorch`. 一般用于指示代码的输出为 `tf.tensor` 或 `torch.tensor`.
+
+
+## PreTrainedTokenizerBase
+
+```mermaid
+graph LR
+    A[SpecialTokensMixin] ----> C[PretrainedTokenizerBase]
+    B[PushTohubMixin] ----> C[PretrainedTokenizerBase]
+    C[PretrainedTokenizerBase] ----> D[PretrainedTokenizer]
+    D[PretrainedTokenizer] ----> E[BertTokenizer]
+```
