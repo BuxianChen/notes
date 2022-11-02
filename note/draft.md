@@ -58,6 +58,10 @@ $f_X(x),f_{\bf X}({\bf x})$
 
 $xy,\boldsymbol{xy},{\bf xy},XY,{\bf XY},\boldsymbol{XY}$
 
+## 前向兼容与后向兼容(backward vs forward compatibility)
+
+[backward-vs-forward-compatibility](https://stevenheidel.medium.com/backward-vs-forward-compatibility-9c03c3db15c9)
+
 ## 常用软件
 
 7-zip、Adobe Reader、typora、notepad++、Git
