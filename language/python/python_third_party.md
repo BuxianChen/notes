@@ -442,6 +442,65 @@ sorted_x = natsorted(x)
 
 超时自动退出装饰器
 
+## redis
+
+python调用redis服务主要是如下两个第三方包:
+
+- 包名(pip install): redis, import时的模块名: redis
+- 包名(pip install): redis-py-cluster, import时的模块名: rediscluster
+
+以上两个包存在一些版本兼容性问题: 
+
+- redis-py-cluster依赖于redis, 但目前redis已经集成了redis-py-cluster的所有内容, 使用方式为:
+    ```python
+    from rediscluster import RedisCluster  # 旧版, redis-py-cluster 2.x, 依赖于redis 3.x
+    from redis.cluster import RedisCluster  # redis 4.x
+    ```
+    [redis-py-cluster github README](https://github.com/Grokzen/redis-py-cluster)
+    > In the upstream package redis-py that this librar extends, they have since version * 4.1.0 (Dec 26, 2021) ported in this code base into the main branch.
+    
+    [redis-py readthdocs](https://redis-py.readthedocs.io/en/latest/clustering.html)
+    > The cluster client is based on Grokzen’s redis-py-cluster, has added bug fixes, and now supersedes that library. Support for these changes is thanks to his contributions
+- redis包在旧版本中存在`Redis`与`StrictRedis`两个类, 但在目前的 `3.x` 及以上版本已经合并为一个类, 源码中有如下代码:
+    ```
+    StrictRedis = Redis
+    ```
+    关于StrictRedis与Redis的讨论参考[stackoverflow](https://stackoverflow.com/questions/19021765/redis-py-whats-the-difference-between-strictredis-and-redis)
+
+- 结论: 不要使用`redis-py-cluster`, 直接安装`redis 4.x`及以上版本, 使用`redis.Redis`和`redis.cluster.RedisCluster`类, 不要使用`redis.StrictRedis`
+
+
+具体使用方式为:
+
+```python
+from redis import Redis
+from redis.cluster import ClusterNode, RedisCluster
+
+# decode_respose为True表示利用get得到的数据类型为字符串
+redis_service = Redis(
+    host="127.0.0.1",
+    port=6379,  # redis默认端口为6379
+    decode_responses=True,
+    password="xxx"
+)
+
+redis_service = RedisCluster(
+    startup_nodes=[
+        ClusterNode("127.0.0.1", 6379)
+    ],
+    decode_responses=True,
+    password="xxx"
+)
+
+# 以下操作适用于Redis与RedisCluster
+key = "test001"
+redis_service.exists(key)
+redis_service.set(key, json.dumps(["text1", "text2"]))
+redis_service.set(key, json.dumps(["text1", "text2", "text3"]))
+value = redis_service.get(key)
+redis_service.delete(key)
+```
+
 ## 代码片段
 
 ```python
