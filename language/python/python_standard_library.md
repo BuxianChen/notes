@@ -219,11 +219,14 @@ def foo(name, age=18):
     return "hello" + str(n)
 ```
 
-## subprocess
+## subprocess (待补充)
 
-**1. 便捷用法: `subprocess.run`函数**
+- `subprocess` 模块的作用是运行命令行可以执行的命令
+- `multiprocessing` 模块的典型用法是用多进程执行同一个python 代码
 
-\[官方文档\]\([https://docs.python.org/3/library/subprocess.html?highlight=subprocess%20run\#subprocess.run](https://docs.python.org/3/library/subprocess.html?highlight=subprocess%20run#subprocess.run)\)
+**subprocess.run**
+
+[官方文档](https://docs.python.org/3/library/subprocess.html?highlight=subprocess%20run#subprocess.run)
 
 ```python
 # 函数原型
@@ -237,13 +240,13 @@ subprocess.run(cmd)  # 报错: FileNotFoundError: [WinError 2] 系统找不到�
 subprocess.run(cmd, shell=True)  #正常运行
 ```
 
-其中`shell`参数的默认值为,`shell=True`表示"命令"\(可能用词不准确\)在shell中执行, 文档中说除非必要, 否则不要设置为True. 注意: 在window下, 上述情况需设置为`True`, 主要原因是windows下`echo`不是一个可执行文件, 而是cmd中的一个命令.
+其中`shell`参数的默认值为,`shell=True`表示"命令"(可能用词不准确)在shell中执行, 文档中说除非必要, 否则不要设置为True. 注意: 在window下, 上述情况需设置为`True`, 主要原因是windows下`echo`不是一个可执行文件, 而是cmd中的一个命令.
 
-科普\([链接](https://www.cnblogs.com/steamedfish/p/7123749.html)\)
+科普[链接](https://www.cnblogs.com/steamedfish/p/7123749.html)
 
-* 一个在windows环境变量PATH目录下的可执行文件\(以`.exe`结尾\), 可以通过`win+R`组合键后敲入文件名进行执行; 而`echo`在windows下不是一个自带的可执行文件, 而是`cmd`窗口中的一个内置命令.
+* 一个在windows环境变量PATH目录下的可执行文件(以`.exe`结尾), 可以通过`win+R`组合键后敲入文件名进行执行; 而`echo`在windows下不是一个自带的可执行文件, 而是`cmd`窗口中的一个内置命令.
 * windows下`cmd`是一个shell, 而平时所说的`dos`是一种操作系统的名字, 而`dos命令`是这个操作系统中的命令. `cmd`窗口下的能执行的命令与`dos`命令有许多重叠之处, 但不能混为一谈.
-* 所谓`shell`, 这是一个操作系统中的概念, 不同的操作系统有不同的`shell`, 常见的有: windows下的`cmd`\(命令行shell\), powershell\(命令行shell\), windows terminal\(命令行shell\), 文件资源管理器\(图形化shell\); linux下的bash\(命令行shell, 全称: Bourne Again shell\), shell是一种脚本语言.
+* 所谓`shell`, 这是一个操作系统中的概念, 不同的操作系统有不同的`shell`, 常见的有: windows下的`cmd`(命令行shell), powershell(命令行shell), windows terminal(命令行shell), 文件资源管理器(图形化shell); linux下的bash(命令行shell, 全称: Bourne Again shell), shell是一种脚本语言.
 
 **subprocess.check_output**
 
@@ -257,11 +260,12 @@ output.decode()
 
 ## multiprocessing（待补充）
 
-plan：先看懂python官方文档的introduction即可
 
-### Processing
+### multiprocessing.Process
 
-示例1: 低层级API
+此为一个相对底层的 API，用于直接创建子进程运行 python 代码。
+
+用法一：使用 `multiprocessing.Process`创建进程并传入需要运行的 python 函数及实参
 
 ```python
 # 注意观察注释的两行所起的效果
@@ -284,9 +288,30 @@ t2 = time.time()
 print("运行时间: ", t2 - t1)
 ```
 
-### Pool
+方法二：自己写一个类继承 `multiprocessing.Process`，示例如下：
 
-示例2: 高阶API\(常用\)--`multiprocessing.Pool`
+```python
+import multiprocessing
+class MyProcess(multiprocessing.Process):
+    def __init__(self, func, args):
+        super().__init__()
+        self.func = func
+        self.args = args
+    
+    def run(self):
+        self.func(self.args)
+
+
+def foo(x):
+    return x
+
+if __name__ == "__main__":
+    process = MyProcess(foo, 1)
+    process.start()
+    process.join()
+```
+
+### Pool
 
 ```python
 import multiprocessing
@@ -329,7 +354,7 @@ Sub-process(es) done.
 
 `terminate`指立刻中断所有进程的执行
 
-**map, map\_async, starmap, starmap\_async**
+**map, map_async, starmap, starmap_async**
 
 首先, python中
 
@@ -377,14 +402,14 @@ if __name__ == "__main__":
     print(end-start)
 ```
 
-**map, apply, imap, imap\_unodered**
+**map, apply, imap, imap_unodered**
 
 |              | multi-args | Concurrence | Blocking | Ordered-results |
 | :----------- | :--------- | :---------- | :------- | :-------------- |
 | map          | no         | yes         | yes      | yes             |
-| map\_async   | no         | yes         | no       | yes             |
+| map_async   | no         | yes         | no       | yes             |
 | apply        | yes        | no          | yes      | no              |
-| apply\_async | yes        | yes         | no       | no              |
+| apply_async | yes        | yes         | no       | no              |
 
 concurrence指的是子进程之间能否并发执行, blocking指的是是否阻塞主进程的执行.
 
@@ -645,89 +670,99 @@ pmem(rss=8310784, vms=2481725440, pfaults=3207, pageins=18)
 Terminated: 15 <-- 自己把自己结束了
 ```
 
-## os、sys、subprocess
 
-**片段1**
+## concurrent.futures
 
-```python
-# 目录结构
-# dir
-#   --subdir
-#       --test1.py
-# test1.py内容
-import os
-ABSPATH = os.path.abspath(__file__)
-DIRNAME = os.path.dirname(ABSPATH)
-print(ABSPATH)  # 与python命令运行时的目录无关
-print(DIRNAME)  # 与python命令运行时的目录无关
-print(os.getcwd())  # 与python命令运行时的目录相同
-```
+`concurrent.futures`的主要作用是创建异步的线程/进程池。主要的类为 `concurrent.futures.Excutor`(异步调用), `ThreadPoolExecutor`(异步线程池), `ProcessPoolExecutor`(异步进程池)
 
-```text
-# shell中输入
-cd dir
-python subdir/test1.py
-python -m subdir.test1
-# 以下为输出结果
-# ...\dir\subdir\test1.py
-# ...\dir\subdir
-# ...\dir
-cd subdir
-python subdir/test1.py
-python -m subdir.test1
-# 以下为输出结果
-# ...\dir\subdir\test1.py
-# ...\dir\subdir
-# ...\dir\subdir
-```
+[concurrent.futures vs multiprocessing.Pool](https://stackoverflow.com/questions/20776189/concurrent-futures-vs-multiprocessing-in-python-3)(待理解)
 
-**片段2**
+
+## 并发执行
+
+python 中涉及关于并发执行的包及主要的类/方法有如下
+
+- **`threading`**: `threading.Thread`, `threading.Pool`, `threading.Queue`
+- **`multiprocessing`**: `multiprocessing.Process`, `multiprocessing.Pool`, `multiprocessing.Queue`
+- **`concurrent`**: `concurrent.futures.Excutor`, `concurrent.futures.ThreadPoolExecutor`, `concurrent.futures.ProcessPoolExecutor`
+- **`subprocess`**: `subprocess.call`
+- **`queue`**: `queue.Queue`
+
+此处有多个疑问:
+
+- `concurrent.futures.ProcessPoolExecutor` 与 `multiprocessing.Pool` 之间的区别(待补充)
+- `queue.Queue` 与 `multiprocessing.Queue` 之间的区别(待补充)
+
+
+### 例子1: 使用`concurrent.futures`完成子任务异步调用
 
 ```python
-# 目录结构
-# dir
-#   --subdir
-#       --test.py
-#   model.py
+from concurrent.futures import ThreadPoolExecutor, ProcessPoolExecutor
+import random
+import time
+import threading
 
-# test.py内容
-import os
-import sys
-path = os.path.abspath(__file__)
-# model_dir = os.path.dirname(os.path.dirname(path))
-model_dir = os.path.join(os.path.dirname(path), "..")
-# print(model_dir)
-# print(os.path.abspath(model_dir))
-sys.path.append(model_dir)
-import model
+def foo(uniq_id, data):
+    secs = random.random()*2
+    time.sleep(secs)
+    print(f"{uniq_id}, foo sleep, {secs:.2f}")
+    res = {"data_foo": data["data"] + 10}
+    return uniq_id, res
 
-# model.py内容
-print(1)
+def bar(uniq_id, data):
+    secs = random.random()
+    time.sleep(secs)
+    print(f"{uniq_id}, bar sleep, {secs:.2f}")
+    res = {"data_bar": data["data"] + 100}
+    return uniq_id, res
+
+class Scheduler:
+    def __init__(self, names, funcs, pools):
+        self.names = names
+        self.funcs = funcs
+        self.pools = pools
+        self.num_executors = len(funcs)
+
+
+def do_task(uniq_id, data):
+    task_results = []
+    futures = []
+    time.sleep(random.random())
+    for i in range(scheduler.num_executors):
+        time.sleep(random.random())
+        futures.append(scheduler.pools[i].submit(scheduler.funcs[i], uniq_id, data))
+    for i in range(scheduler.num_executors):
+        time.sleep(random.random())
+        task_results.append(futures[i].result()[1])
+    result = dict()
+    for task_result in task_results:
+        result.update(task_result)
+    print("处理完毕", uniq_id, data, result)
+    return uniq_id, data, result
+
+if __name__ == "__main__":
+    scheduler = Scheduler(
+        names=["foo", "bar"],
+        funcs=[foo, bar],
+        pools=[ProcessPoolExecutor(2), ProcessPoolExecutor(2)]
+    )
+
+
+    # 模拟并发请求
+    n = 4
+    threads = []
+    for i in range(n):
+        t = threading.Thread(target=do_task, args=(i, {"data": i}))
+        t.setDaemon(True)
+        threads.append(t)
+
+    for t in threads:
+        t.start()
+
+    for t in threads:
+        t.join()
 ```
 
-```text
-# shell中输入
-cd dir
-python subdir/test.py
-cd dir/subdir
-python test.py
-```
-
-由片段1、2可以得出
-
-* `os.getcwd()`与启动目录相同, 而模块本身的`__file__`与当前模块所在磁盘位置相同
-* 使用`sys.path`可以临时修改python的搜索路径, 可以与`__file__`结合使用, 保证可以在任意目录启动
-
-**片段3**
-
-建议不要使用`os.system`模块, 使用`subprocess`模块代替其功能, `subprocess`主要有两种使用方法
-
-```text
-pipe = subprocess.Popen("dir && dir", shell=True, stdout=subprocess.PIPE).stdout
-print(pipe.read().decode("ISO-8859-1"))
-
-subprocess.call("dir >> 1.txt && dir >> 2.txt", shell=True)subprocess.call("dir >> 1.txt && dir >> 2.txt", shell=True)
-```
 
 ## re、glob
 

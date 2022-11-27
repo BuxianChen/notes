@@ -188,6 +188,7 @@ VSCode设置`File->Preferences->Settings`中的`用户`优先级低于`工作区
 
 代码参考: [draft-src/kafka/write-kafka](draft-src/kafka/write-kafka)
 
+关于kafka的`KAFKA_CFG_LISTENERS`与`KAFKA_CFG_ADVERTISED_LISTENERS`的设定问题，参考[博客](https://www.confluent.io/blog/kafka-client-cannot-connect-to-broker-on-aws-on-docker-etc/)
 
 
 ## 术语

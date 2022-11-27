@@ -449,6 +449,18 @@ docker compose -f docker-compose.yml up
 # docker compose up
 ```
 
+如果不想使用 `docker compose`，则需要手动创建网络：
+
+```
+docker network create app_net
+docker build -t web_web:v1 -f ./web/Dockerfile ./web
+docker run --network=app_net --rm -d --name web -p 5000:5000 web_web:v1
+docker run --network=app_net --rm -d --name redis redis:alpine
+```
+
+
+### docker compose 常用子命令
+
 docker compose 命令的一般格式为
 ```
 docker compose [-f docker-compose.yml文件路径] 命令
