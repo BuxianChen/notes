@@ -466,6 +466,39 @@ docker compose 命令的一般格式为
 docker compose [-f docker-compose.yml文件路径] 命令
 ```
 
+## docker network(后续再整理)
+
+同一台/不同台服务器上的docker/非docker应用互访
+
+|访问方|被请求方|解决方案|
+|----|-----|----|
+|机器A上的容器A1|机器A上的容器A2|A1与A2连接至同一个bridge, A1使用(A2容器名):(port)访问|
+|机器A上的容器A1|机器B上的容器B1|B1暴露端口, A1使用(机器B的IP):(port)访问|
+|机器A上的容器A1|机器A上的应用A3|A1直接访问(127.0.0.1):(A3的端口)|
+|机器A上的容器A1|机器B上的应用B3|A1直接访问(机器B的IP):(B3的端口)|
+|机器A上的应用A3|机器A上的容器A1|容器暴露端口,应用访问方用(127.0.0.1):(port)访问|
+|机器A上的应用A3|机器B上的容器B1|容器暴露端口,应用访问方用(机器B端口):(port)访问|
+|机器A上的应用A3|机器A上的应用A3|-|
+|机器A上的应用A3|机器B上的应用B3|-|
+
+创建/删除网络
+```bash
+docker network create net_a  # 默认创建bridge网络
+docker network rm net_a  # 删除网络
+```
+
+启动容器时添加到网络
+```bash
+docker run -it --network net_a --name container_a <镜像名>
+```
+
+将已经启动的容器添加/移除到网络
+```bash
+docker network connect net_a container_a  # 添加到网络
+docker network disconnect net_a container_a  # 移除
+```
+
+
 
 ## 杂录
 
