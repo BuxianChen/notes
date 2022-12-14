@@ -29,3 +29,7 @@
 - [CV](note/cv.md)
   * [mmlab](note/mmlab.md)
 - [TODO LIST](note/plan.md)
+
+## New
+
+- [MLC](learn/mlc.md)
