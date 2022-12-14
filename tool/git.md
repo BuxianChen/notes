@@ -188,9 +188,18 @@ git init
 
 ### git config
 
+**设置提交commit信息时的用户名及邮箱**
+
+备注: 此项设定与远程代码库的拉取/推送权限无关
 ```bash
 git config --global user.name "John Doe"
 git config --global user.email johndoe@example.com
+```
+
+**设置http协议远程库记住密码**
+
+```bash
+git config --global credential.helper store
 ```
 
 ### git log
@@ -544,6 +553,12 @@ git cherry-pick <commit-id>
 
 上述命令的作用是，将 `<commit-id>` 相对于它前一次提交的修改，作用到当前分支 `dev` 上，并形成一次新的提交。注意：假设 `<commit-id>` 对应于另一个分支例如 `master`，新的提交依旧可能与 `master` 分支有合并冲突。
 
+```bash
+# 使用-n或--no-commit阻止自动提交
+git cherry-pick --no-commit <commit-id1>..<commit-id2>
+```
+将commit-id2相对于commit-id1的连续多个修改作用于当前分支
+
 ### git clone
 
 ```bash
@@ -643,6 +658,26 @@ git ls-files -s  # 查看当前缓冲区内容, 即 .git/index 文件中的内�
 ```
 # 不下载大文件的方式进行下载
 GIT_LFS_SKIP_SMUDGE=1 git clone xxx.git
+```
+
+## 常用命令备忘录
+
+**不切换分支拉取远程代码与本地分支做fast-forward合并**
+```bash
+git fetch <remote> <sourceBranch>:<destinationBranch>
+```
+
+**http协议记住密码**
+```bash
+git config --global credential.helper store
+```
+
+**删除分支**
+
+```bash
+git branch -d <branch-name>  # 删除本地分支
+git branch -rd <remote-name>/<branch-name>  # 删除本地保存的远程分支(不影响远程代码库)
+git push -d <remote-name> <branch-name>  # 删除远程代码库的分支
 ```
 
 ## 疑难杂症
