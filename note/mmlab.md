@@ -1432,3 +1432,23 @@ train_pipeline = [
 ]
 ```
 
+# MMDeploy 学习记录
+
+实验准备: 使用anaconda管理环境, 操作系统为Windows 10, 显卡为NVIDIA GeForce GTX 1650(4G显存)
+```
+python 3.8.15
+cuda 10.2
+cudnn 10.2-windows10-x64-v8.2.2.26
+torch==1.10.1  # torch-1.10.1+cu102-cp38-cp38-win_amd64
+torchvision==0.11.2  # torchvision-0.11.2+cu102-cp38-cp38-win_amd64.whl
+# no cudatoolkit installed by anaconda
+tensorrt-8.2.3.0.windows10.x86_64.cuda-10.2.cudnn8.2.zip
+```
+
+其余信息
+```
+mmcv-full-1.7.0
+```
+
+使用预编译的包: 从[mmdeploy-release](https://github.com/open-mmlab/mmdeploy/releases)下载并安装
+
