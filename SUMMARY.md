@@ -32,4 +32,4 @@
 
 ## New
 
-- [MLC](learn/mlc.md)
+- [DL-deploy](note/dl-deploy.md)
