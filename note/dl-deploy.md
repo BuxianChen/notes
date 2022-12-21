@@ -92,9 +92,104 @@ pybind11实际上是对这种拓展方式做了层层封装
 
 ### Protocol Buffer
 
-Google定义了一套用于代替xml的文本文件格式, 并提供了一套完整的库来解析, 序列化这种数据格式, onnx的序列化使用了这种格式
+Google定义了一套用于代替xml,json的格式, 并提供了一套完整的库来解析, 序列化这种数据格式, onnx的序列化使用了这种格式
 
 官方文档: https://developers.google.com/protocol-buffers/docs
+
+安装步骤参考官方教程进行, 此处简单记一下，两项均需要安装:
+- 安装 protoc（任选其一）:
+  - 从官方 Github 的 Release 中下载关于 protoc 的压缩包，里面有预编译好的二进制 protoc 文件，并将它添加至 `$PATH` 变量中
+  - 下载源码按官方教程编译出 protoc
+- 安装 protobuf runtime (此处仅记录python，以下方式任选其一)
+  - pip install protobuf==xx.xx.xx
+  - 从官方 Github 的 Release 中下载源代码, 进入`python` 文件夹后, 执行 `python setup build` 与 `python setup install`
+
+
+python 使用 protobuf 分为如下几步:
+- 定义数据规范: 即声明字段及字段的类型等(即定义结构体), 这种声明使用的是一种特殊的语法, 保存在一个 `.proto` 文件中
+- 使用 `protoc` 命令工具用 `.proto` 文件生成一个 `.py` 文件(自动生成代码)
+- import 这个生成的文件以创建 `.proto` 里声明的数据结构对象, 并可以使用相关方法将数据解析或保存到文件中
+
+示例（来源于[官方教程](https://developers.google.com/protocol-buffers/docs/pythontutorial)）:
+
+**第一步: 定义"数据结构"**
+
+```protobuf
+// addressbook.proto
+syntax = "proto2";
+
+package tutorial;
+
+message Person {
+  optional string name = 1;
+  optional int32 id = 2;
+  optional string email = 3;
+
+  enum PhoneType {
+    MOBILE = 0;
+    HOME = 1;
+    WORK = 2;
+  }
+
+  message PhoneNumber {
+    optional string number = 1;
+    optional PhoneType type = 2 [default = HOME];
+  }
+
+  repeated PhoneNumber phones = 4;
+}
+
+message AddressBook {
+  repeated Person people = 1;
+}
+```
+
+**第二步: 根据"数据结构"自动生成代码**
+
+```bash
+# 得到 addressbook_pb2.py
+protoc --python_out=./ ./addressbook.proto
+```
+
+备注: 如果使用者直接拿到这个`.py`文件, 实际上就已经可以进行第三步
+
+**第三步: 利用生成的 .py 文件操作数据**
+
+```python
+import addressbook_pb2
+from google.protobuf.json_format import MessageToDict, MessageToJson, ParseDict, Parse
+import json
+
+address_book = addressbook_pb2.AddressBook()
+person = address_book.people.add()
+person.id = 123
+person.name = "123"
+phone = person.phones.add()
+phone.number = "123"
+
+# 序列化为特定格式的字符串
+s = address_book.SerializeToString()
+with open("data", "wb") as fw:
+    fw.write(s)
+with open("data", "rb") as fr:
+    s = fr.read()
+address_book = addressbook_pb2.AddressBook()
+# 从序列化的字符串解析protobuf message
+address_book.ParseFromString(s)
+
+# 转换为json字符串
+json_str = MessageToJson(address_book)
+dict_obj = json.loads(json_str)
+# 转换为字典
+dict_obj = MessageToDict(address_book)
+
+# 从字典转为protobuf message
+address_book = ParseDict(dict_obj, addressbook_pb2.AddressBook())
+
+# 从json字符串转为protobuf message
+address_book = Parse(json_str, addressbook_pb2.AddressBook())
+```
+
 
 ### onnx 概念
 
