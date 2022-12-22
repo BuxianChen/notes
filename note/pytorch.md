@@ -24,15 +24,124 @@ DataLoader(dataset, batch_size=1, shuffle=False, sampler=None,
            persistent_workers=False)
 ```
 
-对于纯自定义的情形，有如下说明：
-
 一般而言，需要自定义一个继承自 `torch.utils.data.Dataset` 的类，该类必须实现 `__len__`，`__getitem__` 方法。`dataset` 参数为该自定义类的实例。
 
-`sampler`，`batch_size`，`shuffle`，`drop_last` 这组参数与 `batch_sampler` 参数是互斥的关系。`sampler` 参数若指定，只需要是一个定义了 `__len__` 的 `Iterable` 即可（最好是 `torch.utils.data.Sampler` 的子类实例）。`batch_sample` 也类似。
+关键代码如下(均不是完整代码,仅包含关键部分)
+```python
+class DataLoader:
+    def __init__(self, ...):
+        # self.sampler: next(iter(self.sampler)) 只返回一个int类型的下标
+        if sampler is None:  # de
+            self.sampler = RandomSampler(dataset) if shuffle else SequentialSampler(dataset)
+        else:
+            # 如果指定了shuffle参数, 则直接报错
+            self.sampler = sampler
 
-`sampler` 作为迭代器时，每次 `next` 返回的应该是一个下标。而 `batch_sampler` 作为迭代器时，每次 `next` 返回的应该是一个 `batch` 的下标列表。
+        # 只有当batch_sampler为None, 且batch_size也有意指定为None时, self.batch_sampler才会成为None
+        if batch_sampler is None and batch_size is not None:
+            batch_sampler = BatchSampler(sampler, batch_size, drop_last)
+        # 如果shuffle/sampler/drop_last/batch_size不为默认值None/1, 则直接报错
+        self.batch_sampler = batch_sampler
 
-`collate_fn` 应该是一个 `Callable`，其输入是一个下标列表。
+        if self.batch_sampler is not None:
+            # 通常情况会进入这里
+            self._index_sampler = self.batch_sampler
+        else:
+            # batch_sampler为None, batch_size也设定为None时会进入这里
+            self._index_sampler = self.sampler
+
+        if collate_fn is None:
+            if self._auto_collation:  # 通常情况
+                collate_fn = _utils.collate.default_collate
+            else:
+                collate_fn = _utils.collate.default_convert
+        self.collate_fn = collate_fn
+
+    def __iter__(self):
+        # 此处为单进程版本, 即num_workers设定为0
+        return _SingleProcessDataLoaderIter(self)
+    
+# 这两个默认的collate_fn不用过于深入探究, 这里只给出例子, 使用时不确定可以直接调用进行试验
+
+# torch.utils.data._utils.collate.default_collate 的行为样例如下:
+# 注意输入总是: [dataset[i] for i in batch_idx], 输出的tensor也总是在CPU上
+
+# default_collate([[1, 2], [3, 4]]) => [tensor([0, 3]), tensor([2, 4])]
+# default_collate([0, 1, 2, 3]) => [tensor([0, 3, 2, 4])]
+# default_collate(['a', 'b', 'c']) => ['a', 'b', 'c']
+# default_collate([{"t": "a", "x": [1, 2]}, {"t": "b", "x": [1, 3]}])
+# => {'t': ['a', 'b'], 'x': [tensor([1, 1]), tensor([2, 3])]}
+
+# torch.utils.data._utils.collate.default_convert 的行为样例如下:
+# 注意输入总是: dataset[i]
+# default_convert([1, 2]) => [1, 2]
+# default_convert({"a": [1, 2]}) => {"a": [1, 2]}
+# default_convert(np.array([1, 2])) => tensor([1, 2])
+
+
+# 此处为了简单将继承自_BaseDataLoaderIter做了展开, 也仅保留了关键部分
+class _SingleProcessDataLoaderIter:
+    def __init__(self, loader):
+        self._dataset = loader.dataset
+        self._dataset_kind = loader._dataset_kind
+        self._auto_collation = loader.batch_sampler is not None  # 通常为True
+        self._drop_last = loader.drop_last
+        self._collate_fn = loader.collate_fn  # 见上面
+
+        self._index_sampler = loader.batch_sampler
+        self._dataset_fetcher = _DatasetKind.create_fetcher(
+            self._dataset_kind, self._dataset, self._auto_collation, self._collate_fn, self._drop_last)
+
+    def __next__(self):
+        if self._sampler_iter is None:
+            self._sampler_iter = iter(self._index_sampler)
+        data = self._next_data()
+        return data
+
+    def _next_data(self):
+        index = self._next_index()  # may raise StopIteration
+        data = self._dataset_fetcher.fetch(index)  # may raise StopIteration
+        return data
+
+    def _next_index(self):
+        return next(self._sampler_iter)
+
+# _DatasetKind.create_fetcher 会最终调用这个, 即先按照sampler或batch_sampler
+class _MapDatasetFetcher(_BaseDatasetFetcher):
+    def fetch(self, possibly_batched_index):
+        if self.auto_collation:
+            # 通常情况
+            data = [self.dataset[idx] for idx in possibly_batched_index]
+        else:
+            data = self.dataset[possibly_batched_index]
+        return self.collate_fn(data)
+```
+
+总结一下:
+
+```python
+# `for x in loader` 实际的行为如下
+it = dataloader.__iter__()  # it是_SingleProcessDataLoaderIter对象
+
+while True:
+    try:
+        it.__next__()
+        # 实际展开为这几步:
+        # 1. 利用loader.sampler或loader.batch_sampler取出idx或batch_idx
+        # 2. 利用idx或batch_idx检索dataset[idx]或[dataset[idx] for idx in batch_idx]
+        # 3. 利用loader.collate_fn对上一步的结果再进行处理
+    except StopIteration:
+        break
+```
+
+入参主要分为如下几块：
+
+- 下标索引迭代器相关：sampler, shuffle, batch_size, drop_last, batch_sampler
+  - `loader.sampler` 作为迭代器时(必定有)，每次 `next` 返回的应该是一个下标。而 `loader.batch_sampler` 作为迭代器时(`loader.batch_sampler`可能本身是`None`)，每次 `next` 返回的应该是一个 `batch` 的下标列表。
+- 数据后处理(作用主要是用来整合一个batch内或单条数据)：collate_fn
+  - `collate_fn` 是一个 `Callable`。
+- 其他：num_workers, pin_memory, timeout, worker_init_fn, prefetch_factor, persistent_workers
+
 
 例子：
 
@@ -327,6 +436,8 @@ optimizer = SGD(g0, lr=hyp['lr0'], momentum=hyp['momentum'], nesterov=True)
 optimizer.add_param_group({'params': g1, 'weight_decay': hyp['weight_decay']})
 optimizer.add_param_group({'params': g2})
 ```
+
+`optimizer.zero_grad` 的实际执行逻辑是对所有的 paramter 进行：`parameter.grad=None`
 
 ### torch.optim.lr_scheduler
 
@@ -1320,5 +1431,5 @@ torchvision.set_image_backend(backend)
 > Yes, you just need to install the NVIDIA drivers and the binaries will come with the other libs.
 > If you want to build from source, you would need to install CUDA, cuDNN etc.
 
-如果采用二进制的形式安装（pip install 属于这一类），那么只需要事先安装好显卡驱动即可，安装包里已经内置了 CUDA 与 cuDNN。这也可能解释了为什么 pytorch 的官方 Docker 镜像例如 `pytorch/pytorch:1.9.0-cuda10.2-cudnn7-runtime` 标签名写的是 cudnn 7 而实际上包含的 cudnn_version.h 里显示的是 8.2.1 版本。
+如果采用二进制的形式安装（pip install 属于这一类），那么只需要事先安装好显卡驱动即可，安装包里已经内置了 CUDA 与 cuDNN（但并非完整，属于阉割版的cudatoolkit）。这也可能解释了为什么 pytorch 的官方 Docker 镜像例如 `pytorch/pytorch:1.9.0-cuda10.2-cudnn7-runtime` 标签名写的是 cudnn 7 而实际上包含的 cudnn_version.h 里显示的是 8.2.1 版本。
 

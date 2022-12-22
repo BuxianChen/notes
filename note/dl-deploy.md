@@ -61,8 +61,6 @@ LIBRARY_PATH  # # 静态链接库搜索路径, 备注: 系统本身的不在这�
 
 ## pybind11
 
-### 相关的东西
-
 结论: 目前最为流行的方式是 pybind11, 许多开源项目一般将 pybind11 作为 git submodule 放在 `third_party` 文件夹中, 源码编译这些开源项目会用到 pybind11, 例如:
 
 - onnx: https://github.com/onnx/onnx/tree/main/third_party
@@ -74,23 +72,21 @@ LIBRARY_PATH  # # 静态链接库搜索路径, 备注: 系统本身的不在这�
 - faiss: 似乎不是 pybind11, https://github.com/facebookresearch/faiss
 - SPTAG: 使用 SWIG, https://github.com/microsoft/SPTAG
 
-#### cpython 的原生方式
 
 cpython 原生的 C 拓展的方式为:
 
 pybind11实际上是对这种拓展方式做了层层封装
 
-#### ctypes
-
-#### cython, swig
-
-略
+存在其他的python调用C/C++扩展的方式:
+- ctypes
+- cython
+- swig
 
 
 
 ## onnx
 
-### Protocol Buffer
+### Protocol Buffer（Finished)
 
 Google定义了一套用于代替xml,json的格式, 并提供了一套完整的库来解析, 序列化这种数据格式, onnx的序列化使用了这种格式
 
@@ -190,10 +186,41 @@ address_book = ParseDict(dict_obj, addressbook_pb2.AddressBook())
 address_book = Parse(json_str, addressbook_pb2.AddressBook())
 ```
 
-
 ### onnx 概念
+
+参考[官方文档](https://onnx.ai/onnx/intro/concepts.html)，此处仅简要列出：
+
+- node: 即张量op
+  - attribute: 张量op的参数(一般不会被更改), 例如: 假设onnx定义了一个op用于对两个输入做加权和, 那么这个权重可以被视为是这个op的attribute。attribute这个概念跟initializer应该只是实现上的区分
+- input: 即张量op的输入
+  - initializer: 一种特殊的输入, 固定的权重
+- output: 即张量op的输出
+- domain: onnx用domain将op进行划分(即domain是一些op的集合), 官方只定义了如下几个domain:
+  - `ai.onnx`: 包含 Add, Conv, Relu 等
+  - `ai.onnx.ml`: 包含 TreeEnsembleRegressor, SVMRegressor 等
+  - `ai.onnx.preview.training`: onnx v1.7.0 新特性, 包含 Adam 等
+- graph: 使用node, input, output搭建的图
+
+> Every node has a type, a name, named inputs and outputs, and attributes. As long as a node is described under these constraints, a node can be added to any ONNX graph.
+
+- opset version:
+  - opset version: 可以通过以下方式查看当前版本的onnx的opset版本号
+  ```
+  import onnx
+  print(onnx.__version__, " opset=", onnx.defs.onnx_opset_version())
+  # 1.13.0  opset= 18
+  ```
+  - op version: 每个op都有自己的版本号, 例如: Add 操作有 1, 6, 7, 13, 14这几个版本号, 这代表 Add 操作随着 opset 更新的版本
+  - 一个graph会为每个domain记录一个全局的opset版本号，graph内的所有node都会按照所在的domain的opset版本号决定其版本号, 例如一个graph里设定的的ai.onnx这个domain的opset版本号为8, 则 Add 操作的版本号为 7
+- proto: 上述概念实现上采用了Protocol Buffer, onnx 为
+
 
 ### onnx Python API
 
+onnx定义模型的方式是使用 `*Proto` 的方式进行的：
 
+
+### 源码安装解析
+
+此处结合 make, cmake, pybind11, setup.py, protocol buffer 对 onnx 项目的安装过程以及一些使用时的调用栈进行分析
 
