@@ -219,6 +219,31 @@ def foo(name, age=18):
     return "hello" + str(n)
 ```
 
+## enum
+
+枚举类型
+
+```python
+from enum import Enum
+class MyEnum(Enum):
+    A = "a"
+    B = "b"
+
+# 得到一个枚举类型的实例有几种办法
+x = MyEnum.A
+y = MyEnum("a")
+z = MyEnum["A"]
+
+(x is y) and (y is z)  # True
+x == "a"  # False
+
+# 列举所有的取值
+for key, value in MyEnum.__members__.items():
+    # key分别为["A", "B"]
+    # value分别为[MyEnum.A, MyEnum.B]
+    ...
+```
+
 ## subprocess (待补充)
 
 - `subprocess` 模块的作用是运行命令行可以执行的命令

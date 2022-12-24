@@ -1,6 +1,6 @@
 # Lightning
 
-## 参考资料
+参考资料：
 
 - [pytorch-lightning 101](https://www.youtube.com/playlist?list=PLaMu-SDt_RB5NUm67hU2pdE75j6KaIOv2): 视频课程, 可以用来理解概念, 共 4 小节课程, 其中第 3 小节是 pytorch-lightning 的基本用法, 第 4 小节介绍了 pytorch-lightning 的实现细节
 
@@ -9,7 +9,10 @@
 - [pytorch-lightning with huggingface transfomers](https://pytorch-lightning.readthedocs.io/en/stable/notebooks/lightning_examples/text-transformers.html)
 
 
-## 使用
+
+本文档主要分为两大部分。第一部分从使用 Lightning 的角度，介绍使用方法，以样例为主，尽量不涉及过多的源码。第二部分主要解释 Lightning 的源代码，有利于更好地使用。
+
+## 第一部分：`Lightning` 的使用
 
 
 ### 疑惑
@@ -27,6 +30,15 @@
 - DDP, AMP: 在 Lightning 中用 `Trainer` 的初始化参数指定
 - 模型加载与保存: 最简单的用法是 Lightning 中用 `Trainer` 自动处理, 高级用法是初始化 `Trainer` 时增加 `pytorch_lightning.callbacks.ModelCheckpoint` 这个 callback, 更复杂的用法是关闭 `Trainer` 的模型保存功能(`enable_checkpointing=False`), 在 `LightningModule` 的 `training_epoch_end` 或者 `validation_epoch_end` 中检测当前的 local_rank, 只在 local_rank 为0的进程上做保存模型的工作
 - 控制台打印: 可以使用 python 本身的 `logging` 模块进行, 参考[官方文档](https://pytorch-lightning.readthedocs.io/en/stable/common/console_logs.html)
+
+### 使用模板
+
+```python
+from pytorch_lightning import LightModule, Trainer
+model = MyModule(...)  # MyModule 继承自 LightModule
+trainer = Trainer(...)  # max_steps, min_steps 等参数
+trainer.fit(model, train_dataloaders=None, val_dataloaders=None, datamodule=None,ckpt_path=None)
+```
 
 ### pytorch_lightning.LightningModule
 
@@ -157,7 +169,7 @@ class PLModule(LightningModule)
 如果需要控制backward的逻辑, 需要做以下事情
 - 在`__init__`中设置`self.automatic_optimization=False`
 - 在`training_step`中使用如下API:
-    - 使用 `self.optimizers()` 获取所有优化器
+    - 使用 `optimizer=self.optimizers()` 获取所有优化器
     - 使用 `optimizer.zero_grad()` 清除梯度
     - 使用 `self.manual_backward(loss)` 而不要使用 `loss.backward()`
     - 使用 `optimizer.step()`
@@ -194,92 +206,60 @@ def training_step(self, batch, batch_idx):
     self.local_rank
 ```
 
-#### training_step 出入参
+#### fit 函数伪代码( hook 编程)
 
-入参: 
-出参: 返回一个标量版的loss即可, 或者返回一个字典, 字典中有一个键值对为{"loss": loss}
+从Lightning的实现上
+
+- hook 指的是类的一些特定方法, 例如: `on_train_epoch_start`, `on_train_batch_start`。
+- callback 指的是含有这些特定方法的类。
+
+
+具体来说，简易版的大致实现方式如下
+
+备注: 下面的写法仅做示意 hook 编程的大致形式, 并非对齐 `LightningModule` 的真正实现
 
 ```python
-@dataclass
-class OutputResult:
-    def asdict(self) -> Dict[str, Any]:
-        raise NotImplementedError
+# 不引入Trainer的时候, LightningModule的简易版实现
+class MyLightningModule:
+    def __init__(self, callbacks):
+        self.callbacks = callbacks
+    def call_hook(self, hook_name, *args. **kwargs):
+        for callback in self.callbacks:
+            if hasattr(callback, hook_name):
+                func = getattr(callback, hook_name)
+                if callable(func):
+                    func(*args. **kwargs)  # 返回值怎么处理?
+    def fit(self, loader):
+        for batch in loader:
+            self.call_hook("on_before_batch", batch)
+            self.training_step()  # 这个是 hook 吗?
+            self.call_hook("on_after_batch", batch)
+    def training_step(self):
+        raise NotImplementedError()
 
-# src/pytorch_lightning/loops/optimization/optimizer_loop.py
-class OptimizerLoop(Loop[_OUTPUTS_TYPE]):
-    """Runs over a sequence of optimizers.
+class MyCustomModule(MyLightningModule):
+    def __init__(self, callbacks):
+        super().__init__(self, callbacks)
+    def training_step(self):
+        # ...
 
-    This loop implements what is known in Lightning as Automatic Optimization.
-    """
+class FirstCallback:
+    def on_before_batch(self):
+        # ...
+    def on_after_batch(self):
+        # ...
+class SecondCallback:
+    def on_before_batch(self):
+        # ...
 
-    output_result_cls = ClosureResult
-    def _training_step(self, kwargs: OrderedDict) -> ClosureResult:
-        ...
-        # 注: training_step_output即为training_step的返回结果
-        result = self.output_result_cls.from_training_step_output(training_step_output, self.trainer.accumulate_grad_batches)
-        ...
-
-
-@dataclass
-class ClosureResult(OutputResult):
-    """A container to hold the result of a :class:`Closure` call.
-
-    It is created from the output of :meth:`~pytorch_lightning.core.module.LightningModule.training_step`.
-
-    Attributes:
-        closure_loss: The loss with a graph attached.
-        loss: A detached copy of the closure loss.
-        extra: Any keys other than the loss returned.
-    """
-
-    closure_loss: Optional[Tensor]
-    loss: Optional[Tensor] = field(init=False, default=None)
-    extra: Dict[str, Any] = field(default_factory=dict)
-
-    def __post_init__(self) -> None:
-        self._clone_loss()
-
-    def _clone_loss(self) -> None:
-        if self.closure_loss is not None:
-            # the loss will get scaled for amp. avoid any modifications to it
-            self.loss = self.closure_loss.detach().clone()
-
-    @classmethod
-    def from_training_step_output(
-        cls, training_step_output: Optional[STEP_OUTPUT], normalize: int = 1
-    ) -> "ClosureResult":
-        closure_loss, extra = None, {}
-
-        if isinstance(training_step_output, dict):
-            # this should not modify the `training_step_output`, as the user could be using it after `training_step_end`
-            closure_loss = training_step_output.get("loss")
-            if closure_loss is None:
-                raise MisconfigurationException(
-                    "In automatic_optimization, when `training_step` returns a dict, the 'loss' key needs to be present"
-                )
-            extra = {k: v for k, v in training_step_output.items() if k not in ("loss", "hiddens")}
-        elif isinstance(training_step_output, Tensor):
-            closure_loss = training_step_output
-        elif training_step_output is not None:
-            raise MisconfigurationException(
-                "In automatic optimization, `training_step` must return a Tensor, "
-                "a dict, or None (where the step will be skipped)."
-            )
-
-        if closure_loss is not None:
-            # accumulate the loss. If ``accumulate_grad_batches == 1``, no effect
-            # note: avoid in-place operation `x /= y` here on purpose
-            closure_loss = closure_loss / normalize
-
-        return cls(closure_loss, extra=extra)
-
-    def asdict(self) -> Dict[str, Any]:
-        return {"loss": self.loss, **self.extra}
+if __name__ == "__main__":
+    callbacks = [FirstCallback(), SecondCallback()]
+    model = MyLightningModule(callbacks)
+    loader = ...
+    model.fit(loader)
 ```
 
-#### training_step 伪代码(后续源码分析也可参照此)
-
-参考[官方文档](https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#hooks), 摘录如下:
+在理解了 hook/callback 之后, 可以参考[官方文档](https://pytorch-lightning.readthedocs.io/en/stable/common/lightning_module.html#hooks)中真正的实现流程理解 fit 函数的整个过程, 并在 `LightningModule` 的子类中覆盖这些方法或者传入自定义 Callback 类, 摘录如下:
 
 ```python
 def fit(self):
@@ -373,6 +353,103 @@ def val_loop():
     on_validation_model_train()  # calls `model.train()`
     torch.set_grad_enabled(True)
 ```
+
+
+#### training_step 出入参
+
+- 入参: 由以下这些 hook 最后的输出得到
+    ```python
+    for batch in train_dataloader():
+        on_train_batch_start()
+
+        on_before_batch_transfer()
+        # 将batch中的tensor转移到相关的device上，如果默认的方法不能满足要求, 则可以重载这个函数
+        transfer_batch_to_device()
+        on_after_batch_transfer()
+
+        training_step()
+    ```
+- 出参: 返回一个标量版的loss即可, 或者返回一个字典, 字典中有一个键值对为{"loss": loss}
+
+```python
+@dataclass
+class OutputResult:
+    def asdict(self) -> Dict[str, Any]:
+        raise NotImplementedError
+
+# src/pytorch_lightning/loops/optimization/optimizer_loop.py
+class OptimizerLoop(Loop[_OUTPUTS_TYPE]):
+    """Runs over a sequence of optimizers.
+
+    This loop implements what is known in Lightning as Automatic Optimization.
+    """
+
+    output_result_cls = ClosureResult
+    def _training_step(self, kwargs: OrderedDict) -> ClosureResult:
+        ...
+        # 注: training_step_output即为training_step的返回结果
+        result = self.output_result_cls.from_training_step_output(training_step_output, self.trainer.accumulate_grad_batches)
+        ...
+
+
+@dataclass
+class ClosureResult(OutputResult):
+    """A container to hold the result of a :class:`Closure` call.
+
+    It is created from the output of :meth:`~pytorch_lightning.core.module.LightningModule.training_step`.
+
+    Attributes:
+        closure_loss: The loss with a graph attached.
+        loss: A detached copy of the closure loss.
+        extra: Any keys other than the loss returned.
+    """
+
+    closure_loss: Optional[Tensor]
+    loss: Optional[Tensor] = field(init=False, default=None)
+    extra: Dict[str, Any] = field(default_factory=dict)
+
+    def __post_init__(self) -> None:
+        self._clone_loss()
+
+    def _clone_loss(self) -> None:
+        if self.closure_loss is not None:
+            # the loss will get scaled for amp. avoid any modifications to it
+            self.loss = self.closure_loss.detach().clone()
+
+    @classmethod
+    def from_training_step_output(
+        cls, training_step_output: Optional[STEP_OUTPUT], normalize: int = 1
+    ) -> "ClosureResult":
+        closure_loss, extra = None, {}
+
+        if isinstance(training_step_output, dict):
+            # this should not modify the `training_step_output`, as the user could be using it after `training_step_end`
+            closure_loss = training_step_output.get("loss")
+            if closure_loss is None:
+                raise MisconfigurationException(
+                    "In automatic_optimization, when `training_step` returns a dict, the 'loss' key needs to be present"
+                )
+            extra = {k: v for k, v in training_step_output.items() if k not in ("loss", "hiddens")}
+        elif isinstance(training_step_output, Tensor):
+            closure_loss = training_step_output
+        elif training_step_output is not None:
+            raise MisconfigurationException(
+                "In automatic optimization, `training_step` must return a Tensor, "
+                "a dict, or None (where the step will be skipped)."
+            )
+
+        if closure_loss is not None:
+            # accumulate the loss. If ``accumulate_grad_batches == 1``, no effect
+            # note: avoid in-place operation `x /= y` here on purpose
+            closure_loss = closure_loss / normalize
+
+        return cls(closure_loss, extra=extra)
+
+    def asdict(self) -> Dict[str, Any]:
+        return {"loss": self.loss, **self.extra}
+```
+
+
 
 #### `training_step`, `validation_step`, `test_step`, `predict_step`
 
@@ -514,7 +591,7 @@ class MyDataModule(LightningDataModule):
 
 
 
-## 源码阅读
+## 第二部分：`Lightning` 源码阅读
 
 OpenMMLab对pytorch-lightning也有一篇源码解读文章: https://zhuanlan.zhihu.com/p/389271556
 
@@ -528,6 +605,8 @@ trainer.fit(model, train_dataloaders=None, val_dataloaders=None, datamodule=None
 ```
 
 ### `LightningModule`
+
+#### 父类
 
 源码中关于 `LightningModule` 类的定义继承自了多个父类, 特别注意它也继承自`torch.nn.Module`。因此需要先对几个父类的代码做个了解
 
@@ -544,7 +623,13 @@ class LightningModule(
     ...
 ```
 
-**HyperparametersMixin**
+<details>
+<summary>
+<hidden_block>
+HyperparametersMixin
+</hidden_block>
+</summary>
+
 
 主要使用的方式如下参考[官网例子](https://pytorch-lightning.readthedocs.io/en/stable/notebooks/lightning_examples/text-transformers.html): 通过调用 `self.save_hyperparameters` 方法, 将所有 `__init__` 的传参保存到`self._hparams`中
 
@@ -563,10 +648,11 @@ class MyModule(LightningModule):
         self.save_hyperparameters(ignore=["model_name_or_path"])
 model = MyModule("x.pth", 10)
 print(model.hparams)  # pytorch_lightning.utilities.parsing.AttributeDict
-# {"num_labels": 10, "learning_rate": 2e-5, |train_batch_size": 32}
+# {"num_labels": 10, "learning_rate": 2e-5, "train_batch_size": 32}
 ```
 
-未完待续...
+</summary>
+</details>
 
 
 ### `Trainer.__init__`
@@ -578,16 +664,17 @@ print(model.hparams)  # pytorch_lightning.utilities.parsing.AttributeDict
 ```python
 # src/pytorch_lightning/trainer/trainer.py:Trainer
 @_defaults_from_env_vars
-    def __init__(self, logger=True, ...)  # 共有约50个参数
+def __init__(self, logger=True, ...)  # 共有约50个参数
+    ...
 ```
 
 首先解释一下这个装饰器的作用:
 
-利用 `os.environ.get` 方法获取形如 `PL_TRAINER_{XXX}` 环境变量, 并用环境变量的值取代 被装饰的函数(上面的例子中为`Trainer.__init__`函数)中的默认值. 即最终第 2 行代码参数设定的优先顺序为:
+利用 `os.environ.get` 方法获取形如 `PL_TRAINER_{XXX}` 环境变量, 并用环境变量的值取代被装饰的函数(上面的例子中为`Trainer.__init__`函数)中的默认值. 即最终第 2 行代码参数设定的优先顺序为:
 
-- 实参 > 环境变量 > 函数定义中形参的默认值
-
-
+```
+实参 > 环境变量 > 函数定义中形参的默认值
+```
 
 <details>
 <summary>
@@ -719,13 +806,18 @@ def get_init_arguments_and_types(cls: _ARGPARSE_CLS) -> List[Tuple[str, Tuple, A
 接下来进入 `Trainer.__init__` 函数的函数体, 如下:
 
 ```python
-# 
+# src/pytorch_lightning/trainer/trainer.py
 def __init__(self, logger, ....):  # 注: 一共有约50个参数
     super().__init__()
+    # 即执行: torch._C._log_api_usage_once("lightning.trainer." + "init")
     Trainer._log_api_event("init")
+    # 此处的 log 是本文件的"全局"变量
+    # log = logging.getLogger(__name__)
     log.detail(f"{self.__class__.__name__}: Initializing trainer with parameters: {locals()}")
+    # 见说明 TrainerState
     self.state = TrainerState()
 
+    # 见说明 Connector
     # init connectors
     self._data_connector = DataConnector(self, multiple_trainloader_mode)
 
@@ -754,6 +846,7 @@ def __init__(self, logger, ....):  # 注: 一共有约50个参数
     self._signal_connector = SignalConnector(self)
     self.tuner = Tuner(self)
 
+    # 见下面说明 FitLoop
     fit_loop = FitLoop(min_epochs=min_epochs, max_epochs=max_epochs)
     training_epoch_loop = TrainingEpochLoop(min_steps=min_steps, max_steps=max_steps)
     # 注: 执行的函数体为: fit_loop.epoch_loop=training_epoch_loop
@@ -855,10 +948,132 @@ def __init__(self, logger, ....):  # 注: 一共有约50个参数
     self._call_callback_hooks("on_init_end")
 ```
 
-此处代码相对复杂, 先简要分析几处:
+
+需要细致展开的部分如下：
 
 
-**_callback_connector: CallbackConnector**
+<details>
+<summary>
+<hidden_block>
+TrainerState
+</hidden_block>
+</summary>
+
+```python
+# from pytorch_lightning.trainer.states import RunningStage, TrainerFn, TrainerState, TrainerStatus
+self.state = TrainerState()
+```
+涉及的源代码如下：
+
+备注：`LightningEnum` 实际上继承自 python 原生的 `Enum`，增加了一个 `from_str` 方法，并允许它直接与字符串比较（`__eq__`函数），如果与枚举状态所对应的字符串相同，则返回 `True`。
+
+```python
+# src/lightning_lite/utilities/enums.py
+from pytorch_lightning.utilities import LightningEnum
+@dataclass
+class TrainerState:
+    """Dataclass to encapsulate the current :class:`~pytorch_lightning.trainer.trainer.Trainer` state."""
+    # trainer的运行状态: "initializing", "running", "finished", "interrupted"
+    status: TrainerStatus = TrainerStatus.INITIALIZING
+    # "fit", "validate", "test", "predict", "tune"
+    # 与trainer.fit/validate/test/predict/tune直接绑定
+    fn: Optional[TrainerFn] = None
+    # "sanity_check", "train", "validate", "test", "predict", "tune"
+    # trainer.fit函数内的具体状态, 会依次变为: "sanity_check", "train", "validate"
+    stage: Optional[RunningStage] = None
+
+    # detect the fault tolerant flag
+    # 这个不确定是用来做什么的
+    _fault_tolerant_mode: _FaultTolerantMode = field(default_factory=_FaultTolerantMode.detect_current_mode)
+
+    @property
+    def finished(self) -> bool:
+        return self.status == TrainerStatus.FINISHED
+
+    @property
+    def stopped(self) -> bool:
+        return self.status.stopped
+```
+
+以下是更为具体的源代码
+
+```python
+class TrainerStatus(LightningEnum):
+    """Enum for the status of the :class:`~pytorch_lightning.trainer.trainer.Trainer`"""
+
+    INITIALIZING = "initializing"  # trainer creation
+    RUNNING = "running"
+    FINISHED = "finished"
+    INTERRUPTED = "interrupted"
+
+    @property
+    def stopped(self) -> bool:
+        return self in (self.FINISHED, self.INTERRUPTED)
+
+class TrainerFn(LightningEnum):
+    """
+    Enum for the user-facing functions of the :class:`~pytorch_lightning.trainer.trainer.Trainer`
+    such as :meth:`~pytorch_lightning.trainer.trainer.Trainer.fit` and
+    :meth:`~pytorch_lightning.trainer.trainer.Trainer.test`.
+    """
+
+    FITTING = "fit"
+    VALIDATING = "validate"
+    TESTING = "test"
+    PREDICTING = "predict"
+    TUNING = "tune"
+
+    @property
+    def _setup_fn(self) -> "TrainerFn":
+        """``FITTING`` is used instead of ``TUNING`` as there are no "tune" dataloaders.
+
+        This is used for the ``setup()`` and ``teardown()`` hooks
+        """
+        return TrainerFn.FITTING if self == TrainerFn.TUNING else self
+
+class RunningStage(LightningEnum):
+    """Enum for the current running stage.
+
+    This stage complements :class:`TrainerFn` by specifying the current running stage for each function.
+    More than one running stage value can be set while a :class:`TrainerFn` is running:
+
+        - ``TrainerFn.FITTING`` - ``RunningStage.{SANITY_CHECKING,TRAINING,VALIDATING}``
+        - ``TrainerFn.VALIDATING`` - ``RunningStage.VALIDATING``
+        - ``TrainerFn.TESTING`` - ``RunningStage.TESTING``
+        - ``TrainerFn.PREDICTING`` - ``RunningStage.PREDICTING``
+        - ``TrainerFn.TUNING`` - ``RunningStage.{TUNING,SANITY_CHECKING,TRAINING,VALIDATING}``
+    """
+
+    TRAINING = "train"
+    SANITY_CHECKING = "sanity_check"
+    VALIDATING = "validate"
+    TESTING = "test"
+    PREDICTING = "predict"
+    TUNING = "tune"
+
+    @property
+    def evaluating(self) -> bool:
+        return self in (self.VALIDATING, self.TESTING)
+
+    @property
+    def dataloader_prefix(self) -> Optional[str]:
+        if self in (self.SANITY_CHECKING, self.TUNING):
+            return None
+        if self == self.VALIDATING:
+            return "val"
+        return self.value
+```
+</details>
+
+
+<details>
+<summary>
+<hidden_block>
+Connector
+</hidden_block>
+</summary>
+
+以 `_callback_connector: CallbackConnector` 为例：
 
 推测: 这种`XXXConnector`类的作用基本上就是给`Trainer`添加一些属性, 不知道为啥不直接写在`Trainer`的内部(也许是写在Trainer内部, Trainer类的定义会变得很冗长?看源码长度`pytorch_ligtening/trainer/trainer.py`本身已有2000多行, 如果这些Connector也写在Trainer里,估计会更长)
 
@@ -970,7 +1185,24 @@ def _configure_external_callbacks() -> List[Callback]:
 
 - Python包的EntryPoint的概念: 参考[知乎](https://zhuanlan.zhihu.com/p/37635578)`
 
-**loop**
+</summary>
+</details>
+
+
+
+<details>
+<summary>
+<hidden_block>
+Loop
+</hidden_block>
+</summary>
+
+```python
+fit_loop = FitLoop(min_epochs=min_epochs, max_epochs=max_epochs)
+training_epoch_loop = TrainingEpochLoop(min_steps=min_steps, max_steps=max_steps)
+# 注: 执行的函数体为: fit_loop.epoch_loop=training_epoch_loop
+fit_loop.connect(epoch_loop=training_epoch_loop)
+```
 
 后面`trainer.fit`方法主要与这个`self.fit_loop`有关
 
@@ -983,7 +1215,16 @@ fit_loop.connect(epoch_loop=training_epoch_loop)
 self.fit_loop = fit_loop
 ```
 
-**self._call_callback_hooks**
+</summary>
+</details>
+
+
+<details>
+<summary>
+<hidden_block>
+self._call_callback_hooks
+</hidden_block>
+</summary>
 
 `Trainer.fit` 方法中将会多次调用`Trainer._call_callback_hooks`方法, 因此有必要查看一下源码, 如下:
 
@@ -1051,6 +1292,9 @@ class Strategy(ABC):
         """Returns the pure LightningModule without potential wrappers."""
         return self._lightning_module
 ```
+
+</summary>
+</details>
 
 
 ### `Trainer.fit`
