@@ -650,8 +650,6 @@ model = MyModule("x.pth", 10)
 print(model.hparams)  # pytorch_lightning.utilities.parsing.AttributeDict
 # {"num_labels": 10, "learning_rate": 2e-5, "train_batch_size": 32}
 ```
-
-</summary>
 </details>
 
 
@@ -803,21 +801,23 @@ def get_init_arguments_and_types(cls: _ARGPARSE_CLS) -> List[Tuple[str, Tuple, A
 </details>
 
 
-接下来进入 `Trainer.__init__` 函数的函数体, 如下:
+接下来进入 `Trainer.__init__` 函数的函数体, **完整**源代码如下:
 
 ```python
 # src/pytorch_lightning/trainer/trainer.py
+@_defaults_from_env_vars
 def __init__(self, logger, ....):  # 注: 一共有约50个参数
     super().__init__()
     # 即执行: torch._C._log_api_usage_once("lightning.trainer." + "init")
+    # 在环境变量为PYTORCH_API_USAGE_STDERR=1时才打印信息
     Trainer._log_api_event("init")
     # 此处的 log 是本文件的"全局"变量
     # log = logging.getLogger(__name__)
     log.detail(f"{self.__class__.__name__}: Initializing trainer with parameters: {locals()}")
-    # 见说明 TrainerState
+    # 见说明 `TrainerState`
     self.state = TrainerState()
 
-    # 见说明 Connector
+    # 见说明 `Connector`
     # init connectors
     self._data_connector = DataConnector(self, multiple_trainloader_mode)
 
@@ -844,9 +844,10 @@ def __init__(self, logger, ....):  # 注: 一共有约50个参数
     self._callback_connector = CallbackConnector(self)
     self._checkpoint_connector = CheckpointConnector(self, resume_from_checkpoint)
     self._signal_connector = SignalConnector(self)
+    # 见下面说明 `Tuner`
     self.tuner = Tuner(self)
 
-    # 见下面说明 FitLoop
+    # 见下面说明 `Loop`
     fit_loop = FitLoop(min_epochs=min_epochs, max_epochs=max_epochs)
     training_epoch_loop = TrainingEpochLoop(min_steps=min_steps, max_steps=max_steps)
     # 注: 执行的函数体为: fit_loop.epoch_loop=training_epoch_loop
@@ -880,9 +881,12 @@ def __init__(self, logger, ....):  # 注: 一共有约50个参数
     )
 
     # hook
+    # 见下面说明 `_call_callback_hooks`
+    # V1.8版本对这个做了移除处理, 默认的几个Callback都没有这个hook
     self._call_callback_hooks("on_init_start")
 
     # init data flags
+    # 有点诡异, 没有赋值?
     self.check_val_every_n_epoch: int
     self._data_connector.on_trainer_init(
         val_check_interval,
@@ -917,12 +921,15 @@ def __init__(self, logger, ....):  # 注: 一共有约50个参数
     self.track_grad_norm: float = float(track_grad_norm)
 
     self._detect_anomaly: bool = detect_anomaly
+    # 见下面说明 `_setup_on_init`
     self._setup_on_init()
 
     # configure tuner
+    # 见下面说明 `Tuner`
     self.tuner.on_trainer_init(auto_lr_find, auto_scale_batch_size)
 
     # configure profiler
+    # 见下面说明 `setup._init_profiler`
     setup._init_profiler(self, profiler)
 
     # init logger flags
@@ -932,6 +939,7 @@ def __init__(self, logger, ....):  # 注: 一共有约50个参数
     # init debugging flags
     self.val_check_interval: Union[int, float]
     self.num_sanity_val_steps: Union[float, int]
+    # 见下面说明 `setup._init_debugging_flags`
     setup._init_debugging_flags(
         self,
         limit_train_batches,
@@ -946,6 +954,45 @@ def __init__(self, logger, ....):  # 注: 一共有约50个参数
 
     # Callback system
     self._call_callback_hooks("on_init_end")
+```
+
+
+**整体流程简要描述**：
+
+总的来说基本上是一些为`Trainer`的属性赋值的操作
+```python
+self.state = TrainerState()  # 后续调用fit/test等函数时会对这个self.state进行设置
+# 初始化DataConnector,AcceleratorConnector,LoggerConnector,CallbackConnector,CheckpointConnector,SignalConnector, 代码从略, 除了AcceleratorConnector进行了一些实质性的准备工作外(例如DDP的一些诸如：dist.init_process_group的操作，是否实际执行存疑，待后续明确), 其余基本上都只是对属性值进行了一些初始化
+
+# 初始化几个loop，实际上仅根据入参设定了一些参数, 涉及到的几个loop嵌套关系见后文说明
+self.fit_loop = fit_loop
+self.validate_loop = EvaluationLoop()
+self.test_loop = EvaluationLoop()
+self.predict_loop = PredictionLoop()
+
+# 主要执行逻辑是依次将如下默认Callback类添加至`Trainer.callbacks`中, 然后将这些callback按照类型进行重排序，先后顺序为：tuner_callbacks(BatchSizeFinder),other_callbacks, checkpoint_callbacks(ModelCheckpoint)。
+self._callback_connector.on_trainer_init(...)
+
+# 依次调用所有callback的"on_init_start" hook, lightning v1.8对这一过程做了移除, 可参考关于Trainer.fit的代码解析
+# self._call_callback_hooks("on_init_start")
+
+# 作用是根据入参设定trainer的几个属性
+self._data_connector.on_trainer_init(...)
+
+# 设定一些属性, 并在主进程上打印一些GPU/TPU是否可用, 是否使用的日志
+self._setup_on_init()
+
+# 作用是根据入参设定trainer的几个属性, self.auto_lr_find = auto_lr_find
+self.tuner.on_trainer_init(auto_lr_find, auto_scale_batch_size)
+
+# 初始化self.profiler, 默认为初始化一个PassThroughProfiler(profiler=None)
+setup._init_profiler(self, profiler)
+
+# 设定trainer.loggers(列表): 如果参数为logger默认值True,则创建TensorBoardLogger, 否则按照logger设定
+self._logger_connector.on_trainer_init(...)
+
+# 设定一些debug用的参数, 作用未知?
+setup._init_debugging_flags(...)
 ```
 
 
@@ -1066,17 +1113,246 @@ class RunningStage(LightningEnum):
 </details>
 
 
+
 <details>
 <summary>
 <hidden_block>
-Connector
+Connector(DataConnector,AcceleratorConnector,LoggerConnector,CallbackConnector,CheckpointConnector,SignalConnector)
 </hidden_block>
 </summary>
 
-以 `_callback_connector: CallbackConnector` 为例：
+`Trainer.__init__` 函数依次进行了 `DataConnector`, `AcceleratorConnector`,`LoggerConnector`, `CallbackConnector`, `CheckpointConnector`, `SignalConnector`几个的初始化
 
 推测: 这种`XXXConnector`类的作用基本上就是给`Trainer`添加一些属性, 不知道为啥不直接写在`Trainer`的内部(也许是写在Trainer内部, Trainer类的定义会变得很冗长?看源码长度`pytorch_ligtening/trainer/trainer.py`本身已有2000多行, 如果这些Connector也写在Trainer里,估计会更长)
 
+这里几个 `Connector` 的 `__init__` 函数的初始化基本上只是设定 `self.trainer=trainer`，以及初始化一些状态，并无太多需要说明之处。唯一的例外是`AcceleratorConnector`做了许多工作（此处从略）。
+
+</details>
+
+
+<details>
+<summary>
+<hidden_block>
+Loop
+</hidden_block>
+</summary>
+
+```python
+fit_loop = FitLoop(min_epochs=min_epochs, max_epochs=max_epochs)
+training_epoch_loop = TrainingEpochLoop(min_steps=min_steps, max_steps=max_steps)
+# 注: 执行的函数体为: fit_loop.epoch_loop=training_epoch_loop
+fit_loop.connect(epoch_loop=training_epoch_loop)
+```
+
+为了更好地看出上面三行代码的执行逻辑，将其展开为（`|-`引导内部的调用顺序）如下
+
+备注：一些简单的操作例如：`self.min_steps=min_steps` 被省略了
+
+```python
+fit_loop = FitLoop(min_epochs=min_epochs, max_epochs=max_epochs)
+|-self.epoch_loop = TrainingEpochLoop()
+| |-self.batch_progress = BatchProgress()
+| |-self.scheduler_progress = SchedulerProgress()
+| |-self.batch_loop = TrainingBatchLoop()
+| | |-# 内部保存一个长度为20的memory
+| | |-self.accumulated_loss = TensorRunningAccum(window_length=20)
+| | |-self.running_loss = TensorRunningAccum(window_length=20)
+| | |-self.optimizer_loop = OptimizerLoop()
+| | | |-self.optim_progress: OptimizationProgress = OptimizationProgress()
+| | |-self.manual_loop = ManualOptimization()
+| |   |-self.optim_step_progress = Progress.from_defaults(ReadyCompletedTracker)
+| |-self.val_loop = loops.EvaluationLoop(verbose=False)
+|   |-self.epoch_loop = EvaluationEpochLoop()
+|     |-self.batch_progress = BatchProgress()
+|-self.epoch_progress = Progress()
+
+training_epoch_loop = TrainingEpochLoop(min_steps=min_steps, max_steps=max_steps)
+# fit_loop.epoch_loop=training_epoch_loop
+fit_loop.connect(epoch_loop=training_epoch_loop)
+self.fit_loop = fit_loop
+self.validate_loop = EvaluationLoop()
+self.test_loop = EvaluationLoop()
+self.predict_loop = PredictionLoop()
+|-self.epoch_loop = PredictionEpochLoop()
+  |-self.batch_progress = Progress()
+```
+
+这里代码粗看上有些诡异:
+- `FitLoop` 中包含了一个`TrainingEpochLoop`, 继续而这个 `TrainingEpochLoop`包含`TrainingBatchLoop`和一个`EvaluationLoop`，似乎并不在一个层级上
+  ```
+  TrainingEpochLoop -- TrainingBatchLoop -- OptimizerLoop
+                    \_ EvaluationLoop -- EvaluationEpochLoop(没有EvaluationBatchLoop?)
+  ```
+- `*Progress` 的定义均在 `src/pytorch_lightning/trainer/progress.py` 文件中, 主要作用是循环时记录下标和一些状态, 即记录 `for i, x in enumerate(x_list)` 中的 `i` 与 `x`。其细致的源码分析如下：
+    
+    <details>
+    <summary>
+    <hidden_block>
+    Progress
+    </hidden_block>
+    </summary>
+    这些`*Progress`类都被 `dataclass` 装饰, 继承关系如下
+
+    ```
+    BaseProgress  
+    |-ReadyCompletedTracker
+    | |-StartedTracker
+    | |-ProcessedTracker            
+    |-Progress
+    | |- DataLoaderProgress
+    | |- BatchProgress
+    | |- SchedulerProgress
+    |- OptimizerProgress
+    |- OptimizationProgress
+    ```
+    
+    先看基类的定义
+    ```python
+    @dataclass
+    class BaseProgress:
+        """Mixin that implements state-loading utilities for dataclasses."""
+
+        def state_dict(self) -> dict:
+            return asdict(self)
+
+        def load_state_dict(self, state_dict: dict) -> None:
+            self.__dict__.update(state_dict)
+
+        @classmethod
+        def from_state_dict(cls, state_dict: dict) -> "BaseProgress":
+            obj = cls()
+            obj.load_state_dict(state_dict)
+            return obj
+
+        def reset(self) -> None:
+            """Reset the object's state."""
+            raise NotImplementedError
+    ```
+    而子类基本上都是增加少量的属性, 并覆盖`reset`方法, 有些还会增加少量诸如命名 `reset_on_restart`, `reset_on_run` 的方法
+
+    最重要的子类是 `Progress`, 可以看出主要作用就是循环时记录当前的下标，
+    ```python
+    from dataclasses import asdict, dataclass, field
+    @dataclass
+    class Progress(BaseProgress):
+        """Track aggregated and current progress.
+
+        Args:
+            total: Intended to track the total progress of an event.
+            current: Intended to track the current progress of an event.
+        """
+
+        total: ReadyCompletedTracker = field(default_factory=ProcessedTracker)
+        current: ReadyCompletedTracker = field(default_factory=ProcessedTracker)
+
+        def __post_init__(self) -> None:
+            if type(self.total) is not type(self.current):  # noqa: E721
+                raise ValueError("The `total` and `current` instances should be of the same class")
+
+        def increment_ready(self) -> None:
+            self.total.ready += 1
+            self.current.ready += 1
+
+        def increment_started(self) -> None:
+            if not isinstance(self.total, StartedTracker):
+                raise TypeError(f"`{self.total.__class__.__name__}` doesn't have a `started` attribute")
+            self.total.started += 1
+            self.current.started += 1
+
+        def increment_processed(self) -> None:
+            if not isinstance(self.total, ProcessedTracker):
+                raise TypeError(f"`{self.total.__class__.__name__}` doesn't have a `processed` attribute")
+            self.total.processed += 1
+            self.current.processed += 1
+
+        def increment_completed(self) -> None:
+            self.total.completed += 1
+            self.current.completed += 1
+
+        @classmethod
+        def from_defaults(cls, tracker_cls: Type[ReadyCompletedTracker], **kwargs: int) -> "Progress":
+            """Utility function to easily create an instance from keyword arguments to both ``Tracker``s."""
+            return cls(total=tracker_cls(**kwargs), current=tracker_cls(**kwargs))
+
+        def reset(self) -> None:
+            self.total.reset()
+            self.current.reset()
+
+        def reset_on_run(self) -> None:
+            self.current.reset()
+
+        def reset_on_restart(self) -> None:
+            self.current.reset_on_restart()
+
+        def load_state_dict(self, state_dict: dict) -> None:
+            self.total.load_state_dict(state_dict["total"])
+            self.current.load_state_dict(state_dict["current"])
+    ```
+    </details>
+
+</details>
+
+
+<details>
+<summary>
+<hidden_block>
+CallbackConnector.on_trainer_init
+</hidden_block>
+</summary>
+
+```python
+# trainer.__init__函数内部调用了这个函数
+self._callback_connector.on_trainer_init(...)
+```
+**主要执行逻辑是依次将如下默认Callback类添加至`Trainer.callbacks`中, 然后将这些callback按照类型进行重排序，先后顺序为：tuner_callbacks(BatchSizeFinder),other_callbacks, checkpoint_callbacks(ModelCheckpoint)。**
+
+这些默认的Callback及及相应控制的`Trainer.__init__`函数的入参默认值以及所包含的hook列举如下:
+
+<details>
+<summary>
+<hidden_block>
+生成如下结果的代码
+</hidden_block>
+
+```python
+from pytorch_lightning.callbacks import (
+    Callback
+    GradientAccumulationScheduler,
+    ModelCheckpoint,
+    ModelSummary,
+    TQDMProgressBar,
+)
+from pytorch_lightning.callbacks.rich_model_summary import RichModelSummary
+from pytorch_lightning.callbacks.timer import Timer
+from pytorch_lightning.callbacks.fault_tolerance import _FaultToleranceCheckpoint
+
+def print_overwrite(cls):
+    cls_str = cls.__module__ + "." + cls.__name__
+    names = [name for name in dir(cls) if name.startswith("on_") and getattr(cls, name) is not getattr(Callback, name)]
+    print(f"- **{cls_str}**: "+", ".join(names))
+print_overwrite(ModelCheckpoint)
+print_overwrite(Timer)
+print_overwrite(TQDMProgressBar)
+print_overwrite(RichModelSummary)
+print_overwrite(ModelSummary)
+print_overwrite(GradientAccumulationScheduler)
+print_overwrite(_FaultToleranceCheckpoint)
+```
+</summary>
+</details>
+
+
+- **pytorch_lightning.callbacks.model_checkpoint.ModelCheckpoint**（默认有, enable_checkpointing=True）: on_train_batch_end, on_train_epoch_end, on_train_start, on_validation_end
+- **pytorch_lightning.callbacks.timer.Timer**（默认无, max_time=None）: on_fit_start, on_test_end, on_test_start, on_train_batch_end, on_train_end, on_train_epoch_end, on_train_start, on_validation_end, on_validation_start
+- **pytorch_lightning.callbacks.progress.tqdm_progress.TQDMProgressBar**（默认有, enable_progress_bar=True）: on_predict_batch_end, on_predict_batch_start, on_predict_end, on_predict_start, on_sanity_check_end, on_sanity_check_start, on_test_batch_end, on_test_batch_start, on_test_end, on_test_start, on_train_batch_end, on_train_end, on_train_epoch_end, on_train_epoch_start, on_train_start, on_validation_batch_end, on_validation_batch_start, on_validation_end, on_validation_start
+- **pytorch_lightning.callbacks.rich_model_summary.RichModelSummary**（默认无, 除非enable_progress_bar=False且手动传入这个callback）: on_fit_start
+- **pytorch_lightning.callbacks.model_summary.ModelSummary**（默认有, enable_model_summary）: on_fit_start
+- **pytorch_lightning.callbacks.gradient_accumulation_scheduler.GradientAccumulationScheduler**（默认无, accumulate_grad_batches=None）: on_train_epoch_start
+- **pytorch_lightning.callbacks.fault_tolerance._FaultToleranceCheckpoint**（必然有）: on_exception
+- **pytorch_lightning.callbacks.batch_size_finder.BatchSizeFinder**（默认无, auto_lr_find=False, auto_scale_batch_size=False）: on_fit_start, on_predict_start, on_test_start, on_validation_start
+
+
+**完整**源代码如下：
 ```python
 class CallbackConnector:
     ...
@@ -1123,8 +1399,10 @@ class CallbackConnector:
         # 注: ...
         if self.trainer.state._fault_tolerant_mode.is_enabled:
             self._configure_fault_tolerance_callbacks()
-
-        self.trainer.callbacks.extend(_configure_external_callbacks())  # 注: 见下面的定义, 目前似乎是空列表
+        
+        # 注: 一般是空列表, 可以从Entrypoint中加入callback, 见官网说明
+        # https://pytorch-lightning.readthedocs.io/en/latest/extensions/callbacks.html#entry-points
+        self.trainer.callbacks.extend(_configure_external_callbacks())
 
         # push all model checkpoint callbacks to the end
         # it is important that these are the last callbacks to run
@@ -1145,88 +1423,189 @@ class CallbackConnector:
                 other_callbacks.append(cb)
 
         return tuner_callbacks + other_callbacks + checkpoint_callbacks
+```
+</details>
 
-def _configure_external_callbacks() -> List[Callback]:
-    """Collect external callbacks registered through entry points.
+<details>
+<summary>
+<hidden_block>
+DataConnector.on_trainer_init
+</hidden_block>
+</summary>
 
-    The entry points are expected to be functions returning a list of callbacks.
+```python
+# trainer.__init__函数内部调用了这个函数
+self._data_connector.on_trainer_init(...)
+```
 
-    Return:
-        A list of all callbacks collected from external factories.
+**作用是根据入参设定trainer的几个属性**
+
+**除去异常处理**的源代码如下
+
+```python
+def on_trainer_init(
+        self,
+        val_check_interval: Optional[Union[int, float]],
+        reload_dataloaders_every_n_epochs: int,
+        check_val_every_n_epoch: Optional[int],
+    ) -> None:
+        self.trainer.datamodule = None
+        self.trainer.check_val_every_n_epoch = check_val_every_n_epoch
+        self.trainer.reload_dataloaders_every_n_epochs = reload_dataloaders_every_n_epochs
+        self.trainer._is_data_prepared = False
+```
+</details>
+
+
+<details>
+<summary>
+<hidden_block>
+Tuner
+</hidden_block>
+</summary>
+Tuner的主要作用是自动尝试学习率与显存大小, 在`Trainer.__init__`函数中仅设定参数, 运行逻辑在 `Trainer.fit`函数中
+</details>
+
+
+### `Trainer.fit`
+
+
+**完整**源代码如下：
+```python
+
+def _call_and_handle_interrupt(trainer: "pl.Trainer", trainer_fn: Callable, *args: Any, **kwargs: Any) -> Any:
+    r"""
+    Error handling, intended to be used only for main trainer function entry points (fit, validate, test, predict)
+    as all errors should funnel through them
+
+    Args:
+        trainer_fn: one of (fit, validate, test, predict)
+        *args: positional arguments to be passed to the `trainer_fn`
+        **kwargs: keyword arguments to be passed to `trainer_fn`
     """
-    group = "pytorch_lightning.callbacks_factory"
-
-    if _PYTHON_GREATER_EQUAL_3_8_0:
-        from importlib.metadata import entry_points
-
-        if _PYTHON_GREATER_EQUAL_3_10_0:
-            factories = entry_points(group=group)  # type: ignore[call-arg]
+    try:
+        if trainer.strategy.launcher is not None:
+            return trainer.strategy.launcher.launch(trainer_fn, *args, trainer=trainer, **kwargs)
         else:
-            factories = entry_points().get(group, {})  # type: ignore[assignment]
-    else:
-        from pkg_resources import iter_entry_points
+            return trainer_fn(*args, **kwargs)
 
-        factories = iter_entry_points(group)  # type: ignore[assignment]
+    except _TunerExitException:
+        trainer._call_teardown_hook()
+        trainer._teardown()
+        trainer.state.status = TrainerStatus.FINISHED
+        trainer.state.stage = None
 
-    external_callbacks: List[Callback] = []
-    for factory in factories:
-        callback_factory = factory.load()
-        callbacks_list: Union[List[Callback], Callback] = callback_factory()
-        callbacks_list = [callbacks_list] if isinstance(callbacks_list, Callback) else callbacks_list
-        _log.info(
-            f"Adding {len(callbacks_list)} callbacks from entry point '{factory.name}':"
-            f" {', '.join(type(cb).__name__ for cb in callbacks_list)}"
+    # TODO: Unify both exceptions below, where `KeyboardError` doesn't re-raise
+    except KeyboardInterrupt as exception:
+        rank_zero_warn("Detected KeyboardInterrupt, attempting graceful shutdown...")
+        # user could press Ctrl+c many times... only shutdown once
+        if not trainer.interrupted:
+            trainer.state.status = TrainerStatus.INTERRUPTED
+            trainer._call_callback_hooks("on_exception", exception)
+            for logger in trainer.loggers:
+                logger.finalize("failed")
+    except BaseException as exception:
+        trainer.state.status = TrainerStatus.INTERRUPTED
+        if distributed_available() and trainer.world_size > 1:
+            # try syncing remaining processes, kill otherwise
+            trainer.strategy.reconciliate_processes(traceback.format_exc())
+        trainer._call_callback_hooks("on_exception", exception)
+        for logger in trainer.loggers:
+            logger.finalize("failed")
+        trainer._teardown()
+        # teardown might access the stage so we reset it after
+        trainer.state.stage = None
+        raise
+
+class Trainer:
+    def fit(
+        self,
+        model: "pl.LightningModule",
+        train_dataloaders: Optional[Union[TRAIN_DATALOADERS, LightningDataModule]] = None,
+        val_dataloaders: Optional[EVAL_DATALOADERS] = None,
+        datamodule: Optional[LightningDataModule] = None,
+        ckpt_path: Optional[str] = None,
+    ) -> None:
+        r"""
+        Runs the full optimization routine.
+
+        Args:
+            model: Model to fit.
+
+            train_dataloaders: A collection of :class:`torch.utils.data.DataLoader` or a
+                :class:`~pytorch_lightning.core.datamodule.LightningDataModule` specifying training samples.
+                In the case of multiple dataloaders, please see this :ref:`section <multiple-dataloaders>`.
+
+            val_dataloaders: A :class:`torch.utils.data.DataLoader` or a sequence of them specifying validation samples.
+
+            ckpt_path: Path/URL of the checkpoint from which training is resumed. Could also be one of two special
+                keywords ``"last"`` and ``"hpc"``. If there is no checkpoint file at the path, an exception is raised.
+                If resuming from mid-epoch checkpoint, training will start from the beginning of the next epoch.
+
+            datamodule: An instance of :class:`~pytorch_lightning.core.datamodule.LightningDataModule`.
+        """
+        if not isinstance(model, pl.LightningModule):
+            raise TypeError(f"`Trainer.fit()` requires a `LightningModule`, got: {model.__class__.__qualname__}")
+        # self.strategy.lightning_module即是_lightning_module
+        self.strategy._lightning_module = model
+        call._call_and_handle_interrupt(
+            self, self._fit_impl, model, train_dataloaders, val_dataloaders, datamodule, ckpt_path
         )
-        external_callbacks.extend(callbacks_list)
-    return external_callbacks
+
+    # 实际上执行发生在这, 但可能被self.strategy包裹
+    def _fit_impl(
+        self,
+        model: "pl.LightningModule",
+        train_dataloaders: Optional[Union[TRAIN_DATALOADERS, LightningDataModule]] = None,
+        val_dataloaders: Optional[EVAL_DATALOADERS] = None,
+        datamodule: Optional[LightningDataModule] = None,
+        ckpt_path: Optional[str] = None,
+    ) -> None:
+        Trainer._log_api_event("fit")
+        log.detail(f"{self.__class__.__name__}: trainer fit stage")
+
+        self.state.fn = TrainerFn.FITTING
+        self.state.status = TrainerStatus.RUNNING
+        self.training = True
+
+        # if a datamodule comes in as the second arg, then fix it for the user
+        if isinstance(train_dataloaders, LightningDataModule):
+            datamodule = train_dataloaders
+            train_dataloaders = None
+        # If you supply a datamodule you can't supply train_dataloader or val_dataloaders
+        if (train_dataloaders is not None or val_dataloaders is not None) and datamodule is not None:
+            raise MisconfigurationException(
+                "You cannot pass `train_dataloader` or `val_dataloaders` to `trainer.fit(datamodule=...)`"
+            )
+
+        # links data to the trainer
+        self._data_connector.attach_data(
+            model, train_dataloaders=train_dataloaders, val_dataloaders=val_dataloaders, datamodule=datamodule
+        )
+
+        # TODO: ckpt_path only in v2.0
+        ckpt_path = ckpt_path or self.resume_from_checkpoint
+        self._ckpt_path = self._checkpoint_connector._set_ckpt_path(
+            self.state.fn,
+            ckpt_path,  # type: ignore[arg-type]
+            model_provided=True,
+            model_connected=self.lightning_module is not None,
+        )
+        self._run(model, ckpt_path=self.ckpt_path)
+
+        assert self.state.stopped
+        self.training = False
+        return
 ```
 
-理解上述代码需要如下Python知识
-
-- Python包的EntryPoint的概念: 参考[知乎](https://zhuanlan.zhihu.com/p/37635578)`
-
-</summary>
-</details>
 
 
 
-<details>
-<summary>
-<hidden_block>
-Loop
-</hidden_block>
-</summary>
 
-```python
-fit_loop = FitLoop(min_epochs=min_epochs, max_epochs=max_epochs)
-training_epoch_loop = TrainingEpochLoop(min_steps=min_steps, max_steps=max_steps)
-# 注: 执行的函数体为: fit_loop.epoch_loop=training_epoch_loop
-fit_loop.connect(epoch_loop=training_epoch_loop)
-```
-
-后面`trainer.fit`方法主要与这个`self.fit_loop`有关
-
-```python
-fit_loop = FitLoop(min_epochs=min_epochs, max_epochs=max_epochs)
-training_epoch_loop = TrainingEpochLoop(min_steps=min_steps, max_steps=max_steps)
-# 注: 执行的函数体为: fit_loop.epoch_loop=training_epoch_loop
-fit_loop.connect(epoch_loop=training_epoch_loop)
-# default .fit() loop
-self.fit_loop = fit_loop
-```
-
-</summary>
-</details>
+Trainer._call_callback_hooks(hook_name)
 
 
-<details>
-<summary>
-<hidden_block>
-self._call_callback_hooks
-</hidden_block>
-</summary>
-
-`Trainer.fit` 方法中将会多次调用`Trainer._call_callback_hooks`方法, 因此有必要查看一下源码, 如下:
+`Trainer.fit` 方法中也会多次调用`Trainer._call_callback_hooks`方法, 其**完整**源代码如下:
 
 ```python
 class Trainer:
@@ -1292,9 +1671,3 @@ class Strategy(ABC):
         """Returns the pure LightningModule without potential wrappers."""
         return self._lightning_module
 ```
-
-</summary>
-</details>
-
-
-### `Trainer.fit`

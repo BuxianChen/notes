@@ -244,6 +244,54 @@ for key, value in MyEnum.__members__.items():
     ...
 ```
 
+## dataclasses (python>=3.7 才可用)
+
+引用[官方文档](https://docs.python.org/3/library/dataclasses.html)的说明, 这个模块主要提供了一个针对类的装饰器 `dataclass`，以自动生成一些特殊函数，例如：`__init__`, `__repr__`, `__eq__` 等（对应于 C 语言中的数据结构，即没有实例函数)
+
+> This module provides a decorator and functions for automatically adding generated special methods such as __init__() and __repr__() to user-defined classes
+
+主要的接口为：
+- `dataclasses.dataclass`
+- `dataclasses.field`
+
+`dataclasses.dataclass` 的简单用法如下：
+```python
+# 备注: dataclass实际上有很多参数, 例如此处指定fronzen=True, 则初始化后不能再修改数据
+@dataclass(frozen=True, eq=True)
+class A:
+    x: int  # 这里的类型注解是语法强制的, 但运行时不做类型检查
+    y: float
+    z: str
+    def foo(self):
+        return self.x * self.y
+# A.__init__函数自动生成
+a = A(1.0, 2, "x")  # 注意: 此处实际上不会做类型检查
+a.foo()
+a.x = 3  # 报错
+```
+备注：`dataclass` 还会自动生成 `__eq__` 等函数, 也可以设定 `eq=False` 抑制这一行为
+
+`field` 的简单用法如下：
+
+```python
+@dataclass()
+class A:
+    # y: list[int] = list()  # 会发生意料不到的情况
+    y: list[int] = field(default_factory=list)
+
+a = A()
+a.y.append(2)
+
+b = A()
+b.y.append(3)
+
+A().y  # 此时会返回[], 但如果不用field函数直接写默认值为list(), 则此时返回为[2, 3]
+```
+
+更为深入的细节查阅官方文档：
+- 如果 `dataclass` 装饰的类发生继承关系时, 自动生成的 `__init__` 函数的参数顺序一般来说是先父类, 再子类。但还有许多微妙之处
+- 将 `dataclass` 中的一些 `field` 仅作为关键字参数如何处理
+
 ## subprocess (待补充)
 
 - `subprocess` 模块的作用是运行命令行可以执行的命令
