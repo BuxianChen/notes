@@ -79,8 +79,7 @@ export LD_LIBRARY_PATH=$CUDA_HOME/lib:$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 
 ### 疑难杂症
 
-由于pytorch自带了一个阉割版的
-[参考资料](https://huggingface.co/docs/transformers/v4.24.0/en/main_classes/trainer#trainer-integrations)
+由于pytorch自带(使用pip安装)了一个阉割版的CUDA(可能pytorch为了用户体验,只要求安装驱动其他都自带), 而某些其他的包需要独立安装一个完整的CUDA, 这时候会引发一些冲突,具体解释可以参考[参考资料](https://huggingface.co/docs/transformers/v4.24.0/en/main_classes/trainer#trainer-integrations)
 
 ## 源
 

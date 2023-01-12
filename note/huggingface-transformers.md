@@ -8,7 +8,7 @@
 
 ## 整体代码结构
 
-主要的基类如下
+构建模型主要的基类如下
 
 - `PreTrainedModel`: 模型
 - `PretrainedConfig`: 配置
@@ -231,5 +231,51 @@ graph LR
     C[PretrainedTokenizerBase] ----> D[PretrainedTokenizer]
     D[PretrainedTokenizer] ----> E[BertTokenizer]
 ```
+
+## Trainer
+
+一个完整的例子可以参考 transformers GitHub 源码 `examples/pytorch/summarization/run_summarization.py`
+
+使用方式如下:
+```python
+trainer = Seq2SeqTrainer(
+    model=model,
+    args=training_args,
+    train_dataset=train_dataset if training_args.do_train else None,
+    eval_dataset=eval_dataset if training_args.do_eval else None,
+    tokenizer=tokenizer,
+    data_collator=data_collator,
+    compute_metrics=compute_metrics if training_args.predict_with_generate else None,
+)
+trainer.train(resume_from_checkpoint=checkpoint)
+```
+
+其中`training_args`以如下方式获取到, `Seq2SeqTrainingArguments` 继承自 `transformers.TrainingArguments`(被dataclass装饰), 而 `HfArgumentParser` 继承自 `argparse.ArgumentParser`, `transformers.Seq2SeqTrainer`(仅覆盖了少量的几个方法)继承自`transformers.Trainer`
+
+```python
+parser = HfArgumentParser((ModelArguments, DataTrainingArguments, Seq2SeqTrainingArguments))
+if len(sys.argv) == 2 and sys.argv[1].endswith(".json"):
+    model_args, data_args, training_args = parser.parse_json_file(json_file=os.path.abspath(sys.argv[1]))
+else:
+    model_args, data_args, training_args = parser.parse_args_into_dataclasses()
+```
+
+而`Trainer.train`的循环体为`Trainer.training_step`
+
+```python
+# evaluate用于计算指标?predict只用作预测
+
+# 实际执行trainer.evaluate_loop/prediction_loop
+trainer.evaluate()
+# 实际执行trainer.evaluate_loop/prediction_loop
+trainer.predict()
+
+# trainer.evaluate_loop/prediction_loop最终都是循环执行trainer.prediction_step
+# 备注: 没有evaluate_step
+```
+
+`Seq2SeqTrainer`继承自`Trainer`, 只重载了`evaluate`,`predict`,`prediction_step` 这几个方法
+
+`Trainer.__init__`函数中也允许传入一些`callback`, 与`pytorch-lightning`类似, 但`hook`会更少一些
 
 # datasets
