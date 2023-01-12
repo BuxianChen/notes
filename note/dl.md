@@ -77,6 +77,11 @@ export PATH=$CUDA_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$CUDA_HOME/lib:$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 ```
 
+### 疑难杂症
+
+由于pytorch自带了一个阉割版的
+[参考资料](https://huggingface.co/docs/transformers/v4.24.0/en/main_classes/trainer#trainer-integrations)
+
 ## 源
 
 ### pip 源
