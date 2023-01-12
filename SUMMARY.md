@@ -10,7 +10,7 @@
   - [Python Standard Libary](language/python/python_standard_library.md)
   - [Python Third Party](language/python/python_third_party.md)
 - [Pytorch](note/pytorch.md)
-- [huggingface-transformers](note/huggingface-transformers.md)
+- [huggingface](note/huggingface.md)
 - [pytorch-lightning](note/pytorch-lightning.md)
 
 ## Tool
