@@ -124,6 +124,9 @@ Python自带的数据库：sqlite3
 
 ~~JPG 与 PNG 格式详解（可以看看冈萨雷斯的书上是否有记录）~~
 
+- pytorch 自动求导实现：https://colab.research.google.com/drive/1VpeE6UvEPRz9HmsHh1KS0XxXjYu533EC
+
+
 ## Blog Update Plan
 
 - Jekyll、html/css/javascript 简介

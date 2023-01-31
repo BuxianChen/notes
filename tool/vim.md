@@ -350,6 +350,17 @@ git clone https://github.com/vim-airline/vim-airline.git  # 在底部显示更�
 
 ## 第三部分: Neovim
 
+
+
+关于配置插件的一些“原理”：
+
+- `init.lua`/`init.vim`为用户配置的入口
+- `.lua`/`.vim`的搜索路径与`$VIMRUNTIME`变量相关（此变量是nvim中的变量，并非系统环境变量）。关于启动 neovim 时的具体过程可参考：
+  - neovim 官方文档：https://neovim.io/doc/user/starting.html#starting
+  - 博客：https://thevaluable.dev/vim-runtime-guide-example/
+- 关于自定义配置时 lua 脚本放在哪，可参考[官方文档](https://neovim.io/doc/user/lua-guide.html#lua-guide)
+  - 这几个目录是特殊的 `~/.config/nvim/lua`，`~/.config/nvim/plugin`，`~/.config/nvim/after`
+
 本部分以用Neovim配合各种插件替代VSCode为主线介绍Neovim的使用
 
 
