@@ -1,10 +1,14 @@
+huggingface 的几个重要项目
 
 - transformers
 - datasets
 - tokenizers
 - accelerate
+- huggingface-hub
+- evaluate
+- gradio: 一个适用于AI模型做demo的简易前端
 
-# transformers
+# transformers 包
 
 ## 整体代码结构
 
@@ -250,7 +254,10 @@ trainer = Seq2SeqTrainer(
 trainer.train(resume_from_checkpoint=checkpoint)
 ```
 
-其中`training_args`以如下方式获取到, `Seq2SeqTrainingArguments` 继承自 `transformers.TrainingArguments`(被dataclass装饰), 而 `HfArgumentParser` 继承自 `argparse.ArgumentParser`, `transformers.Seq2SeqTrainer`(仅覆盖了少量的几个方法)继承自`transformers.Trainer`
+其中`training_args`以如下方式获取到：
+- `Seq2SeqTrainingArguments` 继承自 `transformers.TrainingArguments`(被dataclass装饰)，只是一个自定义的“结构体”
+- 而 `HfArgumentParser` 继承自 `argparse.ArgumentParser`，`HfArgumentParser`只是在父类的基础上增加了几个方法：`parse_json_file`、`parse_args_into_dataclasses` 等
+- `transformers.Seq2SeqTrainer`继承自`transformers.Trainer`，`Seq2SeqTrainer`只是在父类的基础上覆盖了少量的几个方法：它的主体逻辑例如配置多卡训练，整体循环迭代等过程继承自`transformers.Trainer`，仅覆盖一些`training_step`中的关键步骤。
 
 ```python
 parser = HfArgumentParser((ModelArguments, DataTrainingArguments, Seq2SeqTrainingArguments))
@@ -276,12 +283,21 @@ trainer.predict()
 
 `Seq2SeqTrainer`继承自`Trainer`, 只重载了`evaluate`,`predict`,`prediction_step` 这几个方法
 
-`Trainer.__init__`函数中也允许传入一些`callback`, 与`pytorch-lightning`类似, 但`hook`会更少一些
+关于 `transformers.Trainer`：
+- `Trainer.__init__`函数中也允许传入一些`callback`, 与`pytorch-lightning`类似, 但`hook`会更少一些
 
 # datasets
 
 
+## datasets.load_dataset
+
+`datasets.load_dataset`用于加载数据集, 适用于如下情况：
+- huggingface hub 维护的数据集, 执行逻辑为下载数据集(有可能会去找到该仓库的同名下载与数据预处理脚本),然后缓存至 `~/.cache/huggingface/datasets` 目录（默认缓存为`.arrow`格式）, 最后返回数据集
+- 本地数据集情形下，依然会缓存至 `~/.cache/huggingface/datasets` 目录，然后返回数据集
+- 如果本地已缓存则直接读缓存，详情[参考](https://huggingface.co/docs/datasets/v2.9.0/en/cache#cache-management)
+
 ```python
+# 本地csv文件
 from datasets import load_dataset
 dataset = load_dataset('csv', data_files={'train': 'a.csv', 'test': 'b.csv'})
 ```
@@ -298,3 +314,82 @@ Dataset csv downloaded and prepared to /home/buxian/.cache/huggingface/datasets/
 备注：
 
 - 输出结果里：Downloading and preparing dataset及以下的内容的逻辑发生在`datasets.builder:DatasetBuilder.download_and_prepare`函数内
+
+**缓存数据文件手动读取**
+```python
+import pyarrow as pa
+
+# 找到缓存的.arrow文件位置
+filename = "/home/buxian/.cache/huggingface/datasets/custom_squad/plain_text/1.0.0c6c7330bf7fd4d7dc964ac79c0c71bfac098436da8f0c7c19e62999b3e8cb8f3/custom_squad-train.arrow"
+
+memory_mapped_stream = pa.memory_map(filename)
+opened_stream = pa.ipc.open_stream(memory_mapped_stream)
+# pyarrow.Table
+pa_table = opened_stream.read_all()
+```
+
+## 缓存目录
+
+huggingface所有项目的默认缓存目录为`~/.cache/huggingface`
+
+```
+datasets/  # 用于缓存跟huggingface datasets模块的东西
+  - csv/
+  - custom_squad/
+  - ...
+hub/  # 缓存一些跟huggingface hub相关的东西?
+  - models--ConvLab--t5-small-nlg-multiwoz21/
+metrics/  # 缓存一些指标计算所必要的文件
+  - glue/
+    - mrpc/
+modules/
+  - __init__.py
+  - datasets_modules
+    - datasets  # load_dataset时所需的脚本
+      - __init__.py
+      - custom_squad/  # 不同版本的预处理文件(hash值由脚本文件内容计算得出)
+        - 397916d1ae99584877e0fb4f5b8b6f01e66fcbbeff4d178afb30c933a8d0d93a/
+          - README.md
+          - __init__.py
+          - custom_squad.json
+          - custom_squad.py
+        - 9daa4a09a366f6e69f7b3ba326b95b5f773487c094c7df0c1b9715aaf1b8b19b/
+          - README.md
+          - __init__.py
+          - custom_squad.json
+          - custom_squad.py
+    - metrics/
+      - glue/  # 此处的脚本也是下载缓存下来的(datasets.load_metric('glue', 'mrpc'))
+        - 91f3cfc5498873918ecf119dbf806fb10815786c84f41b85a5d3c47c1519b343/
+          - __init__.py
+          - glue.json
+          - glue.py
+```
+
+仅就 `datasets` 模块而言, 缓存的实际内容为【某个数据集使用特定的预处理脚本处理后最终得到的数据文件】，而这些【数据文件】默认以 `.arrow` 的方式进行缓存。
+
+根据需求不同，对 `datasets.load_dataset` 的参数有不同的设定
+
+|原始文件位置|预处理方法|做法|传参|
+|-----------|---------|----|----|
+|本地|json/csv格式默认的读取方式|无|`path='csv', data_files='a.csv'`|
+|本地|自定义|编写预处理脚本得到datasets.arrow_dataset.Dataset|`path='/path/to/script.py'`|
+|Huggingface Hub的datasets中|Hub仓库中的下载以及预处理方式|无|`path='username/dataname'`|
+|Huggingface Hub的datasets中|自定义预处理方式|编写预处理脚本得到datasets.arrow_dataset.Dataset：方式一、参考Hub仓库中的默认预处理方式,自己编写预处理脚本，这种方法编写的脚本里应包含下载数据的过程；方式二、如有网络问题也可以预先将原始数据下载下来后再针对本地文件编写预处理脚本|`path='/path/to/script.py'`|
+
+# tokenizers 包
+
+`tokenizers` 包在安装 `transformers` 包时会自动进行安装，在 `transformers` 包中如何被使用需要进一步研究。
+
+# huggingface-hub 包
+
+`huggingface-hub` 包在安装 `transformers`、`datasets` 包时会自动进行安装。
+
+# accelerate 包
+
+`accelerate` 在安装 `transformers` 包时不会进行安装
+
+# 依赖的一些其他三方库学习
+
+- [filelock](https://pypi.org/project/filelock/): 文件锁?安全读写文件时有用?
+- [pyarrow](https://arrow.apache.org/docs/python/): `datasets` 底层依赖的存储方式
