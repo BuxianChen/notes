@@ -966,7 +966,7 @@ ctypes的代码运行效率不如cython
 
 参考博客: [Python - using C and C++ libraries with ctypes \| Solarian Programmer](https://solarianprogrammer.com/2019/07/18/python-using-c-cpp-libraries-ctypes/)
 
-以下仅为tutorial\(可能理解不准确\)
+以下仅为tutorial(可能理解不准确)
 
 #### 2.1 调用动态链接库
 
@@ -974,6 +974,7 @@ ctypes的代码运行效率不如cython
 
 ```c
 // adder.c, 将其编译为adder.so
+// gcc -shared -o adder.so -fPIC adder.c
 int add_int(int num1, int num2){return num1 + num2;}
 float add_float(float num1, float num2){return num1 + num2;}
 ```
@@ -993,13 +994,13 @@ res = add_float(c_a, c_b)
 print("Sum of 5.5 and 4.1 = ", str(res))
 ```
 
-解释: 由于python与c两种语言在数据结构上有着明显的不同, 因此利用ctypes调用C代码时需要进行相应的类型转换: 以上述的`add_float`为例, python中浮点数都是双精度的\(不妨记为`Python-double`\). 而`adder.c`函数参数都是单精度的, 不妨记为`C-float`, 可以将调用过程细化为几步
+解释: 由于python与c两种语言在数据结构上有着明显的不同, 因此利用ctypes调用C代码时需要进行相应的类型转换: 以上述的`add_float`为例, python中浮点数都是双精度的(不妨记为`Python-double`). 而`adder.c`函数参数都是单精度的, 不妨记为`C-float`, 可以将调用过程细化为几步
 
-* python数据类型转换为c数据类型: `p_a` -&gt; `c_a`, `p_b`-&gt;`c_b`
+* python数据类型转换为c数据类型: `p_a` -> `c_a`, `p_b`-> `c_b`
 * c代码调用并返回
 * python将c代码返回的结果转换为python类型
 
-为了使用`add_float(1.0, 2.0)`这种形式进行调用, 必须将`1.0`转换为适应`c`的数据形式\(`add_float.argtypes`\), 对于返回值, 同样道理, 也应指定返回时`c->python`的转换\(`add_float.restype`\)
+为了使用`add_float(1.0, 2.0)`这种形式进行调用, 必须将`1.0`转换为适应`c`的数据形式(`add_float.argtypes`), 对于返回值, 同样道理, 也应指定返回时`c->python`的转换(`add_float.restype`)
 
 ```python
 add_float = adder.add_float
@@ -1062,9 +1063,9 @@ for i in ia:
 
 #### 3.1 python类型与c类型的转换
 
-None, int, bytes, \(unicode\) strings是python中能直接作为C函数参数的数据类型, 其中None代表C中的空指针, bytes与strings作为`char *`与`wchar_t *`的指针, int作为C中的`int`类型, 但注意过大的数字传入C时会被截断. 也就是说上面的`restype`与`argtypes`可以不指定仅限于上述几种数据类型.
+None, int, bytes, (unicode) strings是python中能直接作为C函数参数的数据类型, 其中None代表C中的空指针, bytes与strings作为`char *`与`wchar_t *`的指针, int作为C中的`int`类型, 但注意过大的数字传入C时会被截断. 也就是说上面的`restype`与`argtypes`可以不指定仅限于上述几种数据类型.
 
-> `None`, integers, bytes objects and \(unicode\) strings are the only native Python objects that can directly be used as parameters in these function calls. `None` is passed as a C `NULL` pointer, bytes objects and strings are passed as pointer to the memory block that contains their data \(`char *` or `wchar_t *`\). Python integers are passed as the platforms default C `int` type, their value is masked to fit into the C type.
+> `None`, integers, bytes objects and (unicode) strings are the only native Python objects that can directly be used as parameters in these function calls. `None` is passed as a C `NULL` pointer, bytes objects and strings are passed as pointer to the memory block that contains their data (`char *` or `wchar_t *`). Python integers are passed as the platforms default C `int` type, their value is masked to fit into the C type.
 
 ```python
 from ctypes import *
@@ -1120,55 +1121,6 @@ An int 1234, a double 3.140000
 >>> # 可能C语言中%f只是用来输出双精度浮点数的?
 ```
 
-### 4. numpy的C接口
-
-### 5. 关于ctypes的一个提问
-
-Should the argtypes always be specific via ctypes
-
-I want to know the mechanism of `ctypes`, I have written a simple function to do this test. The `C` source code is,
-
-```c
-// adder.c, compile it using `gcc -shared -fPIC clib.c -o clib.so`
-float float_add(float a, float b) {return a + b;}
-```
-
-the `Python` source code is,
-
-```python
-import ctypes
-from ctypes import c_float
-dll_file = "adder.so"
-clib = ctypes.CDLL(dll_file)
-clib.float_add.argtypes = [c_float, c_float]
-clib.float_add.restype = c_float
-print(clib.float_add(1., 2.))  # ok, result is 3.0
-```
-
-I guess that because of the differences of `Python` and `C`, so the data type should be convert correctly. Concretely, when I specific the `clib.float_add.argtypes`, the process of `clib.float_add(1., 2.)` is, firstly, convert `1.` to `c_float(1.)` and convert `2.` to `c_float(2.)`, which are "C compatible", and the doing computation in `C` side, then the result data of `C` side convert to `Python` data according to the `clib.float_add.restype`. Is it right?
-
-So, if I don't specific the `clib.float_add.argtypes` and always do `Python data -> C data` manually like that, is it always right? But should I always specific the `clib.float_add.restype`?
-
-```python
-# clib.float_add.argtypes = [c_float, c_float]
-clib.float_add.restype = c_float
-print(clib.float_add(c_float(1.), c_float(2.)))  # ok, result is 3.0
-```
-
-,,,
-
-Besides that, another thing confused me, the `restype`, I have written another `Python` test code
-
-```python
-import ctypes
-from ctypes import c_float
-dll_file = "clib.dll"
-clib = ctypes.CDLL(dll_file)
-clib.float_add.argtypes = [c_float, c_float]
-print(clib.float_add(1., 2.))  # returns
-```
-
-Here, I don't specific the `restype`, I know the default is `int`, when I don't specific that, I can't use `IEEE 754` float representation to explain the result. Is it implement dependent?
 
 ## inspect
 
