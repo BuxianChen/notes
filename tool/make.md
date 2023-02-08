@@ -45,6 +45,19 @@ gcc -I cheader -o Demo -Lcheader -l MathFunctions main.cc
   nm -D cheader/libMathFunctions.so
   ```
 
+## 编译步骤、动态链接库与静态链接库
+
+编译步骤拆解为：
+- 编译预处理（pre-processing）：将 `#include` 处理好，宏展开等。使用 `-E` 指定，生成文件后缀名习惯用 `.i`。
+- 编译（compiling）：转换为汇编代码。使用 `-S` 指定，生成文件后缀名习惯用 `.s`。
+- 汇编（assembling）：将汇编代码转换为目标文件。使用 `-c` 指定，生成文件后缀名习惯用 `.o`。
+- 链接（linking）：将目标文件进行链接，最终生成可执行文件
+  - 可以把多个目标文件打包为一个作为函数库，这一过程可以借助 `ar` 命令来完成。函数库分为动态链接库与静态链接库
+
+参考资料：
+
+- 不确定好坏的资料：https://tldp.org/HOWTO/Program-Library-HOWTO/index.html
+
 
 # Make
 
