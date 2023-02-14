@@ -286,6 +286,44 @@ trainer.predict()
 关于 `transformers.Trainer`：
 - `Trainer.__init__`函数中也允许传入一些`callback`, 与`pytorch-lightning`类似, 但`hook`会更少一些
 
+**关于 HfArgumentParser 的一个小示例**
+
+```python
+from transformers import HfArgumentParser, TrainingArguments
+from dataclasses import dataclass, field
+from typing import Optional
+from argparse import ArgumentParser
+import sys
+import yaml
+
+@dataclass
+class DataTrainingArguments:
+    lang: str = field(default=None, metadata={"help": "xxx"})
+    dataset_name: Optional[str] = field(default=None, metadata={"help": "yyy"})
+
+@dataclass
+class ModelArguments:
+    path: str = field(metadata={"help": "zzz"})
+
+# 目的是可以用 --yaml a.yaml --path a.txt --lang en 进行传参,
+# 且--yaml参数解析的字段会被其他的字段例如: path, lang 覆盖.
+
+# 直接使用 parse_args_into_dataclasses 或 parse_yaml_file 无法处理这种特殊情况
+# --yaml a.yaml --path a.txt (假定 a.yaml 中没有指定 path)
+parser = ArgumentParser()
+parser.add_argument("-y", "--yaml", type=str, required=False)
+args, others = parser.parse_known_args(sys.argv[1:])
+if args.yaml:
+    with open(args.yaml) as fr:
+        d = yaml.safe_load(fr)
+else:
+    d = {}
+others = [x for k, v in d.items() for x in ["--"+k, str(v)]] + others
+parser = HfArgumentParser((DataTrainingArguments, ModelArguments, TrainingArguments))
+data_args, model_args, train_args = parser.parse_args_into_dataclasses(others)
+print(data_args, model_args, train_args)
+```
+
 # datasets
 
 
