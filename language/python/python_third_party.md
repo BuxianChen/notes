@@ -501,6 +501,43 @@ value = redis_service.get(key)
 redis_service.delete(key)
 ```
 
+## pytest
+
+经过阅读多篇相关的博客, 总结如下, python 包的项目组织形式严格按照如下方式进行
+```
+- src
+  - package_name
+    - submodule1/  # 全部加上__init__.py
+      - module_a/
+        - __init__.py
+        - some.py
+      somename.py
+      - __init__.py
+- tests/
+  - __init__.py
+  - test_a/
+    - test_1.py
+    - __init__.py
+  - test_b/
+    - test_2.py
+    - __init__.py
+  test_c.py
+# setup.py  # 尽量不写setup.py, 完全由pyproject.toml配置
+# setup.cfg
+pyproject.toml
+```
+
+备注: 很多项目其实未必采用了“正确”的方式组织代码，“正确”的含义也会随着时间的推移而改变
+
+使用 `pip install -e .` 或 `pip install .` 时，`pip` 会去寻找 `setup.py` 或 `pyproject.toml`，后者优先级更高。参考[博客](https://godatadriven.com/blog/a-practical-guide-to-setuptools-and-pyproject-toml/)，可能的组合方式应该有几种：
+
+`setup.py` + `setup.cfg`: 应该是旧的使用习惯, 很多开源库采用的方式
+`pyproject.toml` + `setup.cfg`: 分别配置打包设置与包的基本信息
+`pyproject.toml`: 目前最推荐
+
+许多资料建议用 `src`: [pytest](https://docs.pytest.org/en/7.2.x/explanation/goodpractices.html), [博客](https://blog.ionelmc.ro/2014/05/25/python-packaging/#the-structure%3E)
+
+
 ## 代码片段
 
 ```python
@@ -547,4 +584,12 @@ df[["E", "F"]] = df["A"].apply(lambda x: pd.Series((x, x)))
 ```python
 # 用两个列表创建字典的较快方式(似乎快于字典推导式)
 x = dict(zip(key, value))
+```
+
+**打印带颜色的文本**
+
+```python
+# [0;31m 红色 [0;32m 绿色 [0;33m 黄色
+s = "红色"
+s = "\033[0;31m" + s + "\033[0m"
 ```

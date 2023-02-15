@@ -133,3 +133,32 @@ Python自带的数据库：sqlite3
 - Swin Transformer
 - HMM 语音识别模型（含 EM 算法）
 - MFCC 具体解释
+
+
+## Link
+
+cmake:
+  - [官方tutorial](https://cmake.org/cmake/help/latest/guide/tutorial/index.html)
+  - [上海交通大学视频](https://www.bilibili.com/video/BV14h41187FZ/)
+  - [LLVM对CMake的介绍](https://llvm.org/docs/CMakePrimer.html#ft-view)
+  - [pybind对已经用CMake方式组织的项目怎么集成](https://github.com/pybind/cmake_example)
+  - [GitHub星数超过10k的cmake-examples](https://github.com/ttroy50/cmake-examples)
+
+python 打包相关:
+  - [python官方tutorial](https://packaging.python.org/en/latest/tutorials/packaging-projects/)
+    - 包含了一些关于上传至 PyPI 和 Test PyPI 的知识, 示例使用的是 `src` 结构与 `pyproject.toml` 的方式组织代码结构
+  - [pytest文档里推荐的python项目组织形式](https://docs.pytest.org/en/7.2.x/explanation/goodpractices.html)
+    - 打包配置文件: `pytest.ini`, `pyproject.toml`, `tox.ini`, `setup.cfg`(不推荐)
+  - [python包的组织形式: src layout vs flatlayout](https://packaging.python.org/en/latest/discussions/src-layout-vs-flat-layout/)
+    - 结论: 如果希望作为python包来写, 推荐使用 src layout
+
+python 协程相关:
+  - [realpython文章](https://realpython.com/async-io-python/): 未消化
+  - [解释协程与生成器关系的一篇博客](https://snarky.ca/how-the-heck-does-async-await-work-in-python-3-5/): 
+  
+pytest:
+  - [import mode](https://docs.pytest.org/en/7.2.x/explanation/pythonpath.html#import-modes)
+  - [关于项目源码与测试代码的组织形式](https://docs.pytest.org/en/7.2.x/explanation/goodpractices.html)
+    - **项目源码推荐用 src layout, 测试代码推荐独立于项目源码, pytest 的 import mode 推荐 importlib(存疑, 似乎导致各个test脚本之间不能import), [参考博客](https://blog.ionelmc.ro/2014/05/25/python-packaging/#the-structure%3E)**
+    - [setup.py, setup.cfg and pyproject.toml](https://ianhopkinson.org.uk/2022/02/understanding-setup-py-setup-cfg-and-pyproject-toml-in-python/)
+  - 关于 setup.py, setup.cfg and pyproject.toml 以及 pytest 搭配用的实际例子可以参考 [transformers](https://github.com/huggingface/transformers) 代码库学习
