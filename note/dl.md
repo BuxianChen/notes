@@ -218,9 +218,49 @@ bg %1  # 将任务1放到后台继续执行
 kill -SIGCONT 
 ```
 
-
-
 ## 可视化
+
+### tensorboard
+
+参考资料：[Pytorch tutorial](https://pytorch.org/tutorials/intermediate/tensorboard_tutorial.html)、[Pytorch API](https://pytorch.org/docs/stable/tensorboard.html)
+
+训练时将数据写入
+```python
+writer = SummaryWriter()
+for epoch in range(4):
+    for batch_idx in range(10)
+        global_idx = 10 * epoch + batch_idx
+        writer.add_scalar("Loss/train", loss: float, global_idx)  # 画出曲线图
+        writer.add_image('a/ori_image', ori_image, global_idx)  # ori_image: (3, H, W) tensor
+        writer.add_image('a/trans_image', trans_image, global_idx)  # trans_image: (3, H, W) tensor
+        # 还可以写入Figure
+        # writer.add_figure("matplotlib_figure", figure, global_idx)
+        # 还可以对数据投影可视化
+        # features: (N, C) tensor, class_labels: List[str], 长度为 N, label_img: (N, 3, H, W)
+        # writer.add_embedding(features, metadata=class_labels, label_img=images)
+        
+        # add_video, add_audio, add_text
+        # add_graph: 可视化模型(计算图)
+
+        # add_pr_curve, add_hist: 添加PR曲线等(其实基本也可以用add_figure代替)
+        # add_hparams: 这个不确定, 用于对比不同参数下实验结果?
+    writer.flush()  # 将数据保存, 但不关闭
+writer.close()  # 将数据保存
+```
+
+训练结束后怎么从tensorborad保存的数据中读取？
+
+参考[stackoverflow问答](https://stackoverflow.com/questions/37304461/tensorflow-importing-data-from-a-tensorboard-tfevent-file)
+
+```python
+from tensorboard.backend.event_processing.event_accumulator import EventAccumulator
+event_acc = EventAccumulator("event_file")
+event_acc.Reload()
+print(event_acc.Tags())
+
+for e in event_acc.Scalars('Loss/train'):
+    print(e.step, e.value)
+```
 
 ## 有效利用GPU
 
