@@ -504,6 +504,8 @@ redis_service.delete(key)
 ## pytest
 
 经过阅读多篇相关的博客, 总结如下, python 包的项目组织形式严格按照如下方式进行
+
+备注: 很多项目其实未必采用了“正确”的方式组织代码，“正确”的含义也会随着时间的推移而改变
 ```
 - src
   - package_name
@@ -522,20 +524,49 @@ redis_service.delete(key)
     - test_2.py
     - __init__.py
   test_c.py
-# setup.py  # 尽量不写setup.py, 完全由pyproject.toml配置
-# setup.cfg
+setup.py  # 尽量不写setup.py, 完全由pyproject.toml配置
+setup.cfg
 pyproject.toml
 ```
 
-备注: 很多项目其实未必采用了“正确”的方式组织代码，“正确”的含义也会随着时间的推移而改变
+**关于安装**
 
-使用 `pip install -e .` 或 `pip install .` 时，`pip` 会去寻找 `setup.py` 或 `pyproject.toml`，后者优先级更高。参考[博客](https://godatadriven.com/blog/a-practical-guide-to-setuptools-and-pyproject-toml/)，可能的组合方式应该有几种：
+关于 `pyproject.toml` 与 `setup.py` 与 `setup.cfg`：这三个文件与 `pip install -e .` 或 `pip install` 的行为相关。
 
-`setup.py` + `setup.cfg`: 应该是旧的使用习惯, 很多开源库采用的方式
-`pyproject.toml` + `setup.cfg`: 分别配置打包设置与包的基本信息
-`pyproject.toml`: 目前最推荐
+- `pyproject.toml`：可以配置打包工具，也可以配置包的一些基本信息。
+  - 当打包工具项配置为 `setuptools.build_meta` 时，那么 `pip` 会去按照 `setup.py` 的逻辑去执行安装命令，`pyproject.toml` 和 `setup.cfg` 的其余配置项也会被自动用于 `setup.py` 的执行逻辑里
+  - 当打包工具配置为其他选项例如：`hatchling.build` 时，那么 `pip` 会忽略 `setup.py`，而按照 `pyproject.toml` 和 `setup.cfg` 的其余配置项执行安装命令。
+- `setup.py` 与 `pyproject.toml` 同时存在时，执行 `pip install .` 命令时会按照 `pyproject.toml` 来执行。当然，执行 `python setup.py install` 安装时则忽略 `pyproject.toml`。但一般情况下，推荐使用 `pip install .` 而非 `python setup.py install`。
 
-许多资料建议用 `src`: [pytest](https://docs.pytest.org/en/7.2.x/explanation/goodpractices.html), [博客](https://blog.ionelmc.ro/2014/05/25/python-packaging/#the-structure%3E)
+**关于测试**
+
+关于 `__import__`、`import`、`importlib.import_module`：[stackoverflow问答](https://stackoverflow.com/questions/28231738/import-vs-import-vs-importlib-import-module)
+
+`import` 实际上最终是调用了 `__import__`，而 `__import__` 在底层是直接使用了 C 代码来实现。`importlib.import_module` 本质上的行为跟 `__import__` 比较类似，只是实现方式上是使用纯 Python 来实现的。具体解释如下：
+
+```
+tests
+  - __init__.py
+  - test_a/
+    - __init__.py
+    - test_b.py
+```
+
+- `import tests.test_a.test_b`：`sys.modules` 增加 `tests`、`tests.test_a`、`tests.test_a.test_b` 这几个模块，当前文件可以使用 `tests.test_a.test_b` 这个命名空间，即可以使用 `tests.test_a.test_b.xx`。
+- `mod = importlib.import_module("tests.test_a.test_b")`：`sys.modules` 增加 `tests`、`tests.test_a`、`tests.test_a.b` 这几个模块，当前文件可以使用 `mod` 这个命名空间，即可以使用 `mod.xx`。
+- 在进行了上面两种方式之一进行导入后，可以直接使用 `sys.modules` 获取 `tests.test_a`：
+    ```
+    test_a_mod = sys.modules['tests.test_a']
+    print(test_a_mod.xxx)
+    ```
+
+pytest 在处理 import 的问题时, 支持了三种方式 `prepend`, `append` 与 `importlib`。但每种方式都有各自的缺点。目前的最佳实践是：
+
+- **包放在 `src` 目录下**，所有的模块各个目录应显式地添加 `__init__.py`。放入 `src` 目录最主要的目的是使得本地开发环境与 release 到 PyPI 后别人使用 `pip install` 的方式安装的环境相同。
+- **测试代码完全按包的形式组织**，即各个目录显式地添加 `__init__.py`，独立于包之外，即与 `src` 目录同级方式 `tests` 文件夹。
+- **测试的目的是包在安装之后的行为是否正常**，测试前应该以 `pip install -e .` 或 `pip install .` 的方式将包安装。这也是包要放在 `src` 目录下的原因，即保证不会意外导入当前路径下的代码（很多情况下，`sys.path` 变量会把当前路径添加至模块搜索路径，这样子可能会意外导入）。
+- **以默认的 `prepend` 作为 pytest 的导入方式**。注意：按照 pytest 内部的逻辑，使用 `prepend` 作为导入方式，不可避免地会修改 `sys.path`，但测试代码完全按包的形式组织，已经可以尽可能小的避免了 `sys.path` 的修改，但好处是 `tests` 目录下的各个文件之间可以相互 import。import 的方式应为 `import tests.xx.yy`。然而使用 `importlib` 作为导入方式，测试文件之间无法进行相互 import，这是一个重要的缺点。
+- **执行 `pytest` 命令**（即不要以 `python -m pytest`的方式启动）：使用 `python -m pytest` 会将当前目录添加至 `sys.path` 目录，因此要避免使用。
 
 
 ## 代码片段
