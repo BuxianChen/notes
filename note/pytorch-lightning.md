@@ -206,7 +206,7 @@ def training_step(self, batch, batch_idx):
     self.local_rank
 ```
 
-#### fit 函数伪代码( hook 编程)
+#### fit 函数伪代码(hook 编程)
 
 从Lightning的实现上
 
@@ -530,6 +530,14 @@ trainer = Trainer(max_epochs=4, gpus=2, enable_checkpointing=False)
 
 **方式4(不确定): 继承ModelCheckpoint**
 
+#### 怎样控制 log 打印（未解决）
+
+包含以下几个部分：
+
+- `LightningModule.training_step` 的返回值在 `LightningModule.on_epoch_end` 中保存的具体逻辑是？
+- 如何控制 Tensorboard 的打印内容与打印时机
+- 如何分别控制打印到控制台/保存到日志文件/输出到 Tensorboard 的信息
+
 ### pytorch_lightning.Trainer
 
 ```
@@ -537,6 +545,7 @@ trainer = Trainer()
 trainer.fit(model)
 ```
 
+备注：相比于 huggingface transformers 中的 `Trainer` 类，官方文档中鼓励对其使用继承的方法重写一些方法。pytorch-lightning 中的推荐做法是直接使用 `Trainer`，而对 `LightningModule` 进行继承以及方法重写。
 
 ### pytorch_lightning.LightningDataModule
 

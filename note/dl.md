@@ -262,6 +262,10 @@ for e in event_acc.Scalars('Loss/train'):
     print(e.step, e.value)
 ```
 
+### wandb（待研究）
+
+据说这个工具相比 Tensorboard 更有优势，[参考视频](https://www.bilibili.com/video/BV17A41167WX/?spm_id_from=333.337.search-card.all.click)
+
 ## 有效利用GPU
 
 ## 小工具
