@@ -324,6 +324,180 @@ data_args, model_args, train_args = parser.parse_args_into_dataclasses(others)
 print(data_args, model_args, train_args)
 ```
 
+
+Trainer的扩展方式有两种:
+- 增加Callback,但作用有限,按官方的说法callback不影响训练流程
+- 集成Trainer类,重写一些方式例如:`compute_loss`
+
+## `TrainerControl`, `TrainerState`, `CallbackHandler`, `TrainerCallback`
+
+`Trainer` 中包含：
+- `TrainerControl`: 一些是否需要保存,是否需要记录日志的标志
+- `TrainerState`: 记录当前的训练轮数等,注意log_history是历史的日志记录列表
+- `CallbackHandler`: for循环各个callback进行调用
+
+```python
+@dataclass
+class TrainerControl:
+    should_training_stop: bool = False
+    should_epoch_stop: bool = False
+    should_save: bool = False
+    should_evaluate: bool = False
+    should_log: bool = False
+    # 一些小方法用于设定上面这些参数
+
+@dataclass
+class TrainerState:
+    epoch: Optional[float] = None
+    global_step: int = 0
+    max_steps: int = 0
+    num_train_epochs: int = 0
+    log_history: List[Dict[str, float]] = None
+    # 一些小方法及其他参数略
+
+class CallbackHandler:
+    # __init__函数包含 callbacks,model,tokenizer,optimizer,lr_scheduler等
+    # 主要函数为
+    # 例子, 还有许多 on_xxx 的 hook 方法
+    def on_log(self, args: TrainingArguments, state: TrainerState, control: TrainerControl, logs):
+        control.should_log = False
+        return self.call_event("on_log", args, state, control, logs=logs)
+    def call_event(self, event, args, state, control, **kwargs):
+        for callback in self.callbacks:
+            result = getattr(callback, event)(
+                args,
+                state,
+                control,
+                model=self.model,
+                tokenizer=self.tokenizer,
+                optimizer=self.optimizer,
+                lr_scheduler=self.lr_scheduler,
+                train_dataloader=self.train_dataloader,
+                eval_dataloader=self.eval_dataloader,
+                **kwargs,
+            )
+            # A Callback can skip the return of `control` if it doesn't change it.
+            if result is not None:
+                control = result
+        return control  
+```
+
+总的来说, huggingface transformers 库的 Trainer 写得不是太好, 不利于扩展，但怎么结合 `pytorch-lightning` 使用 huggingface transformers 库的模型: [lightning-transformers](https://lightning-transformers.readthedocs.io/en/latest/)
+
+## 如何增加 Tensorboard 的打印信息
+
+首先看一下 `TensorBoardCallback` 的实现
+```python
+class TensorBoardCallback(TrainerCallback):
+    def on_train_begin(...): ...
+    def on_train_end(...): ...
+    # 只摘录代码核心部分
+    def on_log(self, args, state, control, logs=None, **kwargs):
+        # rewrite_logs 会对 key 进行转换:
+        # "train_loss" -> "train/train_loss"
+        # "others" -> "train/others"
+        # "eval_xxx" -> "eval/xxx"
+        # "test_yyy" -> "test/yyy"
+        logs = rewrite_logs(logs)
+        for k, v in logs.items():
+            self.tb_writer.add_scalar(k, v, state.global_step)
+```
+
+接下来看Trainer中跟 `TensorBoardCallback` 相关的代码
+```python
+class Trainer:
+    def __init__(self, ..., report_to, ...):
+        # 默认会将TensorBoardCallback加入callback中
+    
+    # 此函数仅在三处被调用, 见如下
+    def log(self, logs: Dict[str, float]) -> None:
+        # 官方建议重载此方法
+        if self.state.epoch is not None:
+            logs["epoch"] = round(self.state.epoch, 2)
+
+        output = {**logs, **{"step": self.state.global_step}}
+        self.state.log_history.append(output)
+        self.control = self.callback_handler.on_log(self.args, self.state, self.control, logs)
+
+    # 此函数仅在self.train函数中被调用
+    def _maybe_log_save_evaluate(self, tr_loss, model, trial, epoch, ignore_keys_for_eval):
+        if self.control.should_log:
+            logs["loss"] = round(tr_loss_scalar / (self.state.global_step - self._globalstep_last_logged), 4)
+            logs["learning_rate"] = self._get_learning_rate()
+            # self.log被调用的【第一处】
+            self.log(logs)
+
+        if self.control.should_evaluate:
+            metrics = self.evaluate(ignore_keys=ignore_keys_for_eval)
+    
+    # 此函数仅在self._maybe_log_save_evaluate函数中被调用
+    def evaluate(
+        self,
+        eval_dataset: Optional[Dataset] = None,
+        ignore_keys: Optional[List[str]] = None,
+        metric_key_prefix: str = "eval",
+    ) -> Dict[str, float]:
+        eval_dataloader = self.get_eval_dataloader(eval_dataset)
+        eval_loop = self.prediction_loop if self.args.use_legacy_prediction_loop else self.evaluation_loop
+        output = eval_loop(
+            eval_dataloader,
+            description="Evaluation",
+            # No point gathering the predictions if there are no metrics, otherwise we defer to
+            # self.args.prediction_loss_only
+            prediction_loss_only=True if self.compute_metrics is None else None,
+            ignore_keys=ignore_keys,
+            metric_key_prefix=metric_key_prefix,
+        )
+        output.metrics.update(
+            speed_metrics(
+                metric_key_prefix,
+                start_time,
+                num_samples=output.num_samples,
+                num_steps=math.ceil(output.num_samples / total_batch_size),
+            )
+        )
+        # self.log被调用的【第二处】
+        self.log(output.metrics)
+        return output.metrics
+    
+    # 只摘录跟log有关的部分
+    def train():
+        for epoch in range(epochs_trained, num_train_epochs):
+            for step, inputs in enumerate(epoch_iterator):
+                # 计算loss
+                if (step + 1) % args.gradient_accumulation_steps == 0 or (
+                    steps_in_epoch <= args.gradient_accumulation_steps
+                    and (step + 1) == steps_in_epoch
+                ):
+                    self.optimizer.step()
+                    self.lr_scheduler.step()
+                    model.zero_grad()
+                    self.control = self.callback_handler.on_step_end(args, self.state, self.control)
+                    # 注意: 此处有可能会产生log
+                    self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
+                else:
+                    self.control = self.callback_handler.on_substep_end(args, self.state, self.control)
+            self.control = self.callback_handler.on_epoch_end(args, self.state, self.control)
+            # 注意: 此处有可能会产生log
+            self._maybe_log_save_evaluate(tr_loss, model, trial, epoch, ignore_keys_for_eval)
+        metrics = speed_metrics("train", start_time, num_samples=num_train_samples, num_steps=self.state.max_steps)
+        self.store_flos()
+        metrics["total_flos"] = self.state.total_flos
+        metrics["train_loss"] = train_loss
+        # mertics 最终包含这几个key, 并且这几个key训练完毕后散点图上只有这一个散点
+        # "train_runtime", "train_samples_per_second", "train_steps_per_second"
+        # "total_flos", "train_loss"
+        # self.log被调用的【第三处】
+        self.log(metrics)
+```
+
+因此，自定义tensorboard的输出内容（在不自定义子类重写`self.train`方法的前提下）：
+- 每隔100个batch，输出训练集的损失：无法做到，原因是 `_maybe_log_save_evaluate` 无法传递当前batch的数据信息，因此训练集的信息很难记录在日志中
+- 每个100个batch，输出验证集的损失：可以增加一个Callback，在隔100个batch时，将`self.control.should_evaluate`设置为`True`
+- 输出验证集的其他信息，例如计算准确率，召回率等多个指标时：自定义一个 `CustomTrainer` 继承自 `Trainer`，重载 `self.evaluate` 方法，并在这个重载方法内部使用 `self.log` 方法记录到日志中
+
+终极解决方案：自定义子类重写`Trainer.train`方法，在必要的地方增加逻辑进行日志记录。但`self.train`方法的代码过于冗长（大约400行代码），基本上这种做法需要将原本的 `train` 方法抄录大部分。因此，使用 `Trainer` 不太能随心所欲地增加日志打印逻辑。
+
 # datasets
 
 
