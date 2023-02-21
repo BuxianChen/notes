@@ -219,6 +219,15 @@ def foo(name, age=18):
     return "hello" + str(n)
 ```
 
+**typing.cast**
+
+参考[博客](https://adamj.eu/tech/2021/07/06/python-type-hints-how-to-use-typing-cast/)
+
+```
+x = 1
+typing.cast(str, x)  # 运行时依旧是整数1, 但mypy检查时认为它是字符串
+```
+
 ## enum
 
 枚举类型
