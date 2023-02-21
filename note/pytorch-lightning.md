@@ -198,12 +198,14 @@ class PLModule(LightningModule)
 )
 ```
 
-#### current rank
+#### 当前 rank、step、epoch 等
 
 ```
 def training_step(self, batch, batch_idx):
     self.global_rank
     self.local_rank
+    self.current_epoch  # 当前epoch数
+    self.global_step  # 全局步数
 ```
 
 #### fit 函数伪代码(hook 编程)
@@ -537,6 +539,30 @@ trainer = Trainer(max_epochs=4, gpus=2, enable_checkpointing=False)
 - `LightningModule.training_step` 的返回值在 `LightningModule.on_epoch_end` 中保存的具体逻辑是？
 - 如何控制 Tensorboard 的打印内容与打印时机
 - 如何分别控制打印到控制台/保存到日志文件/输出到 Tensorboard 的信息
+
+
+`LightningModule` 中的 `self.log(...)` 最终调用的是 `trainer._results.log`，而这个对象最终对应的是类似于`trainer.fit_loop.epoch_loop._results`，它是`pytorch_lightning.trainer.connectors.logger_connector.result._ResultCollection` 对象。
+
+逻辑大约是`module.log`调用时，在 `_results` 中记录下信息，之后在 `TrainingEpochLoop` 的 `advance`函数中调用`self.trainer._logger_connector.update_train_step_metrics()`实际将 log 写入：具体进一步触发 `LoggerConnector` 中调用
+`self.log_metrics(self.trainer._results.metrics(not self._epoch_end_reached)['log'])`，根据是否需要写日志，再触发 TensorBoardLogger 的 `log_metrics` 函数。
+
+- `trainer` 的构造函数 `__init__` 中有一个参数 `log_every_n_steps` 用于控制 `update_train_step_metrics` 函数将数据写入 tensorboard
+- 也就是 `module.log()` 最终修改了 `trainer._results`, 然后利用这个在某个时机写入了 tensorboard
+
+备注：由于 `TensorBoardLogger` 中没有保存图像的函数，因此，如果想完全发挥它内部包含的 `torch.utils.tensorboard import SummaryWriter`。可以通过 `TensorBoardLogger.experiment`进行直接实现。
+
+例如（待验证）：
+
+```python
+import pytorch_lightning as pl
+
+# 在 LightningModule 中即刻将log写入tensorboard
+    def training_step(...):
+        for logger in self.trainer.loggers:
+            if isinstance(logger, pl.loggers.TensorBoardLogger):
+                logger.experiment.add_image('a/ori_image', ori_image, global_idx)
+```
+
 
 ### pytorch_lightning.Trainer
 
