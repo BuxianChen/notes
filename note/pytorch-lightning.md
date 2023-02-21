@@ -1680,3 +1680,35 @@ class Strategy(ABC):
         """Returns the pure LightningModule without potential wrappers."""
         return self._lightning_module
 ```
+
+# 其他补充
+
+## apply_to_collection
+
+`lightning_utilities` 中包含一些递归应用函数(具体实现可以参看源码)
+
+```python
+from lightning_utilities.core.apply_func import apply_to_collection, apply_to_collections
+data = [[1, 1.2], 2, 2.3, None]
+data2 = [[1, 3], 3., 2, None]
+# 这个函数也适用于字典和 dataclass, lambda 函数仅应用于指定的类型: int
+apply_to_collection(data, int, lambda x: x * 2, include_none=False)
+# [[2, 1.2], 4, 2.3]
+apply_to_collections(data, data2, int, lambda x, y: x+y)
+# [[2, 1.2], 5.0, 2.3, None]
+```
+
+由于 `pytorch-lightning` 很多地方将这两个函数用于 `dataclass` 上，因此补充一个示例：
+
+```python
+from dataclasses import dataclass
+@dataclass
+class A:
+    a: int
+    b: float
+    c: str
+    d: list
+x = A(a=2, b=2.3, c="str", d=[1, 2, 3.9])
+apply_to_collection(x, int, lambda x: x * 2)
+# A(a=4, b=2.3, c='str', d=[2, 4, 3.9])
+```
