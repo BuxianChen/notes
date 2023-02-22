@@ -498,6 +498,41 @@ class Trainer:
 
 终极解决方案：自定义子类重写`Trainer.train`方法，在必要的地方增加逻辑进行日志记录。但`self.train`方法的代码过于冗长（大约400行代码），基本上这种做法需要将原本的 `train` 方法抄录大部分。因此，使用 `Trainer` 不太能随心所欲地增加日志打印逻辑。
 
+## 离线使用数据集、metric、模型文件
+
+运行示例：[官方示例](https://pytorch-lightning.readthedocs.io/en/stable/notebooks/lightning_examples/text-transformers.html)
+
+此脚本使用 `transformers` 包加载模型，使用 `datasets` 加载数据集以及 metric。
+
+- 模型的离线下载：去 [huggingface](https://huggingface.co/) 搜索并下载, 并在 `from_pretrained` 函数参数替换为本地路径
+- 数据离线下载：去 [huggingface](https://huggingface.co/) 搜索并下载, 并在 `load_dataset` 函数参数替换为本地路径。
+  - 备注：在上面这个例子中，下载的是 `glue` 数据集下的 `mrpc` 数据，因此搜索下载好 `glue` 数据集后，还需要进一步根据 `data_infos.json` 与 `glue.py` 内的内容下载 `mrpc` 数据文件
+  ```text
+  glue/  # 可以在 https://huggingface.co/ 搜索并下载
+    - README.md
+    - dataset_infos.json
+    - glue.py
+  mrpc/  # 根据 dataset_infos.json 文件内容手动下载
+    - mrpc_dev_ids.tsv
+    - msr_paraphrase_test.txt
+    - msr_paraphrase_train.txt
+  ```
+  注意如果按上述方式组织文件，需要做几项修改：
+  ```text
+  # data_infos.json
+  https://dl.fbaipublicfiles.com/glue/data/mrpc_dev_ids.tsv -> ../mrpc/mrpc_dev_ids.tsv
+  https://dl.fbaipublicfiles.com/senteval/senteval_data/msr_paraphrase_train.txt -> ../mrpc/msr_paraphrase_train.txt
+  https://dl.fbaipublicfiles.com/senteval/senteval_data/msr_paraphrase_test.txt -> ../mrpc/msr_paraphrase_test.txt
+  # glue.py 将以下三行修改为
+  # _MRPC_DEV_IDS = "https://dl.fbaipublicfiles.com/glue/data/mrpc_dev_ids.tsv"
+  # _MRPC_TRAIN = "https://dl.fbaipublicfiles.com/senteval/senteval_data/msr_paraphrase_train.txt"
+  # _MRPC_TEST = "https://dl.fbaipublicfiles.com/senteval/senteval_data/msr_paraphrase_test.txt"
+  _MRPC_DEV_IDS = "../mrpc/mrpc_dev_ids.tsv"
+  _MRPC_TRAIN = "../mrpc/msr_paraphrase_train.txt"
+  _MRPC_TEST = "../mrpc/msr_paraphrase_test.txt"
+  ```
+- metric离线下载: 在有网环境下使用 `load_metric` 函数，默认缓存目录为 `~/.cache/huggingface/modules/datasets_modules/metrics/glue/91f3cfc5498873918ecf119dbf806fb10815786c84f41b85a5d3c47c1519b343`。只需要将此目录下的文件拷贝出来，在无网环境下将 `load_metric` 函数参数替换为本地路径。
+
 # datasets
 
 
