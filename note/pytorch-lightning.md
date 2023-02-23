@@ -1,5 +1,3 @@
-# Lightning
-
 参考资料：
 
 - [pytorch-lightning 101](https://www.youtube.com/playlist?list=PLaMu-SDt_RB5NUm67hU2pdE75j6KaIOv2): 视频课程, 可以用来理解概念, 共 4 小节课程, 其中第 3 小节是 pytorch-lightning 的基本用法, 第 4 小节介绍了 pytorch-lightning 的实现细节
@@ -12,15 +10,15 @@
 
 本文档主要分为两大部分。第一部分从使用 Lightning 的角度，介绍使用方法，以样例为主，尽量不涉及过多的源码。第二部分主要解释 Lightning 的源代码，有利于更好地使用。
 
-## 第一部分：`Lightning` 的使用
+# 第一部分：`Lightning` 的使用
 
 
-### 疑惑
+## 疑惑
 
 - `LightningModule` 中的 `self.log(...)` 是指什么?(猜测用于传给torchmetric, 类似于tf的Metric) 似乎最终调用的是`pytorch_lightning.trainer.connectors.logger_connector.result._ResultCollection.log()`
     - 此函数体内涉及到`lightning_utilities.core.apply_func.apply_to_collections`
 
-### Pytorch vs Lightning
+## Pytorch vs Lightning
 
 - Dataset, DataLoader: 在 Lightning 可以沿用, 或者使用 `LightningDataModule`, 多卡训练时, Dataloader 所需的 DistributedSampler 在 Lightning 中无需手动写
 - nn.Module: 在 Lightning 使用 `LightningModule`, 需要提供 `forward`, `training_step`, `configure_optimizers` 方法
@@ -31,7 +29,7 @@
 - 模型加载与保存: 最简单的用法是 Lightning 中用 `Trainer` 自动处理, 高级用法是初始化 `Trainer` 时增加 `pytorch_lightning.callbacks.ModelCheckpoint` 这个 callback, 更复杂的用法是关闭 `Trainer` 的模型保存功能(`enable_checkpointing=False`), 在 `LightningModule` 的 `training_epoch_end` 或者 `validation_epoch_end` 中检测当前的 local_rank, 只在 local_rank 为0的进程上做保存模型的工作
 - 控制台打印: 可以使用 python 本身的 `logging` 模块进行, 参考[官方文档](https://pytorch-lightning.readthedocs.io/en/stable/common/console_logs.html)
 
-### 使用模板
+## 使用模板
 
 ```python
 from pytorch_lightning import LightModule, Trainer
@@ -40,7 +38,7 @@ trainer = Trainer(...)  # max_steps, min_steps 等参数
 trainer.fit(model, train_dataloaders=None, val_dataloaders=None, datamodule=None,ckpt_path=None)
 ```
 
-### pytorch_lightning.LightningModule
+## pytorch_lightning.LightningModule
 
 代码参考自: [pytorch-lightning with huggingface transfomers](https://pytorch-lightning.readthedocs.io/en/stable/notebooks/lightning_examples/text-transformers.html)
 
@@ -140,7 +138,7 @@ class GLUETransformer(LightningModule):
         return [optimizer], [scheduler]
 ```
 
-#### inference without pytorch-lightning package
+### inference without pytorch-lightning package
 
 为了更好地模块化, 建议采用如下方式组织代码
 
@@ -162,7 +160,7 @@ class PLModule(LightningModule)
         ...
 ```
 
-#### 控制backward的逻辑
+### 控制backward的逻辑
 
 更多详细内容参考[官方文档](https://pytorch-lightning.readthedocs.io/en/stable/common/optimization.html)
 
@@ -174,7 +172,7 @@ class PLModule(LightningModule)
     - 使用 `self.manual_backward(loss)` 而不要使用 `loss.backward()`
     - 使用 `optimizer.step()`
 
-#### 多个optimizer与scheduler
+### 多个optimizer与scheduler
 
 建议 `configure_optimizers` 函数按如下方式返回
 ```python
@@ -198,7 +196,7 @@ class PLModule(LightningModule)
 )
 ```
 
-#### 当前 rank、step、epoch 等
+### 当前 rank、step、epoch 等
 
 ```
 def training_step(self, batch, batch_idx):
@@ -208,7 +206,7 @@ def training_step(self, batch, batch_idx):
     self.global_step  # 全局步数
 ```
 
-#### fit 函数伪代码(hook 编程)
+### fit 函数伪代码(hook 编程)
 
 从Lightning的实现上
 
@@ -357,7 +355,7 @@ def val_loop():
 ```
 
 
-#### training_step 出入参
+### training_step 出入参
 
 - 入参: 由以下这些 hook 最后的输出得到
     ```python
@@ -453,7 +451,7 @@ class ClosureResult(OutputResult):
 
 
 
-#### `training_step`, `validation_step`, `test_step`, `predict_step`
+### `training_step`, `validation_step`, `test_step`, `predict_step`
 
 - training_step: 训练过程, batch中应包含x与y, 被trainer.fit调用
 - validation_step: 验证过程, batch中应包含x与y, 通常的每个epoch结束后被trainer.fit调用
@@ -474,7 +472,7 @@ def predict_step(batch, batch_idx, dataloader_id):
     # 返回是Any
 ```
 
-#### save checkpoint advanced
+### save checkpoint advanced
 
 
 **方式1**
@@ -532,7 +530,7 @@ trainer = Trainer(max_epochs=4, gpus=2, enable_checkpointing=False)
 
 **方式4(不确定): 继承ModelCheckpoint**
 
-#### 怎样控制 log 打印（未解决）
+### 怎样控制 log 打印（未解决）
 
 包含以下几个部分：
 
@@ -564,7 +562,7 @@ import pytorch_lightning as pl
 ```
 
 
-### pytorch_lightning.Trainer
+## pytorch_lightning.Trainer
 
 ```
 trainer = Trainer()
@@ -573,7 +571,7 @@ trainer.fit(model)
 
 备注：相比于 huggingface transformers 中的 `Trainer` 类，官方文档中鼓励对其使用继承的方法重写一些方法。pytorch-lightning 中的推荐做法是直接使用 `Trainer`，而对 `LightningModule` 进行继承以及方法重写。
 
-### pytorch_lightning.LightningDataModule
+## pytorch_lightning.LightningDataModule
 
 ```python
 import torch
@@ -626,7 +624,7 @@ class MyDataModule(LightningDataModule):
 
 
 
-## 第二部分：`Lightning` 源码阅读
+# 第二部分：`Lightning` 源码阅读
 
 OpenMMLab对pytorch-lightning也有一篇源码解读文章: https://zhuanlan.zhihu.com/p/389271556
 
@@ -639,9 +637,9 @@ trainer = Trainer(...)  # max_steps, min_steps 等参数
 trainer.fit(model, train_dataloaders=None, val_dataloaders=None, datamodule=None,ckpt_path=None)
 ```
 
-### `LightningModule`
+## `LightningModule`
 
-#### 父类
+### 父类
 
 源码中关于 `LightningModule` 类的定义继承自了多个父类, 特别注意它也继承自`torch.nn.Module`。因此需要先对几个父类的代码做个了解
 
@@ -688,7 +686,7 @@ print(model.hparams)  # pytorch_lightning.utilities.parsing.AttributeDict
 </details>
 
 
-### `Trainer.__init__`
+## `Trainer.__init__`
 
 `Trainer` 类没有父类, 直接继承自 `object`.
 
@@ -1502,7 +1500,7 @@ Tuner的主要作用是自动尝试学习率与显存大小, 在`Trainer.__init_
 </details>
 
 
-### `Trainer.fit`
+## `Trainer.fit`
 
 
 **完整**源代码如下：
