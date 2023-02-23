@@ -650,6 +650,19 @@ modules/
 |Huggingface Hub的datasets中|Hub仓库中的下载以及预处理方式|无|`path='username/dataname'`|
 |Huggingface Hub的datasets中|自定义预处理方式|编写预处理脚本得到datasets.arrow_dataset.Dataset：方式一、参考Hub仓库中的默认预处理方式,自己编写预处理脚本，这种方法编写的脚本里应包含下载数据的过程；方式二、如有网络问题也可以预先将原始数据下载下来后再针对本地文件编写预处理脚本|`path='/path/to/script.py'`|
 
+## `Dataset` 变换
+
+具体使用参考[官方文档](https://huggingface.co/docs/datasets/process)
+
+- `map`: 对每条数据进行变换
+- `filter`、`select`: 挑选数据
+
+```python
+from datasets import load_dataset
+dataset = load_dataset("glue", "mrpc")
+dataset.select(range(128))  # 将数据集缩小
+```
+
 # tokenizers 包
 
 `tokenizers` 包在安装 `transformers` 包时会自动进行安装，在 `transformers` 包中如何被使用需要进一步研究。
@@ -661,6 +674,10 @@ modules/
 # accelerate 包
 
 `accelerate` 在安装 `transformers` 包时不会进行安装
+
+# 结合 pytorch-lightning 使用 transformers 训练
+
+(源码)[./lightning-src/pl_transformers.py]
 
 # 依赖的一些其他三方库学习
 
