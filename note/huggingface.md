@@ -329,7 +329,7 @@ Trainer的扩展方式有两种:
 - 增加Callback,但作用有限,按官方的说法callback不影响训练流程
 - 集成Trainer类,重写一些方式例如:`compute_loss`
 
-## `TrainerControl`, `TrainerState`, `CallbackHandler`, `TrainerCallback`
+### `TrainerControl`, `TrainerState`, `CallbackHandler`, `TrainerCallback`
 
 `Trainer` 中包含：
 - `TrainerControl`: 一些是否需要保存,是否需要记录日志的标志
@@ -384,7 +384,7 @@ class CallbackHandler:
 
 总的来说, huggingface transformers 库的 Trainer 写得不是太好, 不利于扩展，但怎么结合 `pytorch-lightning` 使用 huggingface transformers 库的模型: [lightning-transformers](https://lightning-transformers.readthedocs.io/en/latest/)
 
-## 如何增加 Tensorboard 的打印信息
+### 如何增加 Tensorboard 的打印信息
 
 首先看一下 `TensorBoardCallback` 的实现
 ```python
@@ -498,7 +498,33 @@ class Trainer:
 
 终极解决方案：自定义子类重写`Trainer.train`方法，在必要的地方增加逻辑进行日志记录。但`self.train`方法的代码过于冗长（大约400行代码），基本上这种做法需要将原本的 `train` 方法抄录大部分。因此，使用 `Trainer` 不太能随心所欲地增加日志打印逻辑。
 
-## 离线使用数据集、metric、模型文件
+### 模型保存相关
+
+训练时的保存总入口在 `trainer._save_checkpoint` 函数处，主要保存以下内容：
+
+```
+checkpoint-{global_step}/
+  
+  # 跟 trainer 相关的
+  - optimizer.pt
+  - scheduler.pt
+  - scaler.pt
+  - training_args.bin
+  - trainer_state.json
+  - rng_state.pth(rng_state_{local_rank}.pth)
+  
+  # 跟 PreTrainedModel 相关的
+  - pytorch_model.bin(self.model.save_pretrained)
+  - config.json(self.model.save_pretrained)
+  
+  # 跟 PreTrainedTokenizerBase 相关的
+  - tokenizer_config.json(tokenizer.save_pretrained)
+  - tokenizer.json(tokenizer.save_pretrained)
+  - vocab.txt(tokenizer.save_pretrained)
+  - ...
+```
+
+### 离线使用数据集、metric、模型文件
 
 运行示例：[官方示例](https://pytorch-lightning.readthedocs.io/en/stable/notebooks/lightning_examples/text-transformers.html)
 
