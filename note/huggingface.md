@@ -677,7 +677,7 @@ dataset.select(range(128))  # 将数据集缩小
 
 # 结合 pytorch-lightning 使用 transformers 训练
 
-(源码)[./lightning-src/pl_transformers.py]
+[源码](./lightning-src/pl_transformers.py)
 
 # 依赖的一些其他三方库学习
 
