@@ -1,13 +1,13 @@
-## CUDA 环境配置
+# CUDA 环境配置
 
 说明：高版本的显卡驱动兼容各个低版本的 CUDA 与 CUDNN，但 CUDA 与 CUDNN 之间存在的对应关系。CUDA 的各个版本之间一般不存在兼容性。而CUDNN实际上是一堆头文件和库文件的集合，直接放入CUDA的头文件和库文件中即可。安装顺序为：先安装最新版本的显卡驱动，再安装CUDA，再查询相匹配版本的CUDNN，并将文件复制进CUDA中即可。
 
 
-### (硬件)显卡支持
+## (硬件)显卡支持
 
 显卡与CUDA版本的支持对应情况: 参考(博客)[https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/]
 
-### (系统软件)驱动
+## (系统软件)驱动
 安装驱动的方式有几种：
 - ubuntu下使用命令安装：
     ```bash
@@ -18,11 +18,11 @@
 - 去[官方nvidia驱动下载页面](https://www.nvidia.com/download/index.aspx)下载安装脚本进行安装
 - 系统级别安装CUDA时，可以将驱动也一并勾选进行安装
 
-### (依赖软件) gcc, g++
+## (依赖软件) gcc, g++
 
 安装多个版本的 gcc/g++(ubuntu): 参考[博客](https://linuxconfig.org/how-to-switch-between-multiple-gcc-and-g-compiler-versions-on-ubuntu-20-04-lts-focal-fossa)
 
-### (安装) CUDA与CUDNN
+## (安装) CUDA与CUDNN
 安装多个版本的 CUDA 及 CUDNN：
 
 - [参考链接](https://towardsdatascience.com/installing-multiple-cuda-cudnn-versions-in-ubuntu-fcb6aa5194e2)
@@ -46,7 +46,7 @@
 备注：pytorch中带着的cuda以及cudnn头文件及库文件并不是完整的cuda与cudnn库文件。并且即使系统级别安装的是别的版本的cuda与cudnn，使用pip的方式安装时，pytorch也会将其忽略。
 
 
-### 特例: Ubuntu 20.04 上安装 CUDA 10.2
+## 特例: Ubuntu 20.04 上安装 CUDA 10.2
 
 参考[博客](https://blog.csdn.net/qq757056521/article/details/109267381)
 
@@ -55,7 +55,7 @@
 bash cuda_10.2.89_440.33.01_linux.run --librarypath=/usr/local/cuda-10.2
 ```
 
-### (FAQ) cuda driver version与runtime version
+## (FAQ) cuda driver version与runtime version
 
 ```text
 nvidia-smi  # CUDA Drive Version
@@ -77,13 +77,13 @@ export PATH=$CUDA_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$CUDA_HOME/lib:$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 ```
 
-### 疑难杂症
+## 疑难杂症
 
 由于pytorch自带(使用pip安装)了一个阉割版的CUDA(可能pytorch为了用户体验,只要求安装驱动其他都自带), 而某些其他的包需要独立安装一个完整的CUDA, 这时候会引发一些冲突,具体解释可以参考[参考资料](https://huggingface.co/docs/transformers/v4.24.0/en/main_classes/trainer#trainer-integrations)
 
-## 源
+# 源
 
-### pip 源
+## pip 源
 
 参考：https://mirrors.tuna.tsinghua.edu.cn/help/pypi/
 
@@ -91,7 +91,7 @@ export LD_LIBRARY_PATH=$CUDA_HOME/lib:$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 pip config set global.index-url https://pypi.tuna.tsinghua.edu.cn/simple
 ```
 
-### anaconda 源
+## anaconda 源
 
 参考：https://mirrors.tuna.tsinghua.edu.cn/help/anaconda/
 
@@ -119,7 +119,7 @@ custom_channels:
   simpleitk: https://mirrors.tuna.tsinghua.edu.cn/anaconda/cloud
 ```
 
-### apt 源
+## apt 源
 
 参考：https://mirrors.tuna.tsinghua.edu.cn/help/ubuntu/
 
@@ -128,7 +128,7 @@ sudo sed -i "s@http://.*archive.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@
 sudo sed -i "s@http://.*security.ubuntu.com@https://mirrors.tuna.tsinghua.edu.cn@g" /etc/apt/sources.list
 ```
 
-### 时区
+## 时区
 
 ```
 export TIME_ZONE=Asia/Shanghai
@@ -147,7 +147,7 @@ RUN apt install -y apt-utils tzdata && \
     dpkg-reconfigure -f noninteractive tzdata
 ```
 
-### virtualenvwrapper
+## virtualenvwrapper
 
 安装
 ```
@@ -173,7 +173,7 @@ workon env-name        # 激活环境
 deactivate             # 退出环境
 ```
 
-### jupyter添加核
+## jupyter添加核
 
 ```
 pip install ipykernel
@@ -181,13 +181,13 @@ workon env-name
 python -m ipykernel install --user --name env-name --display-name env-name
 ```
 
-### ssh-key
+## ssh-key
 
 ```
 ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa
 ```
 
-## 日志
+# 日志
 
 ```
 nohup python -u main.py > nohup.out 2>&1 &
@@ -218,9 +218,9 @@ bg %1  # 将任务1放到后台继续执行
 kill -SIGCONT 
 ```
 
-## 可视化
+# 可视化
 
-### tensorboard
+## tensorboard
 
 参考资料：[Pytorch tutorial](https://pytorch.org/tutorials/intermediate/tensorboard_tutorial.html)、[Pytorch API](https://pytorch.org/docs/stable/tensorboard.html)
 
@@ -262,13 +262,13 @@ for e in event_acc.Scalars('Loss/train'):
     print(e.step, e.value)
 ```
 
-### wandb（待研究）
+## wandb（待研究）
 
 据说这个工具相比 Tensorboard 更有优势，[参考视频](https://www.bilibili.com/video/BV17A41167WX/?spm_id_from=333.337.search-card.all.click)
 
-## 有效利用GPU
+# 有效利用GPU
 
-## 小工具
+# 小工具
 
 ```python
 import numpy as np
