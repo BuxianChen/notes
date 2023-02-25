@@ -669,7 +669,66 @@ dataset.select(range(128))  # 将数据集缩小
 
 # huggingface-hub 包
 
-`huggingface-hub` 包在安装 `transformers`、`datasets` 包时会自动进行安装。
+`huggingface-hub` 包在安装 `transformers`、`datasets` 包时会自动进行安装。前面在 `transformers` 包与 `datasets` 包中已简单涉及了许多关于 huggingface 缓存目录的介绍，此处更加清晰地进行介绍：
+
+```
+~/.cache/huggingface/
+  - datasets/
+  - hub/  # `huggingface-hub` 模块
+    - models--julien-c--EsperBERTo-small/
+    - models--lysandrejik--arxiv-nlp/
+    - models--bert-base-cased/
+    - datasets--glue/
+    - datasets--huggingface--DataMeasurementsFiles/
+    - spaces--dalle-mini--dalle-mini/
+  - modules/
+    - datasets_modules/
+    - evaluate_modules/
+```
+
+首先理清一下 huggingface 各个模块关于缓存目录的设置：
+
+- `huggingface-hub` 包的默认缓存目录为 `HUGGINGFACE_HUB_CACHE=~/.cache/huggingface/hub`，其本质是对 `git` 的一层封装。
+- `transformers` 包的默认缓存目录为 `TRANSFORMERS_CACHE=~/.cache/huggingface/hub`（与`huggingface-hub`**一致**，并且本质上是直接复用了`huggingface-hub`的缓存方式，即 `blobs`、`refs`、`snapshots` 的方式）
+- `datasets` 包的默认缓存目录为：`HF_DATASETS_CACHE=~/.cache/huggingface/datasets`（与`huggingface-hub`**不一致**，其本质上是建立了自己的一套缓存数据集的方式，即采用 `arrow` 格式对数据进行缓存，从而加速数据的加载速度，提升训练效率），另外，使用 `datasets.load_dataset` 时会将需要的脚本缓存至 `~/.cache/huggingface/modules/datasets_modules` 目录
+- `evaluate` 包设定了如下一些默认缓存路径：
+  - `HF_METRICS_CACHE=~/.cache/huggingface/metrics`
+  - `HF_EVALUATE_CACHE=~/.cache/huggingface/evaluate`
+  - `HF_MODULES_CACHE=~/.cache/huggingface/modules/evaluate_modules`
+- `diffusers` 包的默认缓存目录为：`DIFFUSERS_CACHE=~/.cache/huggingface/diffusers`，而需要的脚本缓存目录设定在 `~/.cache/huggingface/modules/diffusers_modules` 目录
+
+从上面可以看出，`huggingface-hub` 包作为 huggingface 所有项目的“基础建设”，各个下游项目会根据需要决定是否完全复用这一“基础建设”。以下是一些具体的例子：
+
+```python
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
+tokenizer = AutoTokenizer.from_pretrained("ConvLab/mt5-small-nlg-multiwoz21")
+model = AutoModelForSeq2SeqLM.from_pretrained("ConvLab/mt5-small-nlg-multiwoz21")
+# 下载到 hub/models--Convlab--t5-small-nlg-multiwoz21/ 目录, 由子目录 blobs, refs, snapshots 目录构成
+
+import datasets
+datasets.load_dataset("rotten_tomatoes")
+# 下载到 datasets/rotten_tomatoes/ 目录, 内部目录为 default/1.0.0/<hash值>/{*.arrow,...}
+# 同时将脚本下载到 modules/datasets_modules/datasets/rotten_tomatoes/<hash值>/{rotten_tomatoes.py,...}
+
+from huggingface_hub import snapshot_download
+snapshot_download(repo_id="rotten_tomatoes", repo_type="dataset")
+# 下载到 hub/datasets--rotten_tomatoes 目录, 由子目录 blobs, refs, snapshots 目录构成
+
+# 以下两者完全一致:
+# hub/datasets--rotten_tomatoes/snapshots/c33cbf965006dba64f134f7bef69c53d5d0d285d/rotten_tomatoes.py
+# modules/datasets_modules/datasets/rotten_tomatoes/40d411e45a6ce3484deed7cc15b82a53dad9a72aafd9f86f8f227134bec5ca46/rotten_tomatoes.py
+
+import evaluate  # 仓库位于huggingface-hub的spaces中
+evaluate.load("lvwerra/element_count", module_type="measurement")
+# 下载到 modules/evaluate_modules/metrics/lvwerra--element_count/<hash值>/{element_count.py,...}
+```
+
+基本上都可以通过 `huggingface-hub` 的接口将 `datasets`、`models`、`spaces` 下载到本地，然后各个下游的包例如：`transformers`、`evaluate`、`datasets`、`diffusers` 中加载模型/数据集/脚本的函数中传入本地路径即可。
+
+关于 huggingface-hub 缓存目录的[官方文档](https://huggingface.co/docs/huggingface_hub/how-to-cache)
+
+从 hub 下载文件的主要接口是 `hf_hub_download` 与 `snapshot_download`，参考[官方文档](https://huggingface.co/docs/huggingface_hub/how-to-downstream)即可
+
 
 # accelerate 包
 
