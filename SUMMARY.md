@@ -2,16 +2,17 @@
 
 - [Center](README.md)
 
-## Popular
+## Language
 
 - Python
   - [Python environment](language/python/python_environment_usage.md)
   - [Advanced Python](language/python/python_advanced.md)
   - [Python Standard Libary](language/python/python_standard_library.md)
   - [Python Third Party](language/python/python_third_party.md)
-- [Pytorch](note/pytorch.md)
-- [huggingface](note/huggingface.md)
-- [pytorch-lightning](note/pytorch-lightning.md)
+- C++
+  - [C++ Draft](language/cplusplus/cpp_draft.md)
+- Java
+  - [JavaSE](language/java/javase.md)
 
 ## Tool
 
@@ -21,16 +22,20 @@
   - [shell-cheet-sheet](tool/shell_cheat_sheet.md)
 - [Vim](tool/vim.md)
 - [gcc & make & cmake](tool/make.md)
+- [misc](tool/misc_tools.md)
 
 ## Note
-
-- [Draft](note/draft.md)
 - [DL](note/dl.md)
+  - [DL-deploy](note/dl-deploy.md)
+  - [huggingface](note/huggingface.md)
+  - [pytorch-lightning](note/pytorch-lightning.md)
+  - [Pytorch](note/pytorch.md)
+  - [TensorFlow](note/tensorflow.md)
 - [NLP](note/nlp.md)
 - [CV](note/cv.md)
-  * [mmlab](note/mmlab.md)
+  - [OpenCV](note/opencv.md)
+  - [mmlab](note/mmlab.md)
+- [Audio](note/audio.md)
+- [GNN](note/gnn.md)
 - [TODO LIST](note/plan.md)
-
-## New
-
-- [DL-deploy](note/dl-deploy.md)
+- [Draft](note/draft.md)
