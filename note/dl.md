@@ -81,6 +81,91 @@ export LD_LIBRARY_PATH=$CUDA_HOME/lib:$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 
 由于pytorch自带(使用pip安装)了一个阉割版的CUDA(可能pytorch为了用户体验,只要求安装驱动其他都自带), 而某些其他的包需要独立安装一个完整的CUDA, 这时候会引发一些冲突,具体解释可以参考[参考资料](https://huggingface.co/docs/transformers/v4.24.0/en/main_classes/trainer#trainer-integrations)
 
+
+# WSL2
+
+前置条件：最好是 Windows 11
+
+安装步骤：
+
+- 按微软 [官方文档](https://docs.microsoft.com/en-us/windows/wsl/install) 安装 WSL2
+
+- 在微软商店中安装 Ubuntu 20.04 以及 Windows Terminal (Windows 10) 已自带
+
+后置事项：
+
+- Windows 上安装 VSCode 并安装 Remote-WSL 插件
+
+- 更换 apt 源：[清华源官网](https://mirrors.tuna.tsinghua.edu.cn/help/ubuntu/)
+
+- 文件目录：
+  - Windows 系统查看 WSL2 文件：在资源浏览器目录中输入：`\\wsl$`，或者类似这种目录 `C:\Users\{Username}\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu20.04LTS_79rhkp1fndgsc\LocalState` (不推荐)
+  - WSL2 命令行（Windows Terminal）中查看 Windows 文件目录：`/mnt/c` 表示 C 盘目录
+  - 在 WSL2 命令行中切换至相应目录执行 `code .` 即可打开 VSCode，并且打开后 VSCode 的集成终端本身也会是 WSL2 命令行
+
+- GPU（不确定）：在 Windows 11 本机将 Nvidia 显卡驱动升级至 510 以上版本，那么不做特殊设置，WSL2 中也能访问显卡，在 WSL2 命令行中可以查验：`lspci | grep -i nvidia`
+
+- Docker：可以参考 Docker 官方文档将 Docker Desktop 在 Windows 本机安装，此时 WSL2 与 Windows 本机均能使用 Docker。也可以在 WSL2 Terminal 中使用命令安装 Docker，这样 Docker 只能在 WSL2 命令行中访问
+
+- 网络：一般情况下，无需做特殊设置，WSL2 的网络与 Windows 本机的网络一般是互通的。如果使用 VPN 或代理时，可能需要进行特殊设置（不确定）。
+
+磁盘清理：
+
+[参考资料1](https://stephenreescarter.net/how-to-shrink-a-wsl2-virtual-disk/) [参考资料2](https://stackoverflow.com/questions/64068185/docker-image-taking-up-space-after-deletion) 使用 Windows PowerShell 输入
+
+```
+diskpart
+```
+
+在弹出的命令行中输入
+
+```powershell
+# 清理WSL2
+select vdisk file="C:\Users\xyz\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu20.04LTS_79rhkp1fndgsc\LocalState\ext4.vhdx"
+compact vdisk
+# 清理Docker Desktop
+select vdisk file="C:\Users\xyz\AppData\Local\Docker\wsl\data\ext4.vhdx"
+compact vdisk
+select vdisk file="C:\Users\xyz\AppData\Local\Docker\wsl\distro\ext4.vhdx"
+compact vdisk
+```
+
+## 远程访问WSL
+
+在WSL2的terminal中
+```bash
+sudo apt remove openssh-server
+sudo apt install openssh-server  # 选择1
+sudo vim /etc/ssg/sshd_config
+# 配置以下三项
+# Port 2222
+# PermitRootLogin yes
+# PasswordAuthentication yes
+sudo service ssh --full-restart
+ifconfig  # 查看wsl2的ipv4, 以下用<wsl2_ip>代替
+```
+
+在WSL2的Windows宿主机打开powershell以管理员权限设置端口转发
+```powershell
+netsh interface portproxy set v4tov4 listenport=3333 listenaddress=0.0.0.0 connectport=2222 connectaddress=<wsl2_ip>
+ipconfig  # 查看Windows本机ipv4, 以下用<windows_ip>代替
+```
+
+在WSL2的Windows宿主机设置防火墙规则:
+
+控制面板->防火墙->入站规则->新建规则
+
+- 端口
+- TCP, 特定本地端口, 3333
+- 允许连接
+- 全选上
+- 名称任意
+
+至此, 从局域网中另一台机器打开终端即可远程连接WSL2
+```
+ssh <wsl2_user_name>@<windows_ip> -p 3333
+```
+
 # 源
 
 ## pip 源
@@ -183,9 +268,38 @@ python -m ipykernel install --user --name env-name --display-name env-name
 
 ## ssh-key
 
+`~/.ssh` 目录结构
+
 ```
-ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa
+authorized_keys  # 将其他机器的公钥写入此文件中, 则其他机器可以ssh免密登录
+id_rsa  # 本机私钥
+id_rsa.pub  # 本机公钥
+known_hosts
 ```
+
+- 为本机生成 `id_rsa` 与 `id_rsa.pub` 备用
+  ```bash
+  ssh-keygen -t rsa -b 4096 -f ~/.ssh/id_rsa
+  ```
+
+- 将本机的 `id_rsa.pub` 的内容追加到服务器特定用户的 `~/.ssh/authorized_keys` 文件内，可以实现本机到服务器的远程免密登录
+
+  - 本地 Shell 连接服务器无需输入密码。`ssh username@ip_addr`，例如：`ssh foo@172.16.83.43`
+  - VScode 远程连接无需输入密码
+
+- 将本机的 `id_rsa.pub` 的内容在 gitlab 或 github 上添加到 SSH Keys 中，则可以免密使用 ssh 进行仓库克隆、推送等操作，例如：
+
+  ```
+  git clone git@github.com:BuxianChen/notes.git
+  ```
+
+  但对 http 的方式无效，如果使用下面的方式进行 clone，在执行 push 的时候，会自动跳出一个弹出框，要求输入 github 的帐号及密码：
+
+  ```
+  git clone https://github.com/BuxianChen/notes.git
+  ```
+
+备注：要实现远程免密登陆，服务器端 `.ssh` 文件夹的权限应该为 `700`，而 `authorized_keys` 文件的权限应为 `600`
 
 # 日志
 

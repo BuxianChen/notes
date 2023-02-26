@@ -62,14 +62,6 @@ $xy,\boldsymbol{xy},{\bf xy},XY,{\bf XY},\boldsymbol{XY}$
 
 [backward-vs-forward-compatibility](https://stevenheidel.medium.com/backward-vs-forward-compatibility-9c03c3db15c9)
 
-## 常用软件
-
-7-zip、Adobe Reader、typora、notepad++、Git
-
-VSCode、XShell、Xftp、Anaconda
-
-Make、CMake、MinGW
-
 ## VSCode 使用大杂烩
 
 ### 快捷键
@@ -190,17 +182,6 @@ VSCode设置`File->Preferences->Settings`中的`用户`优先级低于`工作区
 
 关于kafka的`KAFKA_CFG_LISTENERS`与`KAFKA_CFG_ADVERTISED_LISTENERS`的设定问题，参考[博客](https://www.confluent.io/blog/kafka-client-cannot-connect-to-broker-on-aws-on-docker-etc/)
 
-
-## 术语
-
-CLI (command-line interface) 命令行接口
-
-wildcards 通配符
-
-## Linux动态链接库搜索规则
-参考 [csdn博客](https://blog.csdn.net/winycg/article/details/80572735)
-
-默认动态链接库的访问使用缓存机制，存放在 `/etc/ld.so.cache` （二进制格式），搜索路径保存在 `/etc/ld.so.conf` 中。当安装了其他的动态链接库时，需要使用 `ldconfig` 命令更新。
 
 ## 关于机器的进程数
 
@@ -368,39 +349,6 @@ Read the Docs可以[参考](https://blog.csdn.net/lu_embedded/article/details/10
 * ~~使用Read the Docs写代码文档或书~~\(页面结构似乎只能有两层\)
 * gitbook.com与github仓库关联\(写完整的笔记\), 持续更新\(页面结构似乎只能有两层\)
 
-## `~/.ssh` 目录
-
-目录结构
-
-```
-authorized_keys  # 将其他机器的公钥写入此文件中, 则其他机器可以ssh免密登录
-id_rsa  # 本机私钥
-id_rsa.pub  # 本机公钥
-known_hosts
-```
-
-用途
-
-- 为本机生成 `id_rsa` 与 `id_rsa.pub` 备用
-
-- 将本机的 `id_rsa.pub` 的内容追加到服务器特定用户的 `~/.ssh/authorized_keys` 文件内，可以实现本机到服务器的远程免密登录
-
-  - 本地 Shell 连接服务器无需输入密码。`ssh username@ip_addr`，例如：`ssh foo@172.16.83.43`
-  - VScode 远程连接无需输入密码
-
-- 将本机的 `id_rsa.pub` 的内容在 gitlab 或 github 上添加到 SSH Keys 中，则可以免密使用 ssh 进行仓库克隆、推送等操作，例如：
-
-  ```
-  git clone git@github.com:BuxianChen/notes.git
-  ```
-
-  但对 http 的方式无效，如果使用下面的方式进行 clone，在执行 push 的时候，会自动跳出一个弹出框，要求输入 github 的帐号及密码：
-
-  ```
-  git clone https://github.com/BuxianChen/notes.git
-  ```
-
-备注：要实现远程免密登陆，服务器端 `.ssh` 文件夹的权限应该为 `700`，而 `authorized_keys` 文件的权限应为 `600`
 
 ## 自定义右键菜单栏
 
@@ -622,24 +570,7 @@ id_table.facebook_id = post_table.fb_id)) AS joint_table GROUP BY accountID ORDE
             ) AS joint_table ORDER BY accountID;""".format(offset, limit)
 ```
 
-## C/C++知识编译补充
-
-[load-time dynamic loading与load-time dynamic loading](https://stackoverflow.com/questions/2055840/difference-between-load-time-dynamic-linking-and-run-time-dynamic-linking)
-
-## gcc编译选项
-
-问题来源: OpenKE中的一条编译指令
-
-```text
-g++ ./base/Base.cpp -fPIC -shared -o ./release/Base.so -pthread -O3 -march=native
-```
-
-* `-fPIC`, `-shared`选项表示生成动态链接库
-* `-o`选项表示指定输出文件名, 疑惑的是为什么没有按照`libxxx.so`命名
-* `-O3`选项是指定编译时进行优化, 可参考[知乎](https://www.zhihu.com/question/27090458)
-* `-march=native`
-
-## boost安装\(VS2019\)
+## boost安装(VS2019)
 
 将压缩文件`boost_1_74_0.zip`解压后进入\(使用x86\_x64 Cross Tools Command Prompt for VS 2019命令行\)
 
@@ -1023,47 +954,27 @@ dc:date="2006-02-25T20:52:32+08:00" />
 | 6. [http://www.ruanyifeng.com/blog/developer/](http://www.ruanyifeng.com/blog/developer/) | 阮一峰的博客 | 2021-6-2 |
 | 7. [骏马金龙 (junmajinlong.com)](https://www.junmajinlong.com/) | 博客（包含Python、Linux等系列博客）、博客园排名前两百 | 2021-9-12 |
 
-## Linux操作手册
 
-```text
-ls --format single-column openke/base/
-# outputs: (垂直方式列出文件)
-Base.cpp
-Corrupt.h
-Random.h
-Reader.h
-Setting.h
-Test.h
-Triple.h
-```
-
-## 一些python包资源
-
-### 英文正则化(上撇号缩写等)
-
-```python
-import contractions
-contractions.fix("I'm")  # "I am"
-```
-
-## 杂录
-
-### callback
+## callback
 
 callback函数: call back意指"回电话". 例子: 在编写一个对数组排序的函数时, 需要传入一个元素比较函数\(这个比较函数就是callback function\): 以下引用自algs4 part1 第二周ppt
 
 **Callback = reference to executable code.**
 
-* Client passes array of objects to sort\(\) function.
-* The sort\(\) functioncallback calls back object's compareTo\(\) method as needed
+* Client passes array of objects to sort() function.
+* The sort() functioncallback calls back object's compareTo() method as needed
 
-**Implementing callbacks.**\(不同编程语言如何实现回调函数\)
+**Implementing callbacks.**(不同编程语言如何实现回调函数)
 
 * Java: interfaces.
 * C: function pointers.
-* C++: class-type functors.  --- \(例如std::qsort函数的元素比较参数传入的是一个重载了圆括号运算符的类\)
-* C\#: delegates.
-* Python, Perl, ML, Javascript: first-class functions.  --- \(当函数可以作为别的函数的参数, 即函数可以当作变量一样用时, 称这门语言拥有头等函数, 即first-class function\)
+* C++: class-type functors.  --- (例如std::qsort函数的元素比较参数传入的是一个重载了圆括号运算符的类)
+* C#: delegates.
+* Python, Perl, ML, Javascript: first-class functions.  --- (当函数可以作为别的函数的参数, 即函数可以当作变量一样用时, 称这门语言拥有头等函数, 即first-class function)
+
+## 杂录
+
+
 
 ### OpenCL, OpenGL, OpenAL
 
@@ -1080,88 +991,3 @@ callback函数: call back意指"回电话". 例子: 在编写一个对数组排�
 * C++ AMP \(C++ Accelerated Massive Parallelism\): 跨GPU种类\(只要支持[DirectX 11](https://en.wikipedia.org/wiki/DirectX)\), 只适用于windows
 * OpenCL: 跨GPU种类, 跨操作系统\(windows/linux\)
 * CUDA C: 只适用于Nvidia GPU, 跨操作系统\(windows/linux\)
-
-
-### WSL2
-
-前置条件：最好是 Windows 11
-
-安装步骤：
-
-- 按微软 [官方文档](https://docs.microsoft.com/en-us/windows/wsl/install) 安装 WSL2
-
-- 在微软商店中安装 Ubuntu 20.04 以及 Windows Terminal (Windows 10) 已自带
-
-后置事项：
-
-- Windows 上安装 VSCode 并安装 Remote-WSL 插件
-
-- 更换 apt 源：[清华源官网](https://mirrors.tuna.tsinghua.edu.cn/help/ubuntu/)
-
-- 文件目录：
-  - Windows 系统查看 WSL2 文件：在资源浏览器目录中输入：`\\wsl$`，或者类似这种目录 `C:\Users\{Username}\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu20.04LTS_79rhkp1fndgsc\LocalState` (不推荐)
-  - WSL2 命令行（Windows Terminal）中查看 Windows 文件目录：`/mnt/c` 表示 C 盘目录
-  - 在 WSL2 命令行中切换至相应目录执行 `code .` 即可打开 VSCode，并且打开后 VSCode 的集成终端本身也会是 WSL2 命令行
-
-- GPU（不确定）：在 Windows 11 本机将 Nvidia 显卡驱动升级至 510 以上版本，那么不做特殊设置，WSL2 中也能访问显卡，在 WSL2 命令行中可以查验：`lspci | grep -i nvidia`
-
-- Docker：可以参考 Docker 官方文档将 Docker Desktop 在 Windows 本机安装，此时 WSL2 与 Windows 本机均能使用 Docker。也可以在 WSL2 Terminal 中使用命令安装 Docker，这样 Docker 只能在 WSL2 命令行中访问
-
-- 网络：一般情况下，无需做特殊设置，WSL2 的网络与 Windows 本机的网络一般是互通的。如果使用 VPN 或代理时，可能需要进行特殊设置（不确定）。
-
-磁盘清理：
-
-[参考资料1](https://stephenreescarter.net/how-to-shrink-a-wsl2-virtual-disk/) [参考资料2](https://stackoverflow.com/questions/64068185/docker-image-taking-up-space-after-deletion) 使用 Windows PowerShell 输入
-
-```
-diskpart
-```
-
-在弹出的命令行中输入
-
-```powershell
-# 清理WSL2
-select vdisk file="C:\Users\xyz\AppData\Local\Packages\CanonicalGroupLimited.Ubuntu20.04LTS_79rhkp1fndgsc\LocalState\ext4.vhdx"
-compact vdisk
-# 清理Docker Desktop
-select vdisk file="C:\Users\xyz\AppData\Local\Docker\wsl\data\ext4.vhdx"
-compact vdisk
-select vdisk file="C:\Users\xyz\AppData\Local\Docker\wsl\distro\ext4.vhdx"
-compact vdisk
-```
-
-#### 远程访问WSL
-
-在WSL2的terminal中
-```bash
-sudo apt remove openssh-server
-sudo apt install openssh-server  # 选择1
-sudo vim /etc/ssg/sshd_config
-# 配置以下三项
-# Port 2222
-# PermitRootLogin yes
-# PasswordAuthentication yes
-sudo service ssh --full-restart
-ifconfig  # 查看wsl2的ipv4, 以下用<wsl2_ip>代替
-```
-
-在WSL2的Windows宿主机打开powershell以管理员权限设置端口转发
-```powershell
-netsh interface portproxy set v4tov4 listenport=3333 listenaddress=0.0.0.0 connectport=2222 connectaddress=<wsl2_ip>
-ipconfig  # 查看Windows本机ipv4, 以下用<windows_ip>代替
-```
-
-在WSL2的Windows宿主机设置防火墙规则:
-
-控制面板->防火墙->入站规则->新建规则
-
-- 端口
-- TCP, 特定本地端口, 3333
-- 允许连接
-- 全选上
-- 名称任意
-
-至此, 从局域网中另一台机器打开终端即可远程连接WSL2
-```
-ssh <wsl2_user_name>@<windows_ip> -p 3333
-```

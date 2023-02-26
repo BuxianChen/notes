@@ -110,6 +110,15 @@ own、play、research、care、hope、er、ful。
 
 具体算法流程参考博客：[Byte Pair Encoding](https://towardsdatascience.com/byte-pair-encoding-subword-based-tokenization-algorithm-77828a70bee0)
 
+# NLP 小工具（常用正则、文本预处理工具等）
+
+## 英文正则化(上撇号缩写等)
+
+```python
+import contractions
+contractions.fix("I'm")  # "I am"
+```
+
 # Draft
 
 ## Causal Language Modeling (CausalLM, LM)

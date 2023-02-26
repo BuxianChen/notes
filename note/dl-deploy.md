@@ -39,24 +39,9 @@ torch2onnx, tf2onnx, onnx2tensorRT, onnx2ncnn, onnx2onnxruntime
 注意: 可以看出, 实际上部署流程并非都得走 torch(.pth) -> onnx(.onnx) -> tensorRT(.engine) 这种流程, 能直接转成(.engine)格式实际就可以达到目的, 只是因为"生态"的原因, 通常会走两步转换的流程.
 
 
-## make, cmake
+## make, cmake, gcc/g++, llvm
 
-```
-C_INCLUDE_PATH  # C 头文件库搜索路径, 备注: 系统本身的不在这个变量里
-CPLUS_INCLUDE_PATH  # C++ 头文件库搜索路径, 备注: 系统本身的不在这个变量里
-LD_LIBRARY_PATH  # 动态链接库搜索路径, 备注: 系统本身的不在这个变量里
-LIBRARY_PATH  # # 静态链接库搜索路径, 备注: 系统本身的不在这个变量里
-```
-
-为什么通常会需要配置 `LD_LIBRARY_PATH` 而不需要配置 `C_INCLUDE_PATH` 和 `CPLUS_INCLUDE_PATH`, 例如:
-
-- 安装 CUDA
-- 安装 openCV
-- 安装 tensorRT
-
-### gcc/g++ 与 llvm
-
-?
+参见[个人笔记](../tool/make.md)
 
 
 ## pybind11
@@ -82,6 +67,7 @@ pybind11实际上是对这种拓展方式做了层层封装
 - cython
 - swig
 
+详细内容参见 [个人博客](https://buxianchen.github.io/drafts/2022-06-25-pybind.html)
 
 
 ## onnx

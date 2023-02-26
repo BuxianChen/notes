@@ -1,5 +1,50 @@
 
-# gcc/g++ 编译
+# 编译
+
+## 安装 gcc (多版本共存)
+
+参考博客: [Linux下编译安装GCC 4.9.4 - Caosiyang's Blog](https://caosiyang.github.io/posts/2016/05/04/installing-gcc/)
+
+```text
+# 下载gcc源码解压后的目录假定为gcc-4.9.4
+cd gcc-4.9.4
+sh ./contrib/download_prerequisites
+cd ..
+mkdir build-gcc-4.9.4
+cd build-gcc-4.9.4
+# gcc-4.9.4将会安装至/usr/local/gcc-4.9.4/目录下
+../gcc-4.9.4/configure --prefix=/usr/local/gcc-4.9.4/ --enable-checking=release --enable-languages=c,c++ --disable-multilib
+make -j4
+make install
+```
+
+## 关于头文件与库的搜索路径
+
+```
+C_INCLUDE_PATH  # C 头文件库搜索路径, 备注: 系统本身的不在这个变量里
+CPLUS_INCLUDE_PATH  # C++ 头文件库搜索路径, 备注: 系统本身的不在这个变量里
+LD_LIBRARY_PATH  # 动态链接库搜索路径, 备注: 系统本身的不在这个变量里
+LIBRARY_PATH  # # 静态链接库搜索路径, 备注: 系统本身的不在这个变量里
+```
+
+为什么通常会需要配置 `LD_LIBRARY_PATH` 而不需要配置 `C_INCLUDE_PATH` 和 `CPLUS_INCLUDE_PATH`, 例如:
+
+- 安装 CUDA
+- 安装 openCV
+- 安装 tensorRT
+
+## 关于 `ldconfig`
+
+注：以下均为简单理解，并非准确理解
+
+在 Linux 下，默认动态链接库的搜索路径保存在 `/etc/ld.so.conf` 中，默认动态链接库的访问使用缓存机制，存放在 `/etc/ld.so.cache` （二进制格式），如果在默认路径下添加了动态链接库，则需要使用 `ldconfig` 更新默认路径里的动态链接库至 `/etc/ld.so.cache`。具体来说，可能会遇到需要使用 `ldconfig` 命令的场景例如安装 `mysql` 时，默认会将 mysql 的库文件安装到 `/usr/local/mysql/lib`，这个目录一般是在默认的动态链接库搜索路径下，因此由于缓存机制的存在，如果在不执行 `ldconfig` 时，在需要使用 mysql 相关的动态链接库时，会报找不到库的错误。
+
+`ldconfig -v` 用于查看已经缓存的动态链接库。
+
+另外，ldconfig 是系统层面的一些机制，在用户层面，也可以配置 `LD_LIBRARY_PATH` 来添加库目录
+
+
+## 示例(杂录)
 
 **例子1**
 
