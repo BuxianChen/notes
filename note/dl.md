@@ -82,6 +82,22 @@ export LD_LIBRARY_PATH=$CUDA_HOME/lib:$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 由于pytorch自带(使用pip安装)了一个阉割版的CUDA(可能pytorch为了用户体验,只要求安装驱动其他都自带), 而某些其他的包需要独立安装一个完整的CUDA, 这时候会引发一些冲突,具体解释可以参考[参考资料](https://huggingface.co/docs/transformers/v4.24.0/en/main_classes/trainer#trainer-integrations)
 
 
+## 版本问题
+
+来源: ColossalAI `colossalai check -i`
+```python
+# 系统的CUDA版本
+from torch.utils.cpp_extension import CUDA_HOME
+output = subprocess.check_output([CUDA_HOME + "/bin/nvcc", "-V"], universal_newlines=True)
+
+# torch的版本
+import torch
+print(torch.__version__)
+
+# torch内部C++算子所使用的CUDA版本
+print(torch.version.cuda)
+```
+
 # WSL2
 
 前置条件：最好是 Windows 11
