@@ -400,17 +400,31 @@ for e in event_acc.Scalars('Loss/train'):
 
 # 小工具
 
+## numpy 浮点数输出
+
 ```python
 import numpy as np
 # 输出两位小数, 抑制科学计数法输出
 np.set_printoptions(precision=2, suppress=True)
 ```
 
-捕获 NaN
+## torch 捕获 NaN
 
 ```
 x = torch.tensor([1, 2, np.nan])
 torch.isnan(x)
 ```
 
+## 监控 GPU 的使用
+
+```
+watch -n 1 nvidia-smi
+```
+
+或
+
+```bash
+pip install gpustat
+gpustat -i 1
+```
 
