@@ -1062,6 +1062,26 @@ torch.autograd.gradgradcheck(Square.apply, x)
 
 参考[问答](https://jovian.ai/forum/t/purpose-of-non-blocking-true-in-tensor-to/14760)、[问答](https://discuss.pytorch.org/t/should-we-set-non-blocking-to-true/38234/3)、[pytorch官方例程](https://github.com/pytorch/examples/blob/master/imagenet/main.py#L280-L291)
 
+## 小技巧
+
+### 共享参数
+
+某些文本生成模型会共享embedding层与输出层的参数, `huggingface transformers` 将这一操作成为 `tie weight`。
+
+```python
+import torch
+emb_layer = torch.nn.Embedding(3, 4)
+linear = torch.nn.Linear(4, 3, bias=False)
+emb_layer.weight = linear.weight
+x = torch.randint(0, 3, (2, 15))
+y = 1.0
+z = linear(embed(x)).sum() - y
+loss = y - z
+loss.backward()
+
+torch.allclose(embed.weight.grad, linear.weight.grad)
+```
+
 ## 常用函数
 
 `torch.version.cuda` 变量存储了 cuda 的版本号

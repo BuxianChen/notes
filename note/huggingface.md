@@ -30,6 +30,33 @@ configuration_bart.py
 tokenizer_bart.py
 ```
 
+## 使用小技巧
+
+### 实例化一个随机权重的模型
+
+```
+from transformers import T5Config, T5ForConditioalGeneration, T5Tokenizer
+
+assert T5ForConditioalGeneration.config_class == T5Config
+
+# 低级API
+config = T5Config(json.load(open("config.json")))
+config = T5Config.from_json_file("/path/to/model/config.json")
+# 高级API(跟上面两种结果一致, 不会因为from_pretrained导致后面的model会load权重)
+config = T5Config.from_pretrained("/path/to/model/")
+
+# 权重随机初始化
+model = T5ForConditioalGeneration(config)
+
+# tokenizer的配置文件可能有若干个, 最好直接使用高阶API
+# 例如: special_tokens_map.json, added_tokens.json, tokenizer_config.json 等
+tokenizer = T5Tokenizer.from_pretrained("/path/to/model/")
+```
+
+### 关于 mask (待研究, 1和0是否有统一的语义约定)
+
+
+
 
 ## PreTrainedModel
 
