@@ -12,6 +12,21 @@ libraries部分包含torchvision等
 
 community部分没探索过
 
+## 复现性
+
+- [官方文档](https://pytorch.org/docs/stable/notes/randomness.html)
+
+```python
+import torch
+import random
+import numpy as np
+torch.manual_seed(0)
+random.seed(0)
+np.random.seed(0)
+torch.use_deterministic_algorithms(True)
+torch.backends.cudnn.benchmark = False
+```
+
 ## dataloader
 
 [官方文档](https://pytorch.org/docs/stable/data.html)
