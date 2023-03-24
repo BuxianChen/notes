@@ -731,6 +731,21 @@ Python 中, type 函数是一个特殊的函数，调用形式有两种：
 
 ### `abc` 模块
 
+**最佳实践**
+
+- [stackoverflow](https://stackoverflow.com/questions/45826692/body-of-abstract-method-in-python-3-5#:~:text=The%20best%20thing%20to%20put%20in%20the%20body,docstring%20makes%20this%20construct%20%22compile%22%20without%20a%20SyntaxError%3A): abstractmethod的函数体什么都不要写, 只包含 docstring 即可
+- [stackoverflow](https://stackoverflow.com/questions/33335005/is-there-any-difference-between-using-abc-vs-abcmeta#:~:text=The%20only%20difference%20is%20that%20in%20the%20former,class%20ABC%20has%20ABCMeta%20as%20its%20meta%20class.): 继承自 `ABC` 或者使用 `ABCMeta` 没有本质区别，但似乎更推荐继承的方式，更简单。
+
+```python
+from abc import abstractmethod, ABCMeta, ABC
+
+# class Model(metaclass=ABCMeta):
+class Model(ABC):
+    @abstractmethod
+    def foo(self):
+        """This method foos the model."""
+```
+
 `abc` 模块最常见是搭配使用 `ABCMeta` 与 `abstractmethod`。其作用是让子类必须重写父类用 `abstractmethod` 装饰的方法，否则在创建子类对象时就会报错。[参考](https://riptutorial.com/python/example/23083/why-how-to-use-abcmeta-and--abstractmethod)
 
 用法如下：
