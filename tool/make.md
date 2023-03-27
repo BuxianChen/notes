@@ -3,6 +3,8 @@
 
 ## 安装 gcc (多版本共存)
 
+- 阿里云镜像：http://mirrors.aliyun.com/gnu/gcc/
+
 参考博客: [Linux下编译安装GCC 4.9.4 - Caosiyang's Blog](https://caosiyang.github.io/posts/2016/05/04/installing-gcc/)
 
 ```text
