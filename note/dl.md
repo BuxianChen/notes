@@ -274,6 +274,15 @@ workon env-name        # 激活环境
 deactivate             # 退出环境
 ```
 
+备注：
+- 实际上，`workon`, `mkvirtualenv` 等命令是 virtualenvwrapper.sh 这个脚本里的函数，因此使用 `whereis workon` 会找不到位置。
+- 假设环境名为 `test`，则虚拟环境的 `bin` 目录为 `$WORKON_HOME/test/bin`，此目录底下包含如下可执行命令：
+  ```
+  python  # 一般是软链接，链接到 mkvirtualenv 时的 python 路径
+  pip  # 是 pip 包的一个 entrypoint，实际上是一个文本文件（有可执行权限），注意观察第一行以#!开头，记录了执行时的python路径
+  activate  # 是一个shell脚本, 注意其中有一行：VIRTUAL_ENV="~/.virtualenvs/test", 此处硬编码了虚拟环境家目录, workon大约本质上去执行了activate脚本
+  ```
+
 ## jupyter添加核
 
 ```
