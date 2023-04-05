@@ -255,13 +255,123 @@ def pipeline(...):
 
 ## PreTrainedTokenizerBase
 
-```mermaid
-graph LR
-    A[SpecialTokensMixin] ----> C[PretrainedTokenizerBase]
-    B[PushTohubMixin] ----> C[PretrainedTokenizerBase]
-    C[PretrainedTokenizerBase] ----> D[PretrainedTokenizer]
-    D[PretrainedTokenizer] ----> E[BertTokenizer]
+继承关系如下图所示:
+
+![](./huggingface-src/tokenizer_inherit.png)
+
+其中 `Fast` 版本的 `Tokenizer` 依赖于 huggingface tokenizers 库中的实现, 而普通版本的 `Tokenizer` 是 huggingface transformers 库中纯 Python 的实现。
+
+在查阅网上不同的资料的过程中，会有几个疑问：
+
+- 查询 tokenizer 词表的基本信息例如词表、特殊 token 的方法有哪些？
+- 往往会发现许多关于 `Tokenizer` 相似的方法调用，例如下面这些，但它们之间的关联/区别是什么？
+    ```python
+    tokenizer(...)
+    tokenizer.tokenize(...)
+    tokenizer.encode(...)
+    tokenizer.encode_plus(...)
+    tokenizer.batch_encode_plus(...)
+    tokenizer.pad()
+    tokenizer.decode()
+    tokenizer.batch_decode()
+    ```
+- 添加 token 的方法有哪些，区别是什么？
+    ```python
+    tokenizer.add_tokens(...)
+    tokenizer.add_special_tokens(...)
+    ```
+- 怎么训练得到一个 tokenizer
+
+以 `BertTokenizer` 为例，向上追溯至 `SpecialTokensMixin`，`PretrainedTokenizerBase`、`PretrainedTokenizer` 中的一些方法，来回答上述的这些问题：
+
+针对前面几个问题，相关的方法在继承关系中实质上的定义位置如下图所示：
+
+![](./huggingface-src/tokenizer_methods.png)
+
+**获取 tokenizer 的基本信息**
+
+```python
+from transformers import BertTokenizer
+
+tokenizer = BertTokenizer.from_pretrained("chinese-roberta-wwm-ext")
+# 以下方法均注明了在继承关系中最上层的非抽象方法
+
+# 获取vocab_to_index字典(包含特殊token及通过add_tokens添加的token)
+# PretrainedTokenizer/PretrainedTokenizerFast
+str2idx = tokenizer.get_vocab()  # {"[UNK]": 100, "[SEP]": 102}
+
+# 获取index_to_vocab字典: 没有直接方法
+
+# 获取总的token数(包含特殊token及通过add_tokens添加的token)
+# PretrainedTokenizerBase: self.vocab_size + len(self.added_tokens_encoder)
+len(tokenizer)
+# model.resize_token_embeddings(len(tokenizer))
+
+# vocab_size(包含特殊token但不包含add_tokens添加的token)
+# BertTokenizer/BertTokenizerFast
+tokenizer.vocab_size
+
+# self.added_tokens_encoder/self.added_tokens_encoder: 长度相同的字典, 分别代表add_token2int和int2add_token
+# PretrainedTokenizer/PretrainedTokenizerFast
+
+# [待续...]
+# convert_tokens_to_ids: 
+# PretrainedTokenizer/PretrainedTokenizerFast, 但最终需要调用BertTokenizer._convert_token_to_id
+
+
+# convert_ids_to_tokens
+# PretrainedTokenizer/PretrainedTokenizerFast, 但最终需要调用BertTokenizer._convert_id_to_token
 ```
+
+**几个相似的方法**
+
+```python
+tokenizer.tokenize("I'm a student")  # 将字符串转换为token列表
+# ['i', "'", 'm', 'a', 'st', '##ude', '##nt']
+tokenizer.convert_tokens_to_ids(tokenizer.tokenize("I'm a student"))  # 查token2id表, 将token序列转换为id列表
+# [151, 112, 155, 143, 8811, 11997, 8511]
+tokenizer.encode("I'm a student")  # 结合tokenize与convert_tokens_to_ids两步, 并进行后处理(增加BOS和EOS)
+# [101, 151, 112, 155, 143, 8811, 11997, 8511, 102]
+tokenizer("I'm a student")  # 转换为模型的输入
+# {'input_ids': [101, 151, 112, 155, 143, 8811, 11997, 8511, 102],
+#     'token_type_ids': [0, 0, 0, 0, 0, 0, 0, 0, 0],
+#     'attention_mask': [1, 1, 1, 1, 1, 1, 1, 1, 1]}
+```
+
+备注：
+- `__call__` 方法实质上根据输入是文本列表或文本，分别调用了 `batch_encode_plus` 或 `encode_plus` 方法
+- `encode_plus` 方法实质上是依次调用了 `tokenize`、`convert_tokens_to_ids` 和 `prepare_for_model` 等方法
+- `batch_encode_plus` 方法实质上是依次调用了 `tokenize`、`convert_tokens_to_ids`、`prepare_for_model`、`pad` 等方法
+- `encode` 方法实质上是调用了 `encode_plus` 方法，然后只取出 `"input_ids"` 作为返回值
+- `decode` 方法实质上是依次调用 `convert_ids_to_tokens`、`convert_tokens_to_string` 等方法将整数序列转换为文本
+- `batch_decode` 方法实质上是对输入使用 `decode` 方法进行列表推导式
+
+
+**添加token的方法及注意事项**
+
+添加 token 的方法来源于 `SpecialTokensMixin` 中的 `add_tokens` 与 `add_special_tokens`，而 `add_special_tokens` 方法最终会使用到 `add_tokens` 方法。在使用上，在增加了 token 后，模型侧需要将 embedding 进行 resize，最常见的做法如下：
+
+```python
+from transformers import BertTokenizerFast, BertModel
+tokenizer = BertTokenizerFast.from_pretrained("bert-base-uncased")
+model = BertModel.from_pretrained("bert-base-uncased")
+
+num_added_toks = tokenizer.add_tokens(["new_tok1", "[my_new-tok2]"], special_tokens=True)
+print("We have added", num_added_toks, "tokens")
+# Notice: resize_token_embeddings expect to receive the full size of the new vocabulary, i.e., the length of the tokenizer.
+model.resize_token_embeddings(len(tokenizer))
+```
+
+备注：针对 `BertTokenizer` 而言，可以使用如下技巧避免对 model 进行改动
+```python
+# [unused1] 与 [unused2] 都在词表里, 是预留的自定义符号
+num_added_toks = tokenizer.add_tokens(["[unused1]", "[unused2]"], special_tokens=True)  # num_added_toks为0
+```
+
+**怎么训练得到一个 tokenizer**
+
+参考资料（待续）：
+- huggingface tokenizer 官方文档：https://huggingface.co/docs/tokenizers/index
 
 ## Trainer
 
