@@ -400,7 +400,31 @@ worksheet.conditional_format('A1:A8', {'type': 'formula', 'criteria': '=MOD(ROW(
 writer.save()
 ```
 
+**对单元格的一些字符变成红色字符, 另一些字符仍然为黑色**
 
+```python
+import xlsxwriter
+workbook = xlsxwriter.Workbook('x.xlsx')
+worksheet = workbook.add_worksheet()
+cell_format_red = workbook.add_format()
+cell_format_red.set_font_color('red')
+cell_format_black = workbook.add_format()
+cell_format_black.set_font_color('black')
+
+worksheet.write_rich_string(0, 0, cell_format_red, "我", "不", cell_format_black, "是", cell_format_red, "谁")
+workbook.close()
+```
+
+**数据验证(单元格内的值必须满足一定的条件)**
+
+```python
+import xlsxwriter
+workbook = xlsxwriter.Workbook('x.xlsx')
+worksheet = workbook.add_worksheet()
+validation = {"validate": "list", "value": ["apple", "banana", "orange"]}
+# 对一个区域内的单元格设置条件, 注意start与end也包括在内
+worksheet.data_validation(start_row, start_col, end_row, end_col, validation)
+```
 
 ## html转pdf的(pdfkit)
 
