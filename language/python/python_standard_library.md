@@ -301,6 +301,43 @@ A().y  # 此时会返回[], 但如果不用field函数直接写默认值为list(
 - 如果 `dataclass` 装饰的类发生继承关系时, 自动生成的 `__init__` 函数的参数顺序一般来说是先父类, 再子类。但还有许多微妙之处
 - 将 `dataclass` 中的一些 `field` 仅作为关键字参数如何处理
 
+
+## unicodedata
+
+unicode 编码的目的是攘括所有的字符，然而它本身也有版本号, python 的每个版本所支持的 unicode 版本号也不相同, 例如: 
+
+- [python 3.8](https://docs.python.org/3.8/library/unicodedata.html) 支持 [UCD version 12.1.0](http://www.unicode.org/Public/12.1.0/ucd)
+- [python 3.11](https://docs.python.org/3.11/library/unicodedata.html) 支持 [UCD version 14.0.0](https://www.unicode.org/Public/14.0.0/ucd)
+
+
+unicode 的完整列表可以参考 [wiki](https://en.wikipedia.org/wiki/List_of_Unicode_characters)，unicode 的字符范围为：`0-0x10FFFF`，因此最多能容纳1114112个码位, 大多数字符的编码范围在 `0-0xFFFF` （最多65536个）之间。一些例子如下：
+
+- `U+0025`: `%`, name 为 `PERCENT SIGN`
+- `U+0B90`: `ஐ`, name 为 `TAMIL LETTER AI`
+
+而在编码界，需要区分**编码方式**与**实现方式**，上面所讲的 Unicode 属于**编码方式**的范畴，即规定了字符集。而从实现方式的角度，需要将每个字符映射为一个具体的二进制表示。一个自然的方式是将所有的字符按照 Unicode 的定义方式表示为 6 位 16 进制数，但实际上为了省空间，普遍采用的 Unicode **实现方式**为 `utf-8`、`utf-16` 等，其中最通用的是 `utf-8`，而 `utf-8` 具体的字符与字节的对应关系此处不再做展开。
+
+这里简要举一些 unicodedata 的使用例子，更多复杂的内容请参考维基
+
+```python
+import unicodedata
+c = "ஐ"
+i = ord(c)  # 字符 c 的 unicode 码位, 结果为: 2960 = 0x0B90 = 11*16*16+9*16
+c.encode("utf-8")  # 编码为 "utf-8" 时的实际字节表示: b'\xe0\xae\x90'，可以看出utf-8实现中用了3个字节
+print("\\u{i:>04x}")  # \\u0b90
+unicodedata.name(c)  # 返回字符的名字: "TAMIL LETTER AI"
+unicodedata.category(c)  # 字符的类别
+unicodedata.normalize('NFC', '\u0043\u0327')  # 使用 NFC 的转换方式将 C 和一个类似逗号的符号合成为 1 个符号，见备注
+unicodedata.is_normalized('NFC', '\u0043\u0327')  # False，因为这两个字符可以合并为一个字符，见备注
+unicodedata.unidata_version  # unicode data 的版本：'13.0.0', 不同python版本返回值不一样
+```
+
+备注：
+
+- 字符类别参见[官网](https://www.compart.com/en/unicode/category)，例如：类别 "Zs" 表示 Space Seperator, 例如空格；但制表符的类别为 "Cc" Control；而中文字符以及很多其他字符被归为 `Lo` Other Letter。
+- 字符 normalize，有几种转换方式：NFC、NFD、NFKC、NFKD。例如有些字符有多种表示：U+00C7 (LATIN CAPITAL LETTER C WITH CEDILLA，形状为字母`C`下面有个类似逗号的符号) 也可以被表示为 U+0043 (LATIN CAPITAL LETTER C，字母`C`) U+0327 (COMBINING CEDILLA，类似于一个逗号的符号).
+
+
 ## subprocess (待补充)
 
 - `subprocess` 模块的作用是运行命令行可以执行的命令
