@@ -800,6 +800,32 @@ dataset = load_dataset("glue", "mrpc")
 dataset.select(range(128))  # 将数据集缩小
 ```
 
+## 一些不理解的代码
+
+```python
+from datasets import Dataset
+import datasets
+
+def data_gen():
+    for i in range(10):
+        yield {"idx": i, "text": f"text_{i}"}
+
+dataset = Dataset.from_generator(data_gen)
+dataset.save_to_disk("hf-data-temp")
+# 保存了如下文件: hf-data-temp/{data-00000-of-00001.arrow,dataset_info.json,state.json}
+dataset = datasets.load_from_disk("hf-data-temp")  # 似乎不能使用load_dataset
+dataset = dataset.map(lambda x: {"a": "a" + x["text"]}, batched=False)  # 生成hf-data-temp/cache-xxx.arrow
+dataset = dataset.map(lambda x: {"b": "b" + x["text"]}, batched=False)  # 生成hf-data-temp/cache-yyy.arrow
+import os
+os.makedirs("ssss", exist_ok=True)
+# 指定cache_file_name有可能会直接读取缓存, 跟原始流程对不上
+dataset = dataset.map(lambda x: {"b": "b" + x["text"]}, batched=False, cache_file_name="ssss/hug")  # 生成ssss/hug
+
+# datasets.load_from_disk("ssss/hug")  # 报错！！！
+```
+第二次执行时会从缓存中读取
+
+
 # tokenizers 包
 
 `tokenizers` 包在安装 `transformers` 包时会自动进行安装，在 `transformers` 包中如何被使用需要进一步研究。
