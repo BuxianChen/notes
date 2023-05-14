@@ -5,7 +5,7 @@
 
 ## (硬件)显卡支持
 
-显卡与CUDA版本的支持对应情况: 参考(博客)[https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/]
+显卡与CUDA版本的支持对应情况: 参考[博客](https://arnon.dk/matching-sm-architectures-arch-and-gencode-for-various-nvidia-cards/)
 
 ## (系统软件)驱动
 安装驱动的方式有几种：
@@ -20,40 +20,156 @@
 
 ## (依赖软件) gcc, g++
 
-安装多个版本的 gcc/g++(ubuntu): 参考[博客](https://linuxconfig.org/how-to-switch-between-multiple-gcc-and-g-compiler-versions-on-ubuntu-20-04-lts-focal-fossa)
+安装 CUDA 时需要执行安装脚本，可能会涉及到 gcc/g++ 不存在或不兼容的情况，安装多个版本的 gcc/g++(ubuntu): 参考[博客](https://linuxconfig.org/how-to-switch-between-multiple-gcc-and-g-compiler-versions-on-ubuntu-20-04-lts-focal-fossa)
 
-## (安装) CUDA与CUDNN
-安装多个版本的 CUDA 及 CUDNN：
 
-- [参考链接](https://towardsdatascience.com/installing-multiple-cuda-cudnn-versions-in-ubuntu-fcb6aa5194e2)
+## TensorRT
+
+相关下载及文档链接如下：
+
+- CUDA Driver: https://developer.nvidia.com/download/indec.aspx
+- CUDA版本与驱动的支持关系: https://developer.nvidia.com/cuda/cuda-toolkit-release-notes/index.html
+- CUDA:
+  - 下载及文档：https://developer.nvidia.com/cuda-toolkit-archive
+- cuDNN:
+  - 下载：https://developer.nvidia.com/rdp/cudnn-archive
+- TensorRT: 
+  - 下载：https://developer.nvidia.com/nvidia-tensorrt-download
+  - 文档：https://docs.nvidia.com/deeplearning/tensorrt/archives/index.html
+
+TensorRT 依赖于 CUDA 与 cuDNN, 且特定版本的 TensorRT 依赖于特定版本的 CUDA 与 cuDNN，下面是几个版本的例子：
+
+TensorRT 8.2 GA + cuDNN 8.2.4 + CUDA 11.4
+- TensorRT 8.2 GA Update 4 for Linux x86_64 and CUDA 11.0, 11.1, 11.2, 11.3, 11.4 and 11.5 TAR Package: TensorRT-8.2.5.1.Linux.x86_64-gnu.cuda-11.4.cudnn8.2.tar.gz
+- cuDNN v8.2.4 (September 2nd, 2021), for CUDA 11.4, for Linux (x86): cudnn-11.4-linux-x64-v8.2.4.15.tgz
+
+TensorRT 8.2 GA + cuDNN 8.2.4 + CUDA 10.2
+- TensorRT 8.2 GA Update 4 for Linux x86_64 and CUDA 10.2 TAR Package:TensorRT-8.2.5.1.Linux.x86_64-gnu.cuda-10.2.cudnn8.2.tar.gz
+- cuDNN v8.2.4 (September 2nd, 2021), for CUDA 10.2, for Linux (x86): cudnn-10.2-linux-x64-v8.2.4.15.tgz
+
+TensorRT 7.2.3 + cuDNN 8.1.1 + CUDA 11.1
+- TensorRT 7.2.3 for Ubuntu 18.04 and CUDA 11.1, 11.2 TAR package: TensorRT-7.2.3.4.Ubuntu-18.04.x86_64-gnu.cuda-11.1.cudnn8.1.tar.gz
+- cuDNN v8.1.1 (Feburary 26th, 2021), for CUDA 11.0, 11.1, 11.2, for Linux Ubuntu(x86_64): cudnn-11.2-linux-x64-v8.1.1.33.tgz
+
+
+TensorRT 7.2.3 + cuDNN 8.1.1 + CUDA 10.2
+- TensorRT 7.2.3 for Ubuntu 18.04 and CUDA 10.2 TAR package: TensorRT-7.2.3.4.Ubuntu-18.04.x86_64-gnu.cuda-10.2.cudnn8.1.tar.gz
+- cuDNN v8.1.1 (Feburary 26th, 2021), for CUDA 10.2, for Linux Ubuntu(x86_64): cudnn-10.2-linux-x64-v8.1.1.33.tgz
+
+
+CUDA Toolkit 10.2.89 (Nov 2019):
+- cuda_10.2.89_440.33.01_linux.run
+- patch 1 (Aug 26, 2020): cuda_10.2.1_linux.run
+- patch 2 (Nov 17, 2020): cuda_10.2.2_linux.run
+CUDA Toolkit 11.4.4 (Feburary 2022): cuda_11.4.4_470.82.01_linux.run
+CUDA Toolkit 11.1.1 (October 2020): cuda_11.1.1_455.32.00_linux.run
+
+版本选择的方法【后续仍需补充】：
+
+从下载后的 TensorRT 的安装包文件名可以看出其依赖的 CUDA 与 cuDNN 版本
+从下载后的 cuDNN 的安装包文件名可以看出其依赖的 CUDA 版本
+从下载后的 CUDA 的安装包文件名可以看出与其相适配的显卡驱动版本号（如果机器本身的显卡驱动足够高，安装时可以选择不安装显卡驱动）
+
+## 多版本并存安装指南
+
+参考资料
+
+- [博客](https://towardsdatascience.com/installing-multiple-cuda-cudnn-versions-in-ubuntu-fcb6aa5194e2)
 - 李沐[B站课程](https://www.bilibili.com/video/BV1LT411F77M)
     主要有两种方式(除去docker的方式)：
     - 系统级别安装nvidia驱动+系统级手动安装所需要的版本的cuda
         备注：此方法得到的cuda是完整的
     - 系统级别安装nvidia驱动+conda安装cudatoolkit
         备注：此方法得到的cuda是不完整的
-    
-如果只希望运行Pytorch代码，可以只安装驱动，其余的CUDA、CUDNN等包含在`pip install pytorch`中[pytorch问答](https://discuss.pytorch.org/t/how-to-check-if-torch-uses-cudnn/21933)。具体来说，在官方预编译好[pytorch whl](https://download.pytorch.org/whl/torch/)包中，例如：`torch-1.11.0+cu115-cp38-cp38-linux_x86_64.whl`，将其解压后，可以发现这些文件的存在：
+
+本节内容仅作宏观指导, 具体细节以官方文档为准
+
+第一步：安装版本足够高的显卡驱动，驱动决定的支持最高的 CUDA 版本，且驱动在宿主机上只能是唯一的版本
+
+CUDA、cuDNN、TensorRT 都可以多版本并存安装，其中 CUDA 需要执行安装脚本、而 cuDNN 和 TensorRT 只需要将下载的安装文件解压并设置好环境变量即可。
+
+下面以这个版本为例介绍安装方法：
+
+TensorRT 7.2.3 + cuDNN 8.1.1 + CUDA 10.2
+- TensorRT 7.2.3 for Ubuntu 18.04 and CUDA 10.2 TAR package: TensorRT-7.2.3.4.Ubuntu-18.04.x86_64-gnu.cuda-10.2.cudnn8.1.tar.gz
+- cuDNN v8.1.1 (Feburary 26th, 2021), for CUDA 10.2, for Linux Ubuntu(x86_64): cudnn-10.2-linux-x64-v8.1.1.33.tgz
+- CUDA Toolkit 10.2.89 (Nov 2019):
+  - cuda_10.2.89_440.33.01_linux.run
+  - patch 1 (Aug 26, 2020): cuda_10.2.1_linux.run
+  - patch 2 (Nov 17, 2020): cuda_10.2.2_linux.run
+
+
+即假设目录 `/home/username/software` 下下载好了如下文件
 ```
-./torch/lib/libcudnn.so.8
-./torch/lib/libcudnn_adv_infer.so.8
-./torch/lib/libcudnn_adv_train.so.8
-./torch/lib/libcudnn_cnn_infer.so.8
-./torch/lib/libcudnn_cnn_train.so.8
-./torch/lib/libcudnn_ops_infer.so.8
-./torch/lib/libcudnn_ops_train.so.8
+cuda_10.2.89_440.33.01_linux.run
+cuda_10.2.1_linux.run
+cuda_10.2.2_linux.run
+cudnn-10.2-linux-x64-v8.1.1.33.tgz
+TensorRT-7.2.3.4.Ubuntu-18.04.x86_64-gnu.cuda-10.2.cudnn8.1.tar.gz
 ```
-备注：pytorch中带着的cuda以及cudnn头文件及库文件并不是完整的cuda与cudnn库文件。并且即使系统级别安装的是别的版本的cuda与cudnn，使用pip的方式安装时，pytorch也会将其忽略。
 
-
-## 特例: Ubuntu 20.04 上安装 CUDA 10.2
-
+**CUDA 安装**
 参考[博客](https://blog.csdn.net/qq757056521/article/details/109267381)
 
 ```bash
 # 在希望不修改/usr/local/cuda的软连接时
-bash cuda_10.2.89_440.33.01_linux.run --librarypath=/usr/local/cuda-10.2
+./cuda_10.2.89_440.33.01_linux.run --librarypath=/usr/local/cuda-10.2
+./cuda_10.2.1_linux.run  # 安装 patch1
+./cuda_10.2.2_linux.run  # 安装 patch2
+# 安装完后可以将上面 3 个安装脚本文件全部删除
 ```
+
+以上命令会将 CUDA 10.2 安装在 `/usr/local/cuda-10.2` 目录下
+
+需要修改的环境变量有：
+
+```bash
+export PATH=/usr/local/cuda-10.2/bin:$PATH
+export LD_LIBRARY_PATH=/usr/local/cuda-10.2/lib64:$LD_LIBRARY_PATH
+export CPATH=/usr/local/cuda-10.2/include:$CPATH
+```
+
+**cuDNN 安装**
+
+参考 [stackoverflow](https://stackoverflow.com/questions/40736999/installing-cudnn-for-general-usage-without-root-access)
+```bash
+tar -zxvf cudnn-10.2-linux-x64-v8.1.1.33.tgz
+# 官网以及许多教程会推荐将解压后的头文件与库文件直接拷贝至cuda头文件与库文件中, 这里使用分离的办法
+mv cuda cudnn-10.2-linux-x64-v8.1.1.33
+rm -rf cudnn-10.2-linux-x64-v8.1.1.33.tgz  # 注意不能删除解压后的文件
+```
+
+需要修改的环境变量有：
+```bash
+export LD_LIBRARY_PATH=/home/username/software/cudnn-10.2-linux-x64-v8.1.1.33/lib:$LD_LIBRARY_PATH
+export CPATH=/home/username/software/cudnn-10.2-linux-x64-v8.1.1.33/include:$CPATH
+```
+
+**TensorRT 安装**
+
+```bash
+tar -zxvf TensorRT-7.2.3.4.Ubuntu-18.04.x86_64-gnu.cuda-10.2.cudnn8.1.tar.gz
+rm -rf TensorRT-7.2.3.4.Ubuntu-18.04.x86_64-gnu.cuda-10.2.cudnn8.1.tar.gz  # 注意不能删除解压后的文件
+# 可选: 安装python相关的包
+cd TensorRT--7.2.3.4.Ubuntu-18.04.x86_64-gnu.cuda-10.2/python
+python3 -m pip install tensorrt-*-cp3x-none-linux_x86_64.whl
+```
+
+需要修改的环境变量有：
+```bash
+export PATH=/home/username/software/TensorRT-7.2.3.4.Ubuntu-18.04.x86_64-gnu.cuda-10.2.cudnn8.1/bin:$PATH
+export LD_LIBRARY_PATH=/home/username/software/TensorRT-7.2.3.4.Ubuntu-18.04.x86_64-gnu.cuda-10.2.cudnn8.1/lib:$LD_LIBRARY_PATH
+export CPATH=/home/username/software/TensorRT-7.2.3.4.Ubuntu-18.04.x86_64-gnu.cuda-10.2.cudnn8.1/include:$CPATH
+```
+
+## (FAQ) CUDA 的多种安装方式
+
+CUDA 的安装方式在网上各种资料里大略有如下几种，但一般来说只推荐上一节的那种方式，这里对这几种方式做一个说明：
+
+- Nvidia 官网安装：
+  - 离线安装脚本：例如上面介绍的 `cuda_10.2.89_440.33.01_linux.run`，这种安装包含了整个 CUDA 的工具包，最重要的是 nvcc 编译器、头文件、库文件，最全面
+  - deb 包：这种安装也是全面的安装，缺点是它会把头文件、库文件、nvcc 分散在系统文件的各处，不方便删除
+- 使用conda安装cuda-toolkit: 阉割版的cuda，且必须激活环境，总的来说不推荐
 
 ## (FAQ) cuda driver version与runtime version
 
@@ -77,12 +193,47 @@ export PATH=$CUDA_HOME/bin:$PATH
 export LD_LIBRARY_PATH=$CUDA_HOME/lib:$CUDA_HOME/lib64:$LD_LIBRARY_PATH
 ```
 
-## 疑难杂症
+## (FAQ) Pytorch 相关
+
+如果只希望运行Pytorch代码，可以只安装驱动，其余的CUDA、CUDNN等包含在`pip install pytorch`中[pytorch问答](https://discuss.pytorch.org/t/how-to-check-if-torch-uses-cudnn/21933)。具体来说，在官方预编译好[pytorch whl](https://download.pytorch.org/whl/torch/)包中，例如：`torch-1.11.0+cu115-cp38-cp38-linux_x86_64.whl`，将其解压后，可以发现这些文件的存在：
+```
+./torch/lib/libcudnn.so.8
+./torch/lib/libcudnn_adv_infer.so.8
+./torch/lib/libcudnn_adv_train.so.8
+./torch/lib/libcudnn_cnn_infer.so.8
+./torch/lib/libcudnn_cnn_train.so.8
+./torch/lib/libcudnn_ops_infer.so.8
+./torch/lib/libcudnn_ops_train.so.8
+```
+备注：pytorch中带着的cuda以及cudnn头文件及库文件并不是完整的cuda与cudnn库文件。并且即使系统级别安装的是别的版本的cuda与cudnn，使用pip的方式安装时，pytorch在运行时也会将其忽略【设置LD_LIBRARY_PATH会不会影响到？】。
 
 由于pytorch自带(使用pip安装)了一个阉割版的CUDA(可能pytorch为了用户体验,只要求安装驱动其他都自带), 而某些其他的包需要独立安装一个完整的CUDA, 这时候会引发一些冲突,具体解释可以参考[参考资料](https://huggingface.co/docs/transformers/v4.24.0/en/main_classes/trainer#trainer-integrations)
 
+新版本的 pytorch 安装时，有一些新的变化，例如安装包变小了，CUDA和CUDNN的依赖会去下载别的nvidia的包，参见[issue](https://github.com/pytorch/pytorch/issues/96595)
 
-## 版本问题
+
+pytorch 预编译包有两个地方可以下载
+
+- [PyPi](https://pypi.org/project/torch/): 对于一个torch版本而言, 对于一个系统类型(例如:windows/linux), 一个python版本(例如:python3.6/python3.7/python3.8), 只能提供一个whl安装包, 因此只能放一个CUDA版本的预编译包
+- [pytorch whl](https://download.pytorch.org/whl/torch/)：对于一个torch版本而言, Pytorch 预编译了不同 CUDA 版本的预编译包
+
+注意: 不是所有的 CUDA 版本都有预编译包, 例如 CUDA 11.4 版本就没有预编译包
+
+以下是在Linux环境下不同python、pytorch、cuda版本下对推理过程的测试，比较结果的差异【待测试】
+
+- pytorch1.10.2+cuda10.2+python3.7: 一致
+- pytorch1.10.2+cuda10.2+python3.8
+- pytorch1.10.2+cuda10.2+python3.9
+- pytorch1.12.1+cuda10.2+python3.7: 一致
+- pytorch1.12.1+cuda10.2+python3.8
+- pytorch1.12.1+cuda10.2+python3.9
+- pytorch1.12.1+cuda11.3+python3.7: 一致
+- pytorch1.12.1+cuda11.3+python3.8
+- pytorch1.12.1+cuda11.3+python3.9
+
+测试方法如下：使用ubuntu镜像预编译好3种python作为3个基础镜像, 之后使用这三个镜像分别安装pytorch whl文件, 最后在huggingface上模型结果是否有差异.
+
+## (FAQ) 怎么知道版本号
 
 来源: ColossalAI `colossalai check -i`
 ```python
@@ -97,6 +248,18 @@ print(torch.__version__)
 # torch内部C++算子所使用的CUDA版本
 print(torch.version.cuda)
 ```
+
+## (FAQ) 相关的环境变量解释
+
+- `PATH`: 可执行文件搜索目录
+- `CPATH`: 头文件搜索目录
+- `CUDA_HOME`: 这个某些情况下似乎会用到, 不确定是否必须
+- `LD_LIBRARY_PATH`, `RPATH`, `RUNPATH`, `DT_RPATH`, `DT_RUNPATH`: 动态链接库搜索目录
+
+[资料1](https://medium.com/obscure-system/rpath-vs-runpath-883029b17c45)
+[资料2](https://man7.org/training/download/shlib_dynlinker_slides.pdf)
+[pytorch issue](https://github.com/pytorch/pytorch/issues/96595)
+
 
 # WSL2
 

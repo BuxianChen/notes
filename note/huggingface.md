@@ -725,6 +725,28 @@ Dataset csv downloaded and prepared to /home/buxian/.cache/huggingface/datasets/
 
 - 输出结果里：Downloading and preparing dataset及以下的内容的逻辑发生在`datasets.builder:DatasetBuilder.download_and_prepare`函数内
 
+
+load_dataset 函数的全部参数如下(没有按照实际的参数列表排列):
+
+个人觉得常用的
+
+- path, name, split: [参考官方文档](https://huggingface.co/docs/datasets/v2.12.0/en/load_hub), path 一般是huggingface hub的仓库名, name 在官方文档中被称为 dataset configuration, 一般是指一个数据集的几个子数据集, split 一般取值为 "train", "test" 等
+- data_dir, data_files: 这两个参数一般适用 path="csv","json" 等
+- cache_dir, keep_in_memory, storage_options: cache_dir 对应于默认的缓存目录 `HF_DATASETS_CACH=~/.cache/huggingface/datasets`, keep_in_memory 表示不使用缓存, storage_options 目前还不清楚使用场景
+- streaming: 流式下载
+- num_proc: 多进程处理
+
+不常用的
+
+- features: 不清楚
+- download_config, download_mode, verification_mode, ignore_verification: 与下载相关的, 不清楚
+- save_infos: 不清楚
+- revision, use_auth_token: 与下载版本及下载权限相关
+- task: 不清楚
+- **config_kwargs: 不清楚
+
+
+
 **缓存数据文件手动读取**
 ```python
 import pyarrow as pa
