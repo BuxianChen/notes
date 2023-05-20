@@ -177,7 +177,7 @@ address_book = Parse(json_str, addressbook_pb2.AddressBook())
 参考[官方文档](https://onnx.ai/onnx/intro/concepts.html)，此处仅简要列出：
 
 - node: 即张量op
-  - attribute: 张量op的参数(一般不会被更改), 例如: 假设onnx定义了一个op用于对两个输入做加权和, 那么这个权重可以被视为是这个op的attribute。attribute这个概念跟initializer应该只是实现上的区分
+  - attribute: 张量op的参数, 例如: [Unsqueeze](https://github.com/onnx/onnx/blob/main/docs/Changelog.md#unsqueeze-11) 算子(opset11版本) 中的 `axes` 就是 attribute, 构建计算图时就会确定好具体的取值
 - input: 即张量op的输入
   - initializer: 一种特殊的输入, 固定的权重
 - output: 即张量op的输出
@@ -186,9 +186,6 @@ address_book = Parse(json_str, addressbook_pb2.AddressBook())
   - `ai.onnx.ml`: 包含 TreeEnsembleRegressor, SVMRegressor 等
   - `ai.onnx.preview.training`: onnx v1.7.0 新特性, 包含 Adam 等
 - graph: 使用node, input, output搭建的图
-
-> Every node has a type, a name, named inputs and outputs, and attributes. As long as a node is described under these constraints, a node can be added to any ONNX graph.
-
 - opset version:
   - opset version: 可以通过以下方式查看当前版本的onnx的opset版本号
   ```
@@ -198,7 +195,148 @@ address_book = Parse(json_str, addressbook_pb2.AddressBook())
   ```
   - op version: 每个op都有自己的版本号, 例如: Add 操作有 1, 6, 7, 13, 14这几个版本号, 这代表 Add 操作随着 opset 更新的版本
   - 一个graph会为每个domain记录一个全局的opset版本号，graph内的所有node都会按照所在的domain的opset版本号决定其版本号, 例如一个graph里设定的的ai.onnx这个domain的opset版本号为8, 则 Add 操作的版本号为 7
-- proto: 上述概念实现上采用了Protocol Buffer, onnx 为
+- proto: 上述概念实现上采用了Protocol Buffer, `onnx` 定义了如下的[数据结构](https://onnx.ai/onnx/api/classes.html)
+  - 核心: `TensorProto`, `TensorShapeProto`, `TypeProto`, `ValueInfoProto`, `AttributeProto`, `OperatorProto`, `FunctionProto`, `NodeProto`, `GraphProto`, `ModelProto`, `TrainingInfoProto`
+  - 其他: `MapProto`, `OperatorSetIdProto`, `OperatorSetProto`, `OptionalProto`, `SequenceProto`, `SparseTensorProto`, `StringStringEntryProto`, 
+
+下面是一个具体的例子: 
+
+首先参考[例子](https://github.com/microsoft/onnxruntime/blob/main/onnxruntime/python/tools/transformers/notebooks/PyTorch_Bert-Squad_OnnxRuntime_GPU.ipynb)使用 `torch.onnx.export` 转换模型得到一个 `.onnx` 格式的文件
+
+```python
+# pip install transformers
+# 对bert-base-uncased模型的配置做了一些修改: 词表缩小为133, embedding与隐层维数缩小为16, transformer block数量缩小为2
+from transformers import BertForMaskedLM, BertTokenizer
+import torch
+device = "cpu"  # 使用cpu即可
+model = BertForMaskedLM.from_pretrained("my-small-model").to(device)
+tokenizer = BertTokenizer.from_pretrained("my-small-model")
+inputs = tokenizer(["hello world"], padding="max_length", max_length=128, truncation=True, return_tensors="pt").to(device)
+
+model.eval()
+with torch.no_grad():
+  symbolic_names = {0: "batch_size", 1: "max_seq_len"}
+  torch.onnx.export(
+    model,
+    f="model.onnx",
+    args=tuple(inputs.values()),
+    opset_version=11,
+    do_constant_folding=True,
+    input_names=["input_ids", "attention_mask", "token_type_ids"],
+    output_names=["last_hidden_state"],
+    dynamic_axes={
+      "input_ids": symbolic_names,
+      "attention_mask": symbolic_names,
+      "token_type_ids": symbolic_names
+    }
+  )
+```
+
+然后读取并解析
+
+```python
+import onnx
+import google.protobuf.json_format
+model_proto: onnx.ModelProto = onnx.load("model.onnx")
+d = google.protobuf.json_format.MessageToDict(model_proto)
+```
+
+`d` 的内容如下:
+
+```json
+{
+    "irVersion": 6,
+    "producerName": "pytorch",
+    "producerVersion": "1.9",
+    "opsetImport": [{"version": "11"}],
+    "graph": {
+        "name": "torch-jit-export",
+        "input": [
+            {
+                "name": "input_ids",
+                "type": {
+                    "tensorType": {
+                        "elemType": 7,  // int64
+                        "shape": {"dim": [{"dimParam": "batch_size"}, {"dimParam": "max_seq_len"}]}
+                    }
+                }
+            }  // "token_type_ids", "attention_mask" 类似
+        ],
+        "output": [
+            {
+                "name": "last_hidden_state",
+                "type": {
+                    "tensorType": {
+                        "elemType": 1,  // float32
+                        "shape": {"dim": [{"dimParam": "batch_size"}, {"dimParam": "Addlast_hidden_state_dim_1"}, {"dimValue": "133"}]}
+                    }
+                }
+            }
+        ],
+        "initializer": [
+            {
+                "dims": ["1", "128"],
+                "dataType": 7,  // int64
+                "name": "bert.embeddings.position_ids",
+                "rawData": "AAAAAAABBDCCCCC"
+            },
+            {
+                "dims": ["133", "16"],
+                "dataType": 1,  // float32
+                "name": "bert.embeddings.word_embeddings.weight",
+                "rawData": "AAAAAAABBDCCCCC"
+            }
+            // ...
+        ],
+        "node": [  // 一共有242个算子(BertforMaskedLM的num_layers被设置为2的情况下)
+            {
+                "input": ["attention_mask"],
+                "output": ["46"],
+                "name": "Unsqueeze_0",
+                "opType": "Unsqueeze",
+                "attribute": [
+                    {"name": "axes", "ints": ["1"], "type": "INTS"}
+                ]
+            },  // (B, L) -> (B, 1, L), 最终目标是匹配: (B, num_head, L, L)
+            {
+                "input": ["46"],
+                "output": ["47"],
+                "name": "Unsqueeze_1",
+                "opType": "Unsqueeze",
+                "attribute": [
+                    {"name": "axes", "ints": ["2"], "type": "INTS"}
+                ]
+            },  // (B, 1, L) -> (B, 1, 1, L), 目标是匹配是匹配: (B, num_head, L, L)
+            // 上面两个算子对应与transformers中的实现为 extended_attention_mask=attention_mask[:, None, None, :]
+            {
+                "input": ["47"],
+                "output": ["48"],
+                "name": "Cast_2",
+                "opType": "Cast",
+                "attribute": [
+                    {"name": "to", "i": "1", "type": "INTS"}
+                ]
+            },  // 这个对应于 extended_attention_mask=extended_attention_mask.to(torch.float32)
+            // 以下两个算子对应 extended_attention_mask = (1.0 - extended_attention_mask) * torch.finfo(dtype).min 的前半部分
+            {
+                "output": ["49"],
+                "name": "Constant_3",
+                "opType": "Constant",
+                "attribute": [
+                    {"name": "value", "t": {"dataType": 1, "rawData": "AACAPw=="}, "type": "TENSOR"}
+                ]
+            },
+            {
+                "input": ["49", "48"],
+                "output": ["50"],
+                "name": "Sub_4",
+                "opType": "Sub"
+            }
+            // ...
+        ]
+    }
+}
+```
 
 
 ### onnx Python API
