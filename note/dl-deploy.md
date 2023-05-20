@@ -238,6 +238,14 @@ with torch.no_grad():
 import onnx
 import google.protobuf.json_format
 model_proto: onnx.ModelProto = onnx.load("model.onnx")
+
+# onnx.load() 本质上等同于:
+# from onnx import ModelProto              # ModelProto在源码中定义在
+# manual_model_proto = ModelProto()
+# x = open("model.onnx", "rb").read()      # byte类型
+# manual_model_proto.ParseFromString(x)
+# model_proto == manual_model_proto        # True
+
 d = google.protobuf.json_format.MessageToDict(model_proto)
 ```
 
@@ -338,6 +346,14 @@ d = google.protobuf.json_format.MessageToDict(model_proto)
 }
 ```
 
+备注: "AACAPw==" 代表 32 位浮点数的原因可以参考这个[issue](https://github.com/onnx/onnx/issues/5244)。
+
+```python
+import base64
+s = "AACAPw=="
+v = base64.b64decode(s.encode())      # b'\x00\x00\x80?' => 1.0 的 IEEE754 表示: 00111111 10000000 00000000 00000000
+value = np.frombuffer(v, np.float32)  # np.array([1.0])
+```
 
 ### onnx Python API
 
