@@ -260,6 +260,68 @@ print(torch.version.cuda)
 [资料2](https://man7.org/training/download/shlib_dynlinker_slides.pdf)
 [pytorch issue](https://github.com/pytorch/pytorch/issues/96595)
 
+## (FAQ) Nvidia 显卡架构, 型号, CUDA 时间线
+
+参考资料
+
+- [架构](https://en.wikipedia.org/wiki/Category:Nvidia_microarchitectures)
+- [CUDA](https://developer.nvidia.com/cuda-toolkit-archive)
+- [cuDNN](https://developer.nvidia.com/rdp/cudnn-archive)
+- [TensorRT](https://developer.nvidia.com/nvidia-tensorrt-download)
+
+显卡:
+- 2006: Tesla
+- 2010: Fermi
+- 2012: Kepler
+- 2014: Maxwell
+- 2016: Pascal
+- 2017: Volta, Tesla V100
+- 2018: Turing, GeForce16 系列, RTX20 系列
+- 2020: Ampere, A100, RTX3060
+- 2022: Hopper, H100
+
+CUDA:
+- 2016.9: CUDA 8.0
+- 2017.9: CUDA 9.0
+- 2017.10: CUDA 9.1
+- 2018.5: CUDA 9.2
+- 2018.9: CUDA 10.0
+- 2019.2: CUDA 10.1
+- 2019.10: CUDA 10.2
+- 2020.1: CUDA 11.0.1
+- 2020.9: CUDA 11.1.0
+- 2020.12: CUDA 11.2.0
+- 2021.4: CUDA 11.3.0
+- 2021.6: CUDA 11.4.0
+- 2021.10: CUDA 11.5.0
+- 2022.1: CUDA 11.6.0
+- 2022.5: CUDA 11.7.0
+- 2022.10: CUDA 11.8.0
+- 2022.12: CUDA 12.0.0
+- 2023.2: CUDA 12.1.0
+
+cuDNN:
+- 2017.4: cuDNN 6.0 (CUDA 7.5, 8.0)
+- 2017.10: cuDNN 7.0.1 (CUDA 8.0, 9.0)
+- 2018.3: cuDNN 7.1.2 (CUDA 9.0, 9.1, 9.2)
+- 2018.8: cuDNN 7.2.1 (CUDA 9.2)
+- 2018.9: cuDNN 7.3.0 (CUDA 9.0, 9.2, 10.0)
+- 2018.10: cuDNN 7.4.1 (CUDA 9.0, 9.2, 10.0)
+- 2019.2: cuDNN 7.5.0 (CUDA 9.2, 10.0, 10.1)
+- 2019.5: cuDNN 7.6.0 (CUDA 9.2, 10.0, 10.1, 10.2)
+- 2020.7: cuDNN 8.0.2 (CUDA 10.1, 10.2, 11.0)
+- 2021.1: cuDNN 8.1.0 (CUDA 10.2, 11.0, 11.1, 11.2)
+- 2021.4: cuDNN 8.2.0 (CUDA 10.2, 11.x, 11.4)
+- 2021.10: cuDNN 8.3.0 (CUDA 10.2, 11.5)
+- 2022.4: cuDNN 8.4.0 (CUDA 10.2, 11.x)
+- 2022.8: cuDNN 8.5.0 (CUDA 10.2, 11.x)
+- 2022.10: cuDNN 8.6.0 (CUDA 10.2, 11.x)
+- 2022.11: cuDNN 8.7.0 (CUDA 10.2, 11.x)
+- 2023.2: cuDNN 8.8.0 (CUDA 11.x, 12.0)
+- 2023.4: cuDNN 8.9.0 (CUDA 11.x, 12.x)
+
+TensorRT(不确定时间线在哪找)
+
 
 # WSL2
 
