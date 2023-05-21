@@ -611,6 +611,7 @@ git submodule init
 git submodule update
 # 后两步也可以合为一步
 # git submodule update --init
+# git submodule update --init --recursive  # submodule中也包含submodule
 
 # 一步到位
 git clone --recurse-submodules https://github.com/example/a

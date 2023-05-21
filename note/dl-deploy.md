@@ -72,7 +72,7 @@ pybind11实际上是对这种拓展方式做了层层封装
 
 ## onnx
 
-### Protocol Buffer（Finished)
+### Protocol Buffer (Finished)
 
 Google定义了一套用于代替xml,json的格式, 并提供了一套完整的库来解析, 序列化这种数据格式, onnx的序列化使用了这种格式
 
@@ -355,12 +355,142 @@ v = base64.b64decode(s.encode())      # b'\x00\x00\x80?' => 1.0 的 IEEE754 表�
 value = np.frombuffer(v, np.float32)  # np.array([1.0])
 ```
 
-### onnx Python API
+### onnx Python API: (low level)
 
 onnx定义模型的方式是使用 `*Proto` 的方式进行的：
 
-
 ### 源码安装解析
-
 此处结合 make, cmake, pybind11, setup.py, protocol buffer 对 onnx 项目的安装过程以及一些使用时的调用栈进行分析
 
+### onnxruntime
+
+#### 安装
+
+如果下载预编译包, `onnxruntime` 与 `onnxruntime-gpu` 不能同时安装（并且 `onnxruntime-gpu` 似乎不带 TensorRT 的部分，待确认）
+
+#### 一个例子
+本节主要对官方的[示例代码](https://github.com/microsoft/onnxruntime/blob/main/onnxruntime/python/tools/transformers/notebooks/PyTorch_Bert-Squad_OnnxRuntime_GPU.ipynb)
+
+```bash
+python -m onnxruntime.transformers.optimizer \
+  --input onnx.model \
+  --output onnx_opt.model
+  # 其余参数 ...
+```
+
+本质上干了两件事
+
+
+#### 源码安装解析
+
+这里以 TensorRT ([文档](https://fs-eire.github.io/onnxruntime/docs/build/eps.html#tensorrt), [Dockerfile](https://github.com/microsoft/onnxruntime/blob/main/dockerfiles/Dockerfile.tensorrt)) 举例。
+
+这里结合官方[Dockerfile](https://github.com/microsoft/onnxruntime/blob/v1.6.0/dockerfiles/Dockerfile.tensorrt)简述一下 `onnxruntime-gpu==1.6.0` 的源码安装步骤, 官方的 Dockerfile 的内容简化为如下:
+
+```dockerfile
+FROM nvcr.io/nvidia/tensorrt:20.07.1-py3
+ENV PATH /usr/local/nvidia/bin:/usr/local/cuda/bin:/code/cmake-3.14.3-Linux-x86_64/bin:/opt/miniconda/bin:${PATH}
+ENV LD_LIBRARY_PATH /opt/miniconda/lib:$LD_LIBRARY_PATH
+RUN git clone --single-branch --branch v1.6.0 --recursive https://github.com/Microsoft/onnxruntime && \
+    # apt install python3-dev
+    # install miniconda
+    # pip install numpy
+    # install cmake
+    ./build.sh --cuda_home /usr/local/cuda --cudnn_home /usr/lib/x86_64-linux-gnu/ --use_tensorrt --tensorrt_home /workspace/tensorrt --config Release --build_wheel --update --build --cmake_extra_defines ONNXRUNTIME_VERSION=1.6.0 && \
+    pip install /code/onnxruntime/build/Linux/Release/dist/*.whl
+```
+
+镜像的 build 命令为
+
+```bash
+docker build -t onnxruntime-trt -f Dockerfile.tensorrt .
+```
+
+首先对基础镜像 `nvcr.io/nvidia/tensorrt:20.10-py3` (`nvcr.io/nvidia/tensorrt:20.07.1-py3` 应该类似) 做一些说明, 该基础镜像包含 CUDA、cuDNN、TensorRT, 相关信息如下:
+
+```bash
+# 环境变量
+CUDA_PATH=""
+CUDA_HOME=""
+C_PATH=""
+C_INCLUDE_PATH=""
+CPLUS_INCLUDE_PATH=""
+# /usr/local/nvidia/bin 目录实际不存在
+PATH="/opt/tensorrt/bin:/usr/local/mpi/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/local/ucx/bin"
+# LD_LIBRARY_PATH 的几个目录实际上都不存在
+LD_LIBRARY_PATH="/usr/local/cuda/compat/lib:/usr/local/nvidia/lib:/usr/local/nvidia/lib64"
+# 这个目录存放有 libcublas.so 等动态链接库文件
+LIBRARY_PATH="/usr/local/cuda/lib64/stubs:"
+```
+
+默认动态链接库目录
+```
+# cat /etc/ld.so.conf.d/*
+/usr/local/cuda/compat/lib                    # 00-cuda-compat.conf(此目录不存在)
+/usr/local/cuda-11.1/targets/x86_64-linux/lib # 999_cuda-11-1.conf(cuda动态链接库目录)
+/usr/local/cuda/lib64                         # cuda.conf(实际上软连接到/usr/local/cuda-11.1/targets/x86_64-linux/lib)
+/usr/local/lib                                # libc.conf
+/usr/local/nvidia/lib                         # nvidia.conf(此目录不存在)
+/usr/local/nvidia/lib64                       # nvidia.conf(此目录不存在)
+/usr/local/mpi/lib                            # openmpi.conf
+/usr/local/ucx/lib                            # openucx.conf
+/usr/local/lib/x86_64-linux-gnu               # x86_64-linux-gnu.conf(此目录不存在)
+/lib/x86_64-linux-gnu                         # x86_64-linux-gnu.conf
+/usr/lib/x86_64-linux-gnu                     # x86_64-linux-gnu.conf(包含cuDNN动态链接库)
+```
+
+gcc默认头文件目录
+```
+# gcc -v -E -
+/usr/lib/gcc/x86_64-linux-gnu/7/include
+/usr/local/include
+/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed
+/usr/include/x86_64-linux-gnu                 # 包含 cudnn_v8.h 等 cudnn 头文件以及 NvInfer.h 等 TensorRT 头文件目录
+/usr/include                                  # 包含 cudnn.h 头文件, 本质上软链接到 /usr/include/x86_64-linux-gnu/cudnn_v8.h
+# /usr/include/linux 目录下有一个cuda.h文件, 但没有更多的例如 curand.h 文件, 但这个目录似乎不在gcc的默认搜索路径下
+```
+
+CUDA、cuDNN、TensorRT
+
+```
+CUDA
+安装路径为 /usr/local/cuda, 包含 include, lib64, bin 目录
+
+可执行文件目录 /usr/local/cuda/bin 被添加到 PATH 环境变量中 (例如: nvcc)
+头文件目录 /usr/local/cuda/include 似乎没有被设置在环境变量中 (例如: cublas.h)
+库文件目录 /usr/local/cuda/lib64 被包含在默认动态链接库中 (例如: libcublas.so)
+/usr/local/cuda/lib64/stubs 被添加到 LIBRARY_PATH 环境变量中
+
+cuDNN
+无可执行文件
+头文件在默认头文件目录 /usr/include 中 (例如: cudnn.h)
+库文件在默认动态链接库目录 /usr/lib/x86_64-linux-gnu 中 (例如: libcudnn.so)
+
+TensorRT
+可执行文件目录 /opt/tensorrt/bin 被添加到 PATH 环境变量中 (例如: trtexec)
+头文件在默认头文件目录 /usr/include/x86_64-linux-gnu 中 (例如: NvInfer.h)
+库文件在默认动态链接库目录 /usr/lib/x86_64-linux-gnu 中 (例如: libnvinfer.so)
+```
+
+源码安装的关键命令为
+```bash
+./build.sh \
+  # 可以通过设置环境变量 CUDA_HOME 或 --cuda_home 指定, /usr/local/cuda 要包含 bin, lib64, include 目录, nvcc 所在目录需包含在环境变量 PATH 中
+  --cuda_home /usr/local/cuda \
+  # 可以通过设置环境变量 CUDNN_HOME 或 --cudnn_home 指定, /workspace/cudnn 包含 lib64, include 目录即可 
+  --cudnn_home /workspace/cudnn \
+  # 可以通过设置环境变量 TENSORRT_HOME 或 --tensorrt_home 指定, /workspace/TensorRT-7.1.3.4 包含 lib, include 目录也可
+  --use_tensorrt --tensorrt_home /workspace/TensorRT-7.1.3.4 \
+  # --skip_submodule_sync \  # 跳过submodule同步
+  --config Release --build_wheel --update --build --cmake_extra_defines ONNXRUNTIME_VERSION=1.6.0
+
+# cmake/CMakeLists.txt 文件中有这种写法, PATH_SUFFIXES 表示会搜索 TENSORRT_ROOT 与 TENSORRT_ROOT/include 目录
+# find_path(TENSORRT_INCLUDE_DIR NvInfer.h
+#   HINTS ${TENSORRT_ROOT} ${CUDA_TOOLKIT_ROOT_DIR}
+#   PATH_SUFFIXES include)
+
+# MESSAGE(STATUS "Found TensorRT headers at ${TENSORRT_INCLUDE_DIR}")
+# find_library(TENSORRT_LIBRARY_INFER nvinfer
+#   HINTS ${TENSORRT_ROOT} ${TENSORRT_BUILD} ${CUDA_TOOLKIT_ROOT_DIR}
+#   PATH_SUFFIXES lib lib64 lib/x64)
+```
