@@ -366,7 +366,36 @@ onnx定义模型的方式是使用 `*Proto` 的方式进行的：
 
 #### 安装
 
-如果下载预编译包, `onnxruntime` 与 `onnxruntime-gpu` 不能同时安装（并且 `onnxruntime-gpu` 似乎不带 TensorRT 的部分，待确认）
+如果下载预编译包, `onnxruntime` 与 `onnxruntime-gpu` 不能同时安装
+
+备注：
+- onnxruntime-gpu==1.6.0 Pypi 预编译包不带 TensorrtProvider
+- onnxruntime-gpu==1.10.0 Pypi 预编译包包含 TensorrtProvider
+- 无论哪种情况都要注意 `onnxruntime/capi/_ld_preload.py`
+  ```python
+  # onnxruntime-gpu==1.10.0 onnxruntime/capi/_ld_preload.py 文件内容
+  # 注意这些 cudnn 与 tensorrt 的动态链接库要包含在系统目录中
+  from ctypes import CDLL, RTLD_GLOBAL
+  try:
+      _libcublas = CDLL("libcublas.so.11", mode=RTLD_GLOBAL)
+      _libcudnn = CDLL("libcudnn.so.8", mode=RTLD_GLOBAL)
+      _libcurand = CDLL("libcurand.so.10", mode=RTLD_GLOBAL)
+      _libcufft = CDLL("libcufft.so.10", mode=RTLD_GLOBAL)
+      _libcudart = CDLL("libcudart.so.11.0", mode=RTLD_GLOBAL)
+  except OSError:
+      import os
+      os.environ["ORT_CUDA_UNAVAILABLE"] = "1"
+  from ctypes import CDLL, RTLD_GLOBAL
+  try:
+      _libcudnn = CDLL("libcudnn.so.8", mode=RTLD_GLOBAL)
+      _libcudart = CDLL("libcudart.so.11.0", mode=RTLD_GLOBAL)
+      _libnvinfer = CDLL("libnvinfer.so.8", mode=RTLD_GLOBAL)
+      _libnvinfer_plugin = CDLL("libnvinfer_plugin.so.8", mode=RTLD_GLOBAL)
+  except OSError:
+      import os
+      os.environ["ORT_TENSORRT_UNAVAILABLE"] = "1"
+  ```
+
 
 #### 一个例子
 本节主要对官方的[示例代码](https://github.com/microsoft/onnxruntime/blob/main/onnxruntime/python/tools/transformers/notebooks/PyTorch_Bert-Squad_OnnxRuntime_GPU.ipynb)
@@ -448,6 +477,11 @@ gcc默认头文件目录
 /usr/include/x86_64-linux-gnu                 # 包含 cudnn_v8.h 等 cudnn 头文件以及 NvInfer.h 等 TensorRT 头文件目录
 /usr/include                                  # 包含 cudnn.h 头文件, 本质上软链接到 /usr/include/x86_64-linux-gnu/cudnn_v8.h
 # /usr/include/linux 目录下有一个cuda.h文件, 但没有更多的例如 curand.h 文件, 但这个目录似乎不在gcc的默认搜索路径下
+
+nvcc默认头文件库
+假设nvcc位于/usr/local/cuda/bin/nvcc
+那么nvcc --verbose xx.cu 会显示出搜索的头文件信息
+默认头文件搜索路径为 /usr/local/cuda/bin/../include
 ```
 
 CUDA、cuDNN、TensorRT
@@ -457,7 +491,7 @@ CUDA
 安装路径为 /usr/local/cuda, 包含 include, lib64, bin 目录
 
 可执行文件目录 /usr/local/cuda/bin 被添加到 PATH 环境变量中 (例如: nvcc)
-头文件目录 /usr/local/cuda/include 似乎没有被设置在环境变量中 (例如: cublas.h)
+头文件目录 /usr/local/cuda/include 在设置了上述 PATH 变量后, 是nvcc的默认头文件目录 (例如: cublas.h)
 库文件目录 /usr/local/cuda/lib64 被包含在默认动态链接库中 (例如: libcublas.so)
 /usr/local/cuda/lib64/stubs 被添加到 LIBRARY_PATH 环境变量中
 
