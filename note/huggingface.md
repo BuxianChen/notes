@@ -919,6 +919,33 @@ evaluate.load("lvwerra/element_count", module_type="measurement")
 
 `accelerate` 在安装 `transformers` 包时不会进行安装
 
+# safetensors
+
+具体的API参见官方文档即可, 这里仅对存储格式做探究
+
+```python
+import numpy as np
+import json
+# torch.frombuffer 是 torch 1.10.0 的新API, 因此这里用 np.frombuffer
+path = "./huggingface/distilbert-base-uncased/model.safetensors"
+with open(path, "rb") as fr:
+    x = fr.read(8)
+    num = np.frombuffer(x, dtype=int64)[0]  # header 的长度
+    header = json.loads(fr.read(num).decode())
+    print(header)  # 显示"distilbert.embeddings.LayerNorm.bias" 的offset是[0, 3072]
+    data = fr.read(3072)
+    tensor = np.frombuffer(3072, dtype=np.float32)
+    y = tensor[:3]
+
+from safetensors import safe_open
+with open(path, framework="np") as fr
+    z = get_tensor("distilbert.embeddings.LayerNorm.bias")[:3]
+
+np.all(y == z)  # True
+```
+
+
+
 # 结合 pytorch-lightning 使用 transformers 训练
 
 [源码](./lightning-src/pl_transformers.py)
