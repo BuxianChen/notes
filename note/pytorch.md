@@ -1215,12 +1215,12 @@ out2 = out2 * weight + bias
 (out1-out2).abs().sum()
 ```
 
-## `torch.nn.Module` 源码剖析
+## `torch.nn.Module` 源码剖析【TODO】
 
-- 版本：torch 1.6.0
+- 版本：torch 1.9.0 (以下目的是按类别穷举 `nn.Module` 的方法)
 - 相关代码：`torch/nn/modules/module.py`
 
-### register 与 hook 机制
+### hook
 
 可以使用如下方式使得每次调用 `nn.Module` 的 forward 函数时，都将输入打印出来。
 
@@ -1244,19 +1244,26 @@ x = A()(torch.rand([2]))
 
 这种影响全局的注册 hook 的方法有如下几个：
 
-- register_module_forward_pre_hook
-- register_module_forward_hook
-- register_module_backward_hook
+- `register_module_forward_pre_hook`
+- `register_module_forward_hook`
+- `register_module_backward_hook`
+- `register_module_full_backward_hook`
 
 而在 `nn.Module` 的代码中，存在如下与 hook 或 register 有关的函数
 
-- register_buffer
-- register_parameter
-- register_backward_hook
-- register_forward_pre_hook
-- register_forward_hook
-- _register_state_dict_hook
-- _register_load_state_dict_pre_hook
+- `register_backward_hook`
+- `register_full_backward_hook`
+- `register_forward_pre_hook`
+- `register_forward_hook`
+- `_register_state_dict_hook`
+- `_register_load_state_dict_pre_hook`
+
+
+获取 hook
+
+- `_get_backward_hooks`
+- `_maybe_warn_non_full_backward_hook`
+
 
 ### `__init__` 函数
 
@@ -1277,10 +1284,11 @@ def __init__(self):
     """
     torch._C._log_api_usage_once("python.nn_module")
 	
-    # 与相关的实例方法的对应关系为
+    # 与相关的实例方法的对应关系为, 因此默认情况下, 这些hook实际上都是空
     self.training = True  # train, eval
     self._parameters = OrderedDict()  # register_parameter
     self._buffers = OrderedDict()  # register_buffer
+    # 实例化后的model, model.state_dict中不会包含self._non_persistent_buffers_set范围内的buffer
     self._non_persistent_buffers_set = set()
     self._backward_hooks = OrderedDict()  # register_backward_hook
     self._forward_hooks = OrderedDict()  # register_forward_hook
@@ -1334,6 +1342,154 @@ def _call_impl(self, *input, **kwargs):
                 grad_fn.register_hook(wrapper)
     return result
 ```
+
+### parameters、buffer、modules、children
+
+相关的 API 有如下：
+
+- `self.__setattr__(name: str, value: Union[Parameter, Module, Tensor, Any])`
+- `self.__getattr__(name: str)`: 由于确保了 `_buffers`, `_parameters`, `_modules` 和 `__dict__` 不产生冲突, 所以实现很直白, 依次按 name 查找上述四个部分即可
+- `self.__delattr__`
+- `self.register_parameter`: 在 `__getattr__` 中被调用
+- `self.register_buffer`: **不在** `__getattr__` 中被调用
+- `self._parameters`: 仅包含当前类内的 Parameter 不包含 _modules 中的 Parameter
+- `self._modules`: 仅包含当前类内的 submodule 的 key-value, 不继续展开
+- `self._buffers`: 仅包含当前类内的 buffer 不包含 _modules 中的 buffer
+- `self.add_module`: **不在** `__getattr__` 中被调用
+- `state_dict`: 递归包含全部的 parameters 和 buffers
+
+理解这些东西的核心在于 `__getattr__` 与 `__setattr__`：
+
+在 `nn.Module` 中, `__setattr__` 方法的执行**大致**逻辑【还是有些绕】为: 
+
+首先获取 `self._parameters` (备注: 具体的获取方式在实现上是 `self.__dict__.get('_parameters')`, 下同):
+
+- 如果 `value` 是 `nn.Parameter` 类型, 就将 `name` 从 `self.__dict__, self._buffers, self._modules, self._non_persistent_buffers_set` 中移除, 然后调用 `self.register_parameter`(除去一些检查外实际执行的事情只有 `self._parameters[name]=value`)
+- 如果 `value` 是 `nn.Module` 类型, 就将 `name` 从 `self.__dict__, self._buffers, self._parameters, self._non_persistent_buffers_set` 中移除, 然后直接使用 `self._modules[name]=value`
+- 如果 `value` 是 `nn.Tensor` 类型, 且 `name` 在 `self._buffer` 中, 则执行 `self._buffer[name]=value`, 否则执行 `object.__setattr__(self, name, value)`
+
+而 `__getattr__` 方式的执行逻辑是依次从 `_parameters`, `_modules`, `_buffers` 中进行查找, 否则报错（备注，在这三者搜索之前会用默认的 `__getattribute__` 进行搜索）
+
+
+**总之最终的结果**如下:
+
+```python
+# set1, set2, set3, set4 互无交集
+set1 = set(self.__dict__.keys()) - set(["_parameters", "_modules", "_buffers"])
+set2 = set(self._parameters.keys())
+set3 = set(self._modules.keys())
+set4 = set(self._buffers.keys())
+
+keys = list(set1) + list(set2) + list(set3) + list(set4)
+len(keys) == len(set(keys))  # True
+
+# self.state_dict 仅包含: set2 与 set4(不包含_non_persistent_buffers_set) 中东西
+
+self.a = value  # 如果 value 是 Parameter/Module, 则自动存放在 _parameter 或 _module 中, 而如果 value 只是 tensor 类型, 则它不会被存放在 _buffers 中(除非它已经在 _buffers 中)
+
+# 对于 Parameter 和 Module, self.xxx = value 等同于 register_buffer 和 add_module
+```
+
+以下的例子用于加深理解
+
+```python
+import torch.nn as nn
+from torch import rand
+
+class ModelX(nn.Module):
+    pass
+
+class ModelA(nn.Module):
+    def __init__(self):
+        super().__init__()
+        self.module_x = ModelX()
+
+class ModelB(nn.Module):
+    def __init__(self):
+        super().__init__()
+        x = nn.Parameter(rand(400, 400))
+        y = nn.Parameter(rand(200, 200))
+        self.layer1 = x                       # 触发__setattr__, 进而触发register_parameter,因此"layer1"在_parmeters中, 因此在 state_dict 的返回值中 
+        self.register_parameter("layer2", y)  # 等同于 self.layer2=x
+        self.register_buffer("buffer", x)
+        self.a = 1
+        self.b = rand((2, 3)).requires_grad_
+        self.module_a = ModelA()
+
+model_b = ModelB()
+
+'layer1' in model_b.__dict__  # False
+model_b._buffers              # {}
+model_b._parameters           # {"layer1": xxx, "layer2": xxx}
+model_b._modules
+```
+
+以下均为生成器（这里的描述包含了完整参数）
+
+- `self._named_members(get_members_fn, prefix='', recurse=True)`: 下面四个方法的辅助方法, 使用了 `self.named_modules` 来实现
+
+- `self.parameters(recurse=True)`: 包含 Parameter 名字和值, 即递归各层级的 _paramters
+- `self.named_parameters(prefix="", recurse=True)`: 即上一个, 仅返回值, 不返回 name
+- `self.named_buffers(prefix="", recurse=True)`: 包含 buffer 名字和值, 即递归各层级的 _buffers
+- `self.buffers(recurse=True)`: 即上一个, 仅返回值, 不返回 name
+
+- `self.named_modules(memo=set(), prefix='', remove_duplicate=True)`: 递归实现, 包含自身【tie weight的情况可能要另外用一个小节研究一下】
+- `self.modules()`: 即上一个, 仅返回值, 不返回 name
+
+- `self.named_children()`: 即迭代返回 _modules, 注意: 只实现了remove_duplicate=True
+- `self.children()`: 即上一个, 仅返回值, 不返回 name
+
+
+使用 name 获取信息: 
+
+- `self.get_submodule`: 仅在后面两个函数里发挥作用
+- `self.get_parameter`: 仅对外, 在其他地方不使用
+- `self.get_buffer`: 仅对外, 在其他地方不使用
+
+
+### apply、_apply、cuda、float、half ...
+
+- `self.apply(fn: Callable[['Module'], None])`: 常用于初始化参数, 对外接口。注意 `apply` 没有调用 `_apply`
+- `_apply`: 
+    - `cuda`
+    - `xpu`
+    - `cpu`
+    - `type`
+    - `float`
+    - `double`
+    - `half`
+    - `bfloat16`
+    - `to_empty`
+    - `to`
+    - `share_memory`
+
+
+### state_dict 相关
+
+- `self.__setstate__`
+- `load_state_dict`
+- `state_dict`
+- `_save_to_state_dict`
+
+
+### zero_grad、requires_grad、train、eval
+
+- zero_grad
+- requires_grad_
+- train
+- eval
+
+### `__repr__` 相关
+
+- `_get_name()`
+- `extra_repr()`
+- `__repr__`
+
+
+### 其他
+
+- `__dir__`
+- `_replicate_for_data_parallel`
 
 ## Docker
 

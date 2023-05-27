@@ -306,15 +306,152 @@ getattr(a, "_A__a")  # ok
 
 备注：如果要自定义 `__getattribute__` 函数，最好在其内部调用 `object.__getattribute__(self, name)`。
 
-### 2.7 `delattr` 内置方法、`__delattr__` 特殊方法、del 语句
+以下通过一个例子说明清楚:
+
+```python
+class A:
+    def __getattribute__(self, name):
+        print(f"enter __getattribute__({name})")
+        if name == "a.b":
+            return name
+        print(f"call object.__getattribute__({name})")
+        return object.__getattribute__(self, name)
+    
+    def __getattr__(self, name):
+        print(f"enter __getattr__({name})")
+        if name == "a.c":
+            return name
+        else:
+            raise AttributeError("custom error info: '{}' object has no attribute '{}'".format(type(self).__name__, name))
+
+a = A()  # 无输出
+
+a.__getattribute__("a.b")  # 成功返回
+# enter __getattribute__(__getattribute__)
+# call object.__getattribute__(__getattribute__)
+# enter __getattribute__(a.b)
+
+getattr(a, "a.b")          # 成功返回
+# enter __getattribute__(a.b)
+
+a.data                     # 成功返回
+# enter __getattribute__(data)
+# call object.__getattribute__(data)
+
+a.x                        # 成功返回
+# enter __getattribute__(x)
+# call object.__getattribute__(x)
+# enter __getattr__(x)
+
+a.y                        # 报错: custom error info: 'A' object has no attribute 'y'
+# enter __getattribute__(y)
+# call object.__getattribute__(y)
+# enter __getattr__(y)
+
+getattr(a, "a.c")          # 成功返回
+# enter __getattribute__(a.c)
+# call object.__getattribute__(a.c)
+# enter __getattr__(a.c)
+
+a.__getattribute__("a.c")  # 报错: 'A' object has no attribute 'a.c'
+# enter __getattribute__(__getattribute__)
+# call object.__getattribute__(__getattribute__)
+# enter __getattribute__(a.c)
+# call object.__getattribute__(a.c)
+
+a.__getattr__("y")         # 报错: custom error info: 'A' object has no attribute 'y'
+# enter __getattribute__(__getattr__)
+# call object.__getattribute__(__getattr__)
+# enter __getattr__(y)
+```
+
+**总结如下**, 获取属性值的方法有如下几种:
+
+- `obj.name`: 最常见的形式, 这要求 name 必须是一个合法的标识符, 其执行逻辑是, 先进入 `__getattribute__` 方法内, 如果触发 `AttributeError`, 就继续执行 `__getattr__` 方法
+- `getattr(obj, name)`: 执行逻辑与 `obj.name` 完全相同, 唯一的优势是 name 可以不是合法的标识符
+
+这两种仅用于解释概念, 通常来说不会使用到
+
+- `obj.__getattribute__(name)`: 它会首先触发一次 `getattr("__getattribute__")`(因此进入`__getattribute__`), 然后再进入 `__getattribute__` 方法内, 但不会再进入 `__getattr__` 方法内
+- `obj.__getattr__(name)`: 它会首先触发一次 `getattr("__getattr__")` (因此进入`__getattribute__`), 然后在直接进入 `__getattr__` 方法内
+
+**补充**
+
+- `hasattr(obj, name)` 的执行逻辑是: 执行一次 `getattr(obj, name)`, 如果触发 `AttributeError`, 那么就返回 False, 否则返回 True
+
+
+### 2.7 `delattr` 内置方法、`__delattr__` 特殊方法、del 语句、`__del__` 特殊方法
 
 **作用：`__delattr__` 会拦截所有对属性的删除。**
+
+分为两组, 第一组是删除对象, 参考[官方文档](https://docs.python.org/3/reference/datamodel.html#object.__del__)
+
+- `del obj`: 引用计数减 1
+- `obj.__del__()`: 如果某个对象的引用计数为 0, 则触发此方法
+
+示例
+
+```python
+class A:
+    def __del__(self):
+        print("call __del__")
+
+a = A()
+b = a
+del a
+del a  # 报错
+del b  # "call __del__"
+```
+
+
+第二组是删除属性【待确认】
+
+参考 Pytorch `torch.nn.module` 的 `__delattr__` 方法的实现, 应该也是一般要调用 `object.__delattr__(self, name)` 避免无限循环, 并且也通常会调用 `del` 语句来实现逻辑？
+
+- `delattr(obj, name)`: 触发 `__delattr__`, name 可以不是标识符
+- `obj.__delattr__(name)`: 触发一次 `getattr(obj, "__delattr__")`, 然后再执行 `__delattr__`, name 可以不是标识符
+- `del obj.name`: 参考第一组的解释
 
 ### 2.8 `setattr` 内置方法、`__setattr__` 特殊方法
 
 **作用：`__setattr__` 会拦截所有对属性的赋值。**
 
-### 2.9 Descriptor、`__get__`、`__set__`、`__del__`
+[参考链接](https://stackoverflow.com/questions/7559170/whats-the-difference-between-setattr-and-object-setattr) 以及 pytorch 的 `torch.nn.Module` 的 `__setattr__` 的写法。
+
+重载 `__setattr__` 方法一般会调用 `object.__setattr__(self, name, value)` 避免无限循环, 下面是一个错误的例子:
+
+```python
+class A:
+    def __setattr__(self, name, value):
+        print(f"enter __setattr__({name}, {value})")
+        if name == "a":
+            self.b = value
+        if name == "c":
+            self.c = value
+a = A()
+a.a = 3         # 从结果上来看什么也没做
+# enter __setattr__(a, 3)
+# enter __setattr__(b, 3)
+
+a.b = 3         # 从结果上来看什么也没做 
+# enter __setattr__(b, 3)   
+
+a.c = 3         # 无限循环
+# enter __setattr__(c, 3)
+# enter __setattr__(c, 3)
+# enter __setattr__(c, 3)
+# ...
+```
+
+**总结如下**: 以下几种方式给属性赋值:
+
+- `obj.name=value`: 直接触发 `__setattr__` 方法, 但这里的 name 得是一个合法的标识符
+- `setattr(obj, name, value)`: 同上, name 可以不是合法的标识符
+
+这种方式仅做说明, 平时不会使用到
+- `obj.__setattr__(name, value)`: 同上, 但会多触发一次 `getattr("__setattr__")` 的调用, name 可以不是合法的标识符
+
+### 2.9 Descriptor、`__get__`、`__set__`、`__delete__`
 
 参考： 
 
