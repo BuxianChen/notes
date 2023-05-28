@@ -915,6 +915,29 @@ evaluate.load("lvwerra/element_count", module_type="measurement")
 从 hub 下载文件的主要接口是 `hf_hub_download` 与 `snapshot_download`，参考[官方文档](https://huggingface.co/docs/huggingface_hub/how-to-downstream)即可
 
 
+## 怎样确认文件下载正确
+
+以下载 `bert-base-uncased/pytorch_model.bin` 文件为例
+
+```python
+from huggingface_hub import model_info
+model_info("bert-base-uncased", revision="main", files_metadata=True)
+
+# 输出结果里包含如下输出
+# RepoFile: { 
+#     {'blob_id': 'ba5d19791be1dd7992e33bd61f20207b0f7f50a5',
+#      'lfs': {'pointerSize': 134,
+#              'sha256': '097417381d6c7230bd9e3557456d726de6e83245ec8b24f529f60198a67b203a',
+#              'size': 440473133},
+#      'rfilename': 'pytorch_model.bin',
+#      'size': 440473133}
+```
+
+检验本地下载的数据是否与上面的信息一致
+```shell
+sha256sum pytorch_model.bin  # 097417381d6c7230bd9e3557456d726de6e83245ec8b24f529f60198a67b203a
+```
+
 # accelerate 包
 
 `accelerate` 在安装 `transformers` 包时不会进行安装
