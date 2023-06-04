@@ -47,3 +47,21 @@ pdfkit.from_string(html_text, 'out.pdf')
 - 安装完后提供命令行工具一键转换
 - 默认对中文字符进行支持
 - 提供对 Markdown 常见扩展语法的正常转换，并且不会丢失图片
+
+# 内存及显存
+
+参考自 [accelerate.utils.modeling.get_max_memory](https://github.com/huggingface/accelerate/blob/v0.19-release/src/accelerate/utils/modeling.py#L379)
+
+```python
+import torch
+import psutil
+
+_ = torch.tensor([0], device="cuda:0")
+available, total = torch.cuda.mem_get_info(0)
+print(f"{available/1024/1024}MB/{total/1024/1024}MB")
+
+cpu_memory = psutil.virtual_memory()
+total = cpu_memory.total
+available = cpu_memory.available
+print(f"{available/1024/1024}MB/{total/1024/1024}MB")
+```
