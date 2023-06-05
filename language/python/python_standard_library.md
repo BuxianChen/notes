@@ -882,6 +882,36 @@ if __name__ == "__main__":
         t.join()
 ```
 
+### 例子2: 多个进程修改变量
+
+```python
+from concurrent.futures import ProcessPoolExecutor
+from multiprocessing import Manager
+import time
+import os
+
+def foo(x, data):
+    data.append(x)
+    print(x, "Done", id(data), data, os.getpid())
+
+class A:
+    def __init__(self):
+        self.data = Manager().list()  # 如果是普通的列表, 则self.data将不会被修改
+        self.executor = ProcessPoolExecutor(1)
+        
+
+    def process(self, i):
+        self.executor.submit(foo, i, self.data)  # submit 返回 future 对象
+
+if __name__ == "__main__":
+    print(os.getpid())
+    a = A()
+    a.process(1)
+    a.process(2)
+    time.sleep(0.2)  # 这里不严谨, 应该用 future 对象, 确保执行完毕
+    print(a.data)
+```
+
 
 ## re、glob
 
