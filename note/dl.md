@@ -322,6 +322,26 @@ cuDNN:
 
 TensorRT(不确定时间线在哪找)
 
+## GPU利用率/带宽 benchmark
+
+比较可信的工具是
+
+- nvidia-smi: 对 nvidia 的 [NVML](https://developer.nvidia.com/nvidia-management-library-nvml) 的封装工具, 因此如果需要比较精确地把握, 直接研究 NVML 即可, nvidia-smi 本身也有许多高级用法, 参考这个 [掘金系列博客](https://juejin.cn/post/7118926640733749278)
+- cuda-sample: [https://github.com/NVIDIA/cuda-samples](https://github.com/NVIDIA/cuda-samples), 早期版本 cuda-sample 是在 CUDA toolkit 安装时附带的
+
+其他小工具
+
+- [nvtop](https://github.com/Syllo/nvtop)
+- [gpustat](https://github.com/wookayin/gpustat)
+
+
+### 带宽
+
+CPU <-> GPU: cuda-sample/bandwidthTest
+
+GPU 内存带宽: cuda-sample/bandwidthTest
+
+P2P带宽(两块GPU之间拷贝): cuda-sample/p2pBandwidthLatencyTest
 
 # WSL2
 
