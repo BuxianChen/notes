@@ -162,3 +162,25 @@ pytest:
     - **项目源码推荐用 src layout, 测试代码推荐独立于项目源码, pytest 的 import mode 推荐 importlib(存疑, 似乎导致各个test脚本之间不能import), [参考博客](https://blog.ionelmc.ro/2014/05/25/python-packaging/#the-structure%3E)**
     - [setup.py, setup.cfg and pyproject.toml](https://ianhopkinson.org.uk/2022/02/understanding-setup-py-setup-cfg-and-pyproject-toml-in-python/)
   - 关于 setup.py, setup.cfg and pyproject.toml 以及 pytest 搭配用的实际例子可以参考 [transformers](https://github.com/huggingface/transformers) 代码库学习
+
+## 2023 全年计划
+
+已确定的
+
+- 几种流行的大模型结构, 包括但不限于: OPT、BLOOM、LLAMA、GLM、GPTJ、GPTNEO、GPTNEOX、MOSS、RWKV 等
+- 大模型训练所需的数据结构研究
+- GPT-2 详解: 新增博客
+- triton: 新增笔记
+- CUDA: 新增笔记, 长期维护 (各种和 Nvidia 显卡相关的内容汇聚一下)
+- torch benchmark, profiler 等性能测试: 新增博客
+- bitandbytes: 新增博客
+- huggingface optimum: 待定
+- 自动微分: 结合陈天奇课程深入理解实现, 完善博客
+- huggingface peft: 新增博客
+- AutoGPTQ: 博客完善, 基本上需要结合前面所有的内容
+- streamlet、gradio: 学习, 但不确定记录形式, 以及是否记录, 可能会写一些demo保存起来即可
+
+暂时未定的
+- 分布式训练: 结合李沐几篇论文精读以及torch自身的分布式内容整合为博客, 放至最后
+- tvm/fastertransformer: 暂时不定
+- torch.fx, torch.trace, torch.script, torch.compile: 暂时不定
