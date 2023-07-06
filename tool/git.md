@@ -683,6 +683,8 @@ git push -d <remote-name> <branch-name>  # 删除远程代码库的分支
 
 ## 疑难杂症
 
+**一般使用**
+
 ```bash
 # 忽略权限修改
 git config core.filemode false
@@ -693,6 +695,8 @@ git update-index --assume-unchanged [<file> ...]
 # 取消忽略
 git update-index --no-assume-unchanged [<file> ...]
 ```
+
+**代理问题**
 
 关于代理引发的 git clone 失败问题，参考[链接](https://blog.csdn.net/shaopeng568/article/details/114919318)
 
@@ -708,6 +712,17 @@ git config --global http.https://github.com.proxy http://127.0.0.1:7890
 git config --global https.https://github.com.proxy https://127.0.0.1:7890
 ```
 
+**网络问题**
+
+```
+error: RPC failed; curl 56 GnuTLS recv error (-9): Error decoding the received TLS packet.
+```
+
+暂未找到解决方法
+
+
+**终端显示分支**
+
 在 terminal 中提示当前所在分支，将如下代码段加入到 `~/.bashrc` 中即可
 
 ```bash
@@ -721,6 +736,12 @@ function git_branch {
   fi
 }
 export PS1='\[\033[01;36m\][\u@\w]\[\033[01;32m\]$(git_branch)\[\033[00m\] \$ '
+```
+
+**http 免密**
+
+```
+git remote add origin https://{username}:{password}@123.234.3.24
 ```
 
 ## 详例

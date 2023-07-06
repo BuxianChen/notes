@@ -65,3 +65,20 @@ total = cpu_memory.total
 available = cpu_memory.available
 print(f"{available/1024/1024}MB/{total/1024/1024}MB")
 ```
+
+# http 免密
+
+```
+# ~/.netrc 适合 linux/MAC
+machine: xx.com
+login: username
+password: xxxyyy
+```
+
+
+```
+# ~/_netrc 适合 linux/MAC
+machine: xx.com
+login: username
+password: xxxyyy
+```

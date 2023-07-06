@@ -15,6 +15,8 @@
 - L2 Cache
 - DRAM (GPU主存)
 
+compute-capability 与 cuda-architecture 是同一个意思: [问答](https://stackoverflow.com/questions/65097396/difference-between-compute-capability-cuda-architecture-clarification-for-us)
+
 # 软件
 
 同一个 block 中的 thread 都会被调度到同一个 SM 上执行, 且执行相对顺序固定为:
