@@ -184,3 +184,53 @@ pytest:
 - 分布式训练: 结合李沐几篇论文精读以及torch自身的分布式内容整合为博客, 放至最后
 - tvm/fastertransformer: 暂时不定
 - torch.fx, torch.trace, torch.script, torch.compile: 暂时不定
+
+## LLM 学习通盘计划
+
+受到 [C-Eval](https://yaofu.notion.site/C-Eval-6b79edd91b454e3d8ea41c59ea2af873) 介绍博客后, 计划对整个 LLM 的学习计划做个梳理, 以便全局把控
+
+- 前沿动态: 需关注国际先进公司(参考 C-Eval 博客末尾)的论文/博客/新闻等, 具体关注名单与链接地址待更新
+
+- 大规模开源无标注数据集 (可参考 Llama/Bloom/Opt 等论文里的描述)
+
+- 指令微调数据集
+
+- 利用现有大模型能力的玩法
+  - Alpaca 有一种套提示词的做法
+  - CoT
+
+- 大模型评估数据集 (可参考 GPT-4 发布博客)
+  - MMLU
+  - MATH
+  - C-Eval
+
+- 模型结构 (也包含 Tokenizer/位置编码等细节)
+  - GPTJ
+  - GPT-Neox
+  - Llama
+
+- 模型训练方法及高效/省资源方法
+  - 自动微分
+  - 训练显存需求估算
+  - 多卡训练
+    - Pytorch DDP
+    - Pytorch FSDP
+    - Deepspeed
+  - PEFT
+    - Lora
+    - P-Tuning
+  - QAT (Quantization Aware Training)
+
+- 模型推理加速
+  - fastertransformer
+  - tvm
+  - TensorRT
+  - triton 算子
+  - CUDA 算子
+  - 量化
+    - GPTQ
+    - LLM.int8 (bitandbytes)
+
+- 模型推理服务(工程优化)
+  - triton inference server
+  - [huggingface text-generation-inference](https://github.com/huggingface/text-generation-inference)
