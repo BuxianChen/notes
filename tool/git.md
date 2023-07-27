@@ -385,6 +385,7 @@ git reset <origin_feature_commit>  # 可以通过git reflog命令查询
 git branch  # 显示本地分支
 git branch -r  # 显示远程分支
 git branch -a  # 显示远程与本地分支
+git branch -vv  # 显示本地分支以及与其关联的远程分支, 最多只能关联一个
 ```
 
 创建删除分支
@@ -401,10 +402,10 @@ git branch -D <待删除的分支名>  # 强制删除，即使被删除的分支
 git branch --set-upstream-to <远程仓库名>/<远程仓库分支名> <本地分支名>
 ```
 
-类似地，可以使用如下命令来新建本地分支，并与远程分支建立联系。同样地，后续也可以不加参数地使用 git pull/push/fetch
+类似地，可以使用如下命令来新建本地分支，并与远程分支关联。所谓建立关联, 就是关联后可以不加参数(不指定远程分支名)地使用 git pull/push/fetch
 
 ```
-git branch --track dev origin/dev  # 新建本地分支 dev，并建立与远程origin/dev分支间的联系
+git branch --track dev origin/dev  # 新建本地分支 dev，并建立与远程origin/dev分支间的关联
 git branch --track origin/dev  # 将当前分支与远程的origin/dev关联
 ```
 
@@ -639,6 +640,71 @@ git branch -r | grep -v '\->' | while read remote; do git branch --track "${remo
 git fetch --all  # 等价于 git remote update, 作用是拉取全部分支的远程更新
 git pull --all  # 更新全部的本地分支
 ```
+
+### git bundle
+
+bundle 文件用于离线传输 git objects. 使用上可以参考 [文档](https://git-scm.com/docs/git-bundle) 中的例子, 但由于实际使用时与例子中的需求不完全匹配, 所以这里复述一下文档中的例子(部分), 并加以补充. bundle 文件可以理解为一个离线的 repo, 可以将其视为受限的“远程仓库”, 进行 `git remote add`, `git pull`, `git fetch`, 但与真正的远程仓库的重要区别是: 不能对 bundle 文件进行 `git push`.
+
+假定场景是这样: 在网络环境 1 的机器 A 上有一个仓库 R1, 在网络环境 2 上有一个机器 B, 在时刻 T1, 将 R1 通过某种方式复制去了机器 B 的 R2, 随后 R1 继续做了修改/提交, R2 可能也继续做了修改/提交. (可以理解 R1 是某个 GitHub 上的开源项目, R2 为公司在确认开源协议后, 决定基于此项目做二次开发). 现在在 T2 时刻, 希望将 R1 在 T1 时刻之后的所有修改 (git objects) 保存在一个文件 F 中, 然后将 F 拷贝至机器 B, 然后 R2 仓库按需从 F 中 cherry-pick/merge/fetch 等.
+
+[文档](https://git-scm.com/docs/git-bundle) 中的解决方案
+
+**T1 时刻同步**
+
+此步骤是 T1 时刻将 R1 “复制” 到机器 B, 首先在机器 A 上操作
+
+```bash
+machineA$ cd R1
+machineA$ git bundle create file.bundle master
+machineA$ git tag -f lastR2bundle   # 打 tag 不是必要的, 只是方便 T2 时刻做同步
+```
+
+将 `file.bundle` 通过某种方式复制进
+
+```bash
+machineB$ git clone -b master /home/me/tmp/file.bundle R2
+```
+
+```text
+[remote "origin"]
+    url = /home/me/tmp/file.bundle
+    fetch = refs/heads/*:refs/remotes/origin/*
+```
+
+**T2 时刻同步**
+
+上述描述的 T2 时刻同步的做法是与 T1 时刻同步方式匹配的, 实际情况中 T1 时刻的同步还存在这几种情况:
+
+- 将整个 R1 仓库打包为一个压缩包, 传入内网后解压以获取 R2 仓库
+- R1 仓库本身也有远程库例如 GitHub, 而 R1 仓库在 T1 至 T2 期间, 使用 `git fetch` 或 `git pull` 更新 git objects 时, 有许多远程分支 `remotes/origin/xx` 没有相对应的本地分支 `xx`
+
+这种情况下, T2 时刻的同步也需要做些适当的调整, 这里有一个示例, 但需要确保自己知道每一步在做啥:
+
+**这个例子需要理解这个 [stackoverflow问答](https://stackoverflow.com/questions/48590857/getting-all-branches-from-git-bundle) 以及这个 [简书博客](https://www.jianshu.com/p/b494ee197ea8)**
+
+**T1 时刻同步**
+
+将整个 R1 仓库打包为一个压缩包, 传入内网后解压以获取 R2 仓库
+
+**T2 时刻同步**
+
+```bash
+machineA$ git bundle create xx.bundle --all
+# 传输 xx.bundle 至 machineA
+machineB$ git add remote bundle /path/to/xx.bundle
+# 手动修改.git/config的内容
+[remote "bundle"]
+    url = /path/to/xx.bundle
+    fetch = refs/heads/*:refs/remotes/origin/*
+# 改为：加号表示强制，冒号左侧表示远程，右侧表示本地，例如原本的写法里，远程（xx.bundle）中的dev分支在执行fetch时会在本地是refs/remotes/origin/dev。基于此，下面改动的含义自明，需确认是我们想要的再该
+[remote "bundle"]
+    url = /path/to/xx.bundle
+    fetch = +refs/*:refs/*
+# 执行（请参考上面的简书中文博客确认git fetch几种用法的准确含义）
+machineB$ git fetch bundle --all
+```
+
+备注: 参考这个 [blog](https://poweruser.blog/git-lfs-how-to-work-offline-how-to-archive-bundle-a-lfs-repo-c5ff5f10cc86), git lfs 文件似乎没法使用 git bundle 做迁移
 
 ### * git cat-file
 
@@ -1149,6 +1215,93 @@ git merge dev  # Fast-forward, 不会有冲突
 git branch -d dev
 ```
 
+### 例 5 (代码库同步)
+
+场景设定: 公司内网与 GitHub 网络不通, 公司内网存在类似于 Gitlab 的代码管理服务器, 数据文件可从外网上传至内网服务器. 现在希望对 GitHub 项目手动与内网项目同步.
+
+方案1 (不合适, 也没有真正实践过)【待确认！！！】
+
+参考:
+- https://github.com/git-lfs/git-lfs/issues/2342
+
+步骤如下:
+
+**第一次同步**
+
+```
+git clone --bare <SOURCE-URL>  # github url
+cd xx.git
+git lfs fetch origin --all
+cd ..
+tar -czvf xx.git.tar.gz xx.git/
+# 复制进内网
+tar -xzvf xx.git.tar.gz
+
+# 可选(推送至内网代码托管平台)
+cd xx.git
+git push --mirror <TARGET-URL>  # 内网 git 托管 url
+git lfs push --all <TARGET-URL>
+
+# 重新clone一个有workspace的本地库
+git clone xx.git xx
+```
+
+- 外网需保留 `xx.git` 目录(以增量更新)
+- 内网需保留 `xx.git` 目录(以增量更新), `xx` 目录如果不需要可以删除
+- 内网需保留 `<TARGET-URL>`(以增量更新)
+
+**第二次同步(更新)**
+
+```
+# 外网
+cd xx.git
+git fetch origin --all
+git lfs fetch origin --all
+
+cd ..
+tar -czvf xx.git.tar.gz xx.git/
+# 复制进内网
+tar -xzvf xx.git.tar.gz
+mv xx.git xx.git.tmp  # 这个临时保存一下
+
+cd xx.git
+git add remote tmp xx.git.tmp
+git fetch tmp --all
+git lfs fetch origin --all
+rm -rf xx.git.tmp
+
+# 可选(推送至内网代码托管平台)
+git push --mirror <TARGET-URL>  # 内网 git 托管 url
+git lfs push --all <TARGET-URL>
+
+# 有workspace的本地库使用 pull/fetch 更新
+```
+
+
+
+### 例 6: bare repo 与正常 repo 转换
+
+参考: [stackoverflow](https://stackoverflow.com/questions/2199897/how-to-convert-a-normal-git-repository-to-a-bare-one)
+
+
+**正常 repo -> bare repo**
+
+```
+cd repo
+mv .git ../repo.git # renaming just for clarity
+cd ..
+rm -rf repo
+cd repo.git
+git config --bool core.bare true
+```
+
+```
+git bundle create xx.bundle --all
+git bundle verify  # 几个HEAD的指向似乎有问题
+```
+
+**bare repo -> 正常 repo**
+
 ## Git 合作模式
 
 模式一：
@@ -1169,6 +1322,18 @@ git merge --continue
 git checkout master
 git merge dev
 ```
+
+### GitHub Flow
+
+在 Github 上为他人项目贡献代码的工作流如下:
+
+- 在 GitHub 网页的功能在**官方原始仓库**新建 issue
+- 首先 fork **官方原始仓库**到自己的**个人远程仓库**
+- git clone **个人远程仓库**至**本地仓库**, 务必从希望最终被合入的官方分支新建分支进行开发
+- 如果**官方原始仓库**发生修改, 则使用 GitHub 网页的功能将**个人远程仓库**与**官方原始仓库**同步
+- git pull/fetch 将**个人远程仓库**的更新内容拉至**本地仓库**
+- **本地仓库**的新建分支与官方分支合并
+- 使用 GitHub 网页的功能提 PR 请求, PR 请求关联 issue
 
 ## Git hooks
 
