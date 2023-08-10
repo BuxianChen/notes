@@ -139,6 +139,34 @@ args, unknown_args = parser.parse_known_args()
 # args: Namespace(config='a.py'), unknown_args=['-d', 'cpu']
 ```
 
+许多工具会包含许多子命令, 例如: `git add`, `git commit`, `git push`, 其中: `add/commit/push` 都是子命令, `argparse` 包也能做到这一点:
+
+```python
+# xx.py
+import argparse
+parser = argparse.ArgumentParser()
+parser.add_argument('--foo', action='store_true', help='command help')
+subparsers = parser.add_subparsers(help='sub-command help')
+
+# create the parser for the "add" command
+parser_a = subparsers.add_parser('add', help='add help')
+parser_a.add_argument('bar', type=int, help='python xx.py add <filename>')
+
+# create the parser for the "rm" command
+parser_b = subparsers.add_parser('rm', help='rm help')
+parser_b.add_argument('--filename', help='python xx.py rm --filename <filename>')
+
+# parse some argument lists
+print(parser.parse_args(['add', '12']))
+# Namespace(bar=12, foo=False)
+print(parser.parse_args(['--foo', 'rm', '--filename', 'Z']))
+# Namespace(filename='Z', foo=True)
+
+# 注意: --foo 必须出现在子命令之前
+args = parser.parse_args()
+# Usage: python xx.py [-h] [--foo] {add,rm} ...
+print(args)
+```
 
 ## os
 
