@@ -775,7 +775,12 @@ git config --global  --unset http.https://github.com.proxy
 根据实际端口情况修改
 ```
 git config --global http.https://github.com.proxy http://127.0.0.1:7890
-git config --global https.https://github.com.proxy https://127.0.0.1:7890
+git config --global https.https://github.com.proxy http://127.0.0.1:7890
+```
+
+一次性使用
+```
+git clone -c http.proxy="http://127.0.0.1:60264" https://github.com/huggingface/huggingface_hub.git
 ```
 
 **网络问题**
