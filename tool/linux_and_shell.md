@@ -772,6 +772,14 @@ nohup python main.py &
 
 ### 5.4 Remote Macheines
 
+```bash
+# 通过跳板机 ssh 登录
+ssh -J user1@<跳板机1> user2@<跳板机2> user3@<目标机器>
+
+# 通过跳板机 scp 文件
+ssh -P <port3> -o 'ProxyJump user1@<跳板机1> -p <port1> user2@<跳板机2> -p <port2>' file.txt user3<目标机器>:~/file.txt
+```
+
 ### 5.5 zsh
 
 

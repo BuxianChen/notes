@@ -15,7 +15,7 @@ np.load(open("xx.npy"))
 
 ## pandas
 
-#### pandas的apply系列
+### pandas 的 apply 系列
 
 apply: DataFrame的方法, 可指定axis，应用于行或列
 
@@ -37,6 +37,190 @@ applymap: DataFrame的方法, 应用于每一个元素
 | `apply`    | `DataFrame.apply(self, func, axis=0, raw=False, result_type=None, args=(), **kwds)` | 按行或列操作       |
 | `apply`    | `Series.apply(self, func, convert_dtype=True, args(),**kwds)` | 逐元素操作         |
 | `map`      | `Series.map(self, arg, na_action=None)`                      | 替换或者逐元素操作 |
+
+
+### pandas 分组操作
+
+[官方指南](https://pandas.pydata.org/pandas-docs/stable/user_guide/groupby.html)
+
+总体上, 从效果上来说分为三个步骤:
+
+- Splitting: 数据分组, 对应的 API 是 `pd.DataFrame.groupby`
+- Applying: 一般来说有如下几类, 更一般地, 可以使用 splitting 的结果调用 `apply` 函数
+  - Aggregation: 分组后, 对每一组计算一个统计值
+  - Transformation: 分组后, 对每一组分别应用于一个变换, 例如对于 A 分组, 将空值填充为 "A", 对 B 分组, 将空值填充为 "B"
+  - Filtration: 分组后, 根据一些条件筛选分组内的数据或者筛选整个组地数据, 例如如果一个分组的行数小于 10, 则删除整个分组的数据; 每个分组都只取前 3 行.
+- Combining: 将 Applying 的各个分组的结果合并在一次做返回
+
+涉及的 API:
+- Splitting: `pd.DataFrame.groupby`: 返回一个 `pandas.api.typing.DataFrameGroupBy` 对象, 此对象有 `groups`, `get_groups` 等基础方法/属性, 也具有下面的 Applying 步骤中的 `agg`/`aggregation`, `transform`, `filter`, `apply` 等方法
+- Applying:
+  - Aggregation: 内置的方法例如: `mean`, `std`, 更一般地可以使用 `agg`/`aggregation` (这两个方法是一样的, `agg` 只是 short-hand 写法)
+  - Transformation: 内置的方法例如: `cumsum`, 更一般地可以使用 `transform`
+  - Filtration: 内置的方法例如: `head`, 用于取每组的前几行, 使用自定义函数可以用 `filter`, 但注意 `filter` 只能将整组全部去掉或保留
+  - 上面 3 种都不满足时, 可使用 `apply` 函数
+
+**Splitting: groupby 与 pandas.api.typing.DataFrameGroupBy 对象的方法**
+
+```python
+df = pd.DataFrame({
+    "A": ["a", "a", "b", "b"],
+    "B": [1, 9, 2, 4],
+    "C": [4, 6, 1, 10],
+})
+grouped = df.groupby('A')
+
+for name, group in grouped:
+    print(name)   # "a"/"b"
+    print(group)  # (2, 3) shape DataFrame
+
+grouped.get_group("a")  # (2, 3) shape DataFrame
+grouped.groups          # {'a': [0, 1], 'b': [2, 3]}
+```
+
+**Applying: `agg`、`transform`, `filter`, `apply`**
+
+- `agg`、`transform`, `filter`, `apply` 传参时的自定义函数 (UDF: User-Defined Function) 的输入输出条件 (官方文档似乎对此语焉不详) 不尽相同
+- 这几个方法最终 Combining 之后的 DataFrame 的 index 的形式有所不同, 这里只讨论 `group(..., group_keys=True)` 的情况:
+    - `apply` 在 UDF 的出参是一个 DataFrame 的情况下, 会把 groupby 的列作为索引并保留原始索引以构成两级索引
+    - `transform` 会把 groupby 的列丢弃, 原本的索引依然作为索引
+    - `agg` 会把 groupby 的列作为索引, 原本索引丢弃
+    - `filter` 除去索引可能会变少外, groupby 列被保留为列
+
+太长不看系列 (`transform`, `agg`, `filter` 都可用 `apply` 实现):
+
+```python
+# transform
+fn = lambda x: x+1 if x.name=='a' else x-100
+df.groupby('State', group_keys=True).transform(fn)      # Input: Series, Output: Series(List) (Same length with Input)
+apply_fn = lambda x: pd.DataFrame([fn(x[c]) for c in x.columns]).T
+df.groupby('State', group_keys=False).apply(apply_fn)   # Input: DataFrame, Output: DataFrame
+
+# agg
+fn = lambda x: x.sum() if x.name=='a' else 0
+df.groupby('State', group_keys=True).agg(fn)            # Input: Series, Output: Scalar
+apply_fn = lambda x: pd.Series({c: fn(x[c]) for c in x.columns if c not in ["State"]})
+df.groupby('State', group_keys=False).apply(apply_fn)   # Input: DataFrame, Output: Series
+
+# filter
+fn = lambda x: True
+df.groupby('State', group_keys=True).filter(fn)         # Input: DataFrame, Output: bool
+apply_fn = lambda x: x if fn(x) else []
+df.groupby('State', group_keys=False).apply(apply_fn)   # Input: DataFrame, Output: DataFrame
+
+# apply
+df.groupby('State', group_keys=True).apply(lambda x: x+1)    # Input: Dataframe, Output: Scalar/Series(List)/DataFrame
+
+# 当UDF Output是标量时, apply 的最终结果是 Series
+df.groupby('State', group_keys=False).apply(lambda x: 1)     # Final Output: Series
+```
+
+参考资料:
+
+- StackOverflow 问答: [https://stackoverflow.com/questions/27517425/apply-vs-transform-on-a-group-object](https://stackoverflow.com/questions/27517425/apply-vs-transform-on-a-group-object)
+- 官方指南: [https://pandas.pydata.org/pandas-docs/stable/user_guide/groupby.html](https://pandas.pydata.org/pandas-docs/stable/user_guide/groupby.html)
+
+UDF 的输入输出对比
+
+**transform**
+
+输入: 每组的每一列(Series)作为输入
+输出: 与输入同等长度的列表/Series
+
+**agg**
+
+输入: 每组的每一列(Series)作为输入
+输出: 标量
+
+**filter**
+输入: 每组的DataFrame作为输入
+输出: True/False
+
+**apply**
+输入: 每组的DataFrame作为输入
+输出: 标量/Series(不必与输入同等长度)/DataFrame
+
+
+为了弄清这些函数的 UDF 的输入输出, 可以构造类似如下的测试代码
+
+```python
+import pandas as pd
+import numpy as np
+from IPython.display import display
+df = pd.DataFrame({'State':['Texas', 'Texas', 'Florida', 'Florida'], 
+                   'a':[4,5,1,3], 'b':[6,10,3,11]})
+def subtract_two(x):
+    display(x)
+    print()
+    y = x['a'] - x['b']
+    display(y)
+    print()
+    return y
+
+result = df.groupby('State').apply(subtract_two)
+display(result)
+print()
+print(result.to_numpy())
+print(result.index)
+```
+
+输出结果如下:
+```
+     State  a   b
+2  Florida  1   3
+3  Florida  3  11
+
+2   -2
+3   -8
+dtype: int64
+
+   State  a   b
+0  Texas  4   6
+1  Texas  5  10
+
+0   -2
+1   -5
+dtype: int64
+
+State     
+Florida  2   -2
+         3   -8
+Texas    0   -2
+         1   -5
+dtype: int64
+
+[-2 -8 -2 -5]
+MultiIndex([('Florida', 2),
+            ('Florida', 3),
+            (  'Texas', 0),
+            (  'Texas', 1)],
+           names=['State', None])
+```
+
+pandas 可能会自动做些优化 (与numba有关), 所以有些像上面那种测试代码可能会有比较诡异的结果, 例如:
+
+```python
+df = pd.DataFrame({'State':['Texas', 'Texas', 'Florida', 'Florida'], 
+                   'a':[4,5,1,3], 'b':[6,10,3,11]})
+def subtract_two(x):
+    if x.name == 'a':
+        y = x + 1
+    else:
+        y = x + 2
+    display(type(x), type(y), "\n", x, "\n", y)
+    print()
+    return y
+
+# def inspect(x):
+#     print(type(x))
+#     raise
+
+result = df.groupby('State').transform(subtract_two)
+display(result)
+print()
+print(result.to_numpy())
+print(result.index)
+```
 
 ### pandas读写excel文件
 
