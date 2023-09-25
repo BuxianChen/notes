@@ -938,6 +938,208 @@ model_info("bert-base-uncased", revision="main", files_metadata=True)
 sha256sum pytorch_model.bin  # 097417381d6c7230bd9e3557456d726de6e83245ec8b24f529f60198a67b203a
 ```
 
+## API
+
+```python
+# add_space_secret
+# 增加一个secret环境变量, 复制空间时不会被拷贝
+
+# add_space_variable
+# 增加一个公开的环境变量, 复制空间时会被拷贝
+
+# change_discussion_status
+# 注意PR与Discussion的编号是混在一起的, 序号从1开始, 例如可能是这样
+# https://huggingface.co/Buxian/test-model/discussions/1    PR
+# https://huggingface.co/Buxian/test-model/discussions/2    Discussion
+# https://huggingface.co/Buxian/test-model/discussions/3    PR
+# 如果状态本身就是 closed, 那么会报错
+change_discussion_status(repo_id, discussion_num=2, new_status='closed', comment='finish the discussion')
+
+# comment_discussion
+comment_discussion(repo_id,  discussion_num=2, comment="add comment")
+
+# create_branch
+# exist_ok 默认为 False
+create_branch(repo_id, branch="new_branch", revision="from", exist_ok=False)
+
+# create_commit: (见后续)
+
+# create_commits_on_pr: (见后续)
+
+# create_discussion
+# 默认pull_request 为 False, 而当取值为 True 时, 会在远程仓库建立类似refs/pr/6这种分支名, 然后创建的 discussion 会被标记为 Draft PR, 网页界面上会有操作指引:
+# git clone https://huggingface.co/Buxian/test-model
+# cd test-model && git fetch origin refs/pr/6:pr/6
+# git checkout pr/6
+# huggingface-cli login
+# git push origin pr/6:refs/pr/6
+# 在网页上点按钮将PR转换为正式状态
+# 
+# 具体可参考:
+# https://huggingface.co/docs/hub/repositories-pull-requests-discussions
+create_discussion(repo_id, title="title", description="content", pull_request=True)
+
+# git clone 时不会 clone refs/pr/6 这个分支, 执行git fetch origin refs/pr/6:xxyy时, 目录结构会增加一个
+# .git/refs/
+# ├── heads
+# │   ├── main  # 保存着 commit-id
+# │   └── xxyy  # 保存着 commit-id
+
+
+# create_pull_request
+# 本质上, 就是调用 create_discussion 设定参数 pull_request=True 实现的
+create_pull_request(repo_id, title="title", description="content")
+
+# create_repo
+
+# create_tag
+
+# dataset_info(待研究)
+
+# delete_branch
+
+# delete_file
+
+# delete_folder
+
+# delete_repo
+
+# delete_space_secret
+
+# delete_space_storage
+
+# delete_space_variable
+
+# delete_tag
+
+# duplicate_space
+
+# edit_discussion_comment
+
+# file_exists
+
+# get_dataset_tags
+
+# get_discussion_details
+
+# get_full_repo_name
+
+# get_model_tags
+
+# get_repo_discussions
+
+# get_space_runtime
+
+# get_space_variables
+
+# get_token_permission
+
+# hf_hub_download
+
+# hidden_discussion_comment
+
+# like, unlike
+
+# list_datasets, list_files_info, list_liked_repos, list_metrics, list_models
+
+# list_repo_commits, list_repo_files, list_repo_refs, list_spaces
+
+# merge_pull_request
+
+# model_info(待研究)
+
+# move_repo
+
+# pause_space
+
+# rename_discussion
+
+# repo_exists
+
+# repo_info
+
+# request_space_hardware, request_space_storage
+
+# restart_space
+
+# run_as_future(这个可以研究下)
+
+# set_space_sleep_time
+
+# snapshot_download
+
+# space_info
+
+# super_squash_history
+
+# update_repo_visibility
+
+# upload_file, upload_folder
+
+# whoami
+```
+
+其他接口
+
+```python
+# huggingface_hub.plan_multi_commits
+```
+
+HfFileSystem
+
+```python
+# huggingface_hub.HfFileSystem (仅仅是对HfApi的一点封装)
+# pip install pandas huggingface_hub
+import pandas as pd
+df = pd.read_csv("hf://Buxian/test-model/.gitattributes", sep=" ")
+```
+
+**Inference API**
+
+```python
+import json
+import requests
+API_URL = "https://api-inference.huggingface.co/models/gpt2"
+headers = {"Authorization": f"Bearer {token}"}
+def query(payload):
+    data = json.dumps(payload)
+    response = requests.request("POST", API_URL, headers=headers, data=data)
+    return json.loads(response.content.decode("utf-8"))
+data = query("Can you please let us know more details about your ")
+```
+
+怎么确定它是语言模型? 入参出参怎么确定的呢? 可能的因素:
+
+任务类型确定:
+
+```
+# https://huggingface.co/bert-base-uncased/blob/main/config.json
+# https://huggingface.co/bert-base-uncased
+# 页面上 Inference API 上显示的是 Fill-Mask
+{
+    "architectures": ["BertForMaskedLM"]
+}
+
+# https://huggingface.co/internlm/internlm-chat-7b/blob/main/config.json
+# https://huggingface.co/internlm/internlm-chat-7b
+# 页面上 Inference API 上显示的是 Text Generation
+{
+  "architectures": [
+    "InternLMForCausalLM"
+  ],
+  "auto_map": {
+    "AutoConfig": "configuration_internlm.InternLMConfig",
+    "AutoModel": "modeling_internlm.InternLMForCausalLM",
+    "AutoModelForCausalLM": "modeling_internlm.InternLMForCausalLM"
+  },
+}
+```
+
+任务类型与请求出入参对应关系: [https://huggingface.co/docs/api-inference/detailed_parameters](https://huggingface.co/docs/api-inference/detailed_parameters)
+
+**Inference Endpoint**
+
+
 # accelerate 包
 
 `accelerate` 在安装 `transformers` 包时不会进行安装
