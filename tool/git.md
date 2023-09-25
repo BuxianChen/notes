@@ -720,6 +720,25 @@ git cat-file -p 24c5735c3e8ce8fd18d312e9e58149a62236c01a  # 查看 objects 目�
 git ls-files -s  # 查看当前缓冲区内容, 即 .git/index 文件中的内容
 ```
 
+### * git ls-remote
+
+```bash
+# 查看远程库所有的tag, branch 等:
+git ls-remote origin
+```
+
+输出
+
+```
+919ecbc81882fb3d8139d340e8ed32ed305c23ce        HEAD
+dc41dd5ac4890b3155e1a6cb7c1f986049f63c2e        refs/heads/dev
+919ecbc81882fb3d8139d340e8ed32ed305c23ce        refs/heads/main
+f179eef20d0db126f8aa3d3758f3f88a904f1163        refs/pr/1
+6844761b3145f904df40e56acf2e0d5df2dfb88d        refs/pr/2
+847491ff49d8ae93a9708c68b4de9095eec0c6ff        refs/pr/3
+919ecbc81882fb3d8139d340e8ed32ed305c23ce        refs/pr/6
+```
+
 ### git lfs
 
 ```
