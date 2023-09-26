@@ -184,6 +184,21 @@ os.path.realpath(os.path.expanduser("~/a.link"))  # /home/username/a.txt
 os.path.abspath(os.path.realpath(os.path.expanduser("~/a.link")))
 ```
 
+## io
+
+```python
+# https://stackoverflow.com/questions/24474687/io-bufferedreader-peek-function-returning-all-the-text-in-the-buffer
+# xyz.txt 的文件内容为: first\nsecond
+stream = io.BufferedReader(io.FileIO('xyz.txt'), buffer_size=4)
+stream.peek(8)  # b'firs'  # buffer中一共4个字节, 当前文件指针在初始位置0, peek 读取从文件指针到缓冲区结束的内容, 但不移动文件指针
+stream.read(3)  # b'fir'   # buffer中一共4个字节, 当前文件指针在初始位置0, read 读取3个字节后把指针位置往后挪至3
+stream.peek(8)  # b's'     # buffer中一共4个字节, 当前文件指针在3, peek 读取从文件指针到缓冲区结束的内容, 但不移动文件指针, 因此只读1个字节
+stream.read(1)  # b's'     # buffer中一共4个字节, 当前文件指针在3, read 读取1个字节后把指针挪至4, 此时缓冲区被刷新为新的4个字节
+stream.peek(8)  # b't\nse' # buffer中一共4个字节, 当前文件指针在4, peek 读取从文件指针到缓冲区结束的内容, 但不移动文件指针, 因此读4个字节
+# 总之, peek 方法可能获取的字节数多于或少于制定的参数, 取决于 buffer 大小以及当前文件指针的位置
+stream.peek(num)[:num]  # 保证最多获取 num 个字节
+```
+
 
 ## collections
 
