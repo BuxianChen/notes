@@ -186,6 +186,12 @@ os.path.abspath(os.path.realpath(os.path.expanduser("~/a.link")))
 
 ## io
 
+open 函数的 mode 参数: `r+b` 表示可读可写(但只要调用了write, 原本的数据就会被覆盖掉)
+
+`read`
+
+`peek`
+
 ```python
 # https://stackoverflow.com/questions/24474687/io-bufferedreader-peek-function-returning-all-the-text-in-the-buffer
 # xyz.txt 的文件内容为: first\nsecond
@@ -197,6 +203,14 @@ stream.read(1)  # b's'     # buffer中一共4个字节, 当前文件指针在3, 
 stream.peek(8)  # b't\nse' # buffer中一共4个字节, 当前文件指针在4, peek 读取从文件指针到缓冲区结束的内容, 但不移动文件指针, 因此读4个字节
 # 总之, peek 方法可能获取的字节数多于或少于制定的参数, 取决于 buffer 大小以及当前文件指针的位置
 stream.peek(num)[:num]  # 保证最多获取 num 个字节
+```
+
+`seek`
+
+```python
+stream.read(3)
+# 定义的常量:  os.SEEK_SET: 0, os.SEEK_CUR: 1, os.SEEK_END: 2
+stream.seek(2, 1)  # 返回 3+2=5
 ```
 
 
