@@ -864,7 +864,67 @@ Python 中, type 函数是一个特殊的函数，调用形式有两种：
 
 
 
-### `__new__` 函数与 `__init__` 函数（待补充）
+### `__new__` 函数与 `__init__` 函数
+
+以下是一个代码样例:
+
+```python
+class A(object):
+    def __init__(self, *args, **kwargs):
+        print("run the init of A")
+    def __new__(cls, *args, **kwargs):
+        print(f"run the new of A, parameters: {cls}")
+        return object.__new__(B)
+
+class B(object):
+    def __init__(self, *args, **kwargs):
+        print("run the init of B")
+        print(f"extra parameters for __init__: {args}, {kwargs}")
+        print("id in __init__", id(args[0]), args, id(kwargs))
+        self.args = args
+        self.kwargs = kwargs
+    def __new__(cls, *args, **kwargs):
+        print("run the new of B", cls)
+        print(f"extra parameters for __new__: {args}, {kwargs}")
+        print("id in __new__ start", id(args[0]), args, id(kwargs))
+        args[0]["b"] = 3   # 如果直接用 args = ({"a": 2, "b": 3},) 是没有效果的
+        print("id in __new__ after", id(args[0]), args, id(kwargs))
+        return object.__new__(cls)   # object.__new__ 只能有一个参数
+
+a = A()  # 只调用了 A.__new__ 就结束了
+print(type(a))  # <class '__main__.B'>
+print("===============")
+
+b = B({"a": 2}, c = 2)
+# 执行逻辑: __new__ 的 cls 参数自动用 B 填充. 伪代码猜测如下
+# def _construct_guess(*args, **kwargs):
+#     ret = B.__new__(B, *args, **kwargs)
+#     if isinstance(ret, B):
+#         B.__init__(ret, *args, **kwargs)   
+#     return ret
+
+# 实参传递如下
+# b = B.__new__(B, args=({"a": 2},), kwargs={"c": 2})
+# B.__init__(b, args=({"a": 2, "b": 3},), kwargs={"c": 2})
+
+print(type(b), b.args, b.kwargs)
+```
+
+输出结果
+
+```
+run the new of A, parameters: <class '__main__.A'>
+<class '__main__.B'>
+===============
+run the new of B <class '__main__.B'>
+extra parameters for __new__: ({'a': 2},), {'c': 2}
+id in __new__ start 139811860204800 ({'a': 2},) 139811860203200
+id in __new__ after 139811860204800 ({'a': 2, 'b': 3},) 139811860203200
+run the init of B
+extra parameters for __init__: ({'a': 2, 'b': 3},), {'c': 2}
+id in __init__ 139811860204800 ({'a': 2, 'b': 3},) 139811860203200
+<class '__main__.B'> ({'a': 2, 'b': 3},) {'c': 2}
+```
 
 ### `abc` 模块
 
