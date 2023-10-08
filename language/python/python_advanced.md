@@ -986,7 +986,7 @@ a.foo()
 a.bar()  # 此时才会抛出异常
 ```
 
-## 5. with语法\(含少量contextlib包的笔记\)
+## 5. with语法(含少量contextlib包的笔记)
 
 主要是为了理解pytorch以及tensorflow中各种with语句
 
@@ -1085,7 +1085,7 @@ print(hasattr(x, "a"))  # False
 # x.__exit__(None, None, None)
 ```
 
-### \*5.3 使用contextlib包中的函数来使得类支持with语法
+### 5.3 使用contextlib包中的函数来使得类支持with语法
 
 按照上一节的做法, 可以使用如下写法让`MassageWriter`支持with语法
 
@@ -2139,6 +2139,154 @@ xxx
 ```
 
 常见的作用参考[博客](https://www.geeksforgeeks.org/what-is-three-dots-or-ellipsis-in-python3/)
+
+## 变量的作用域
+
+[https://realpython.com/inner-functions-what-are-they-good-for/](https://realpython.com/inner-functions-what-are-they-good-for/)
+
+[https://realpython.com/python-scope-legb-rule/](https://realpython.com/python-scope-legb-rule/)
+
+首先看下面的例子:
+
+```python
+def outer_func(who):
+    def inner_func():
+        print(f"Hello, {who}")
+    inner_func()
+outer_func("World!")
+```
+
+这里的 `outer_func` 被称为 `inner_func` 的 ***enclosing function***, 而 `inner_func` 被称为 `outer_func` 的 ***inner function (nested function)***. 从 `inner_func` 的视角看, `who` 变量是 ***nonlocal variable***, 从 `outer_func` 的视角看, `who` 变量是 ***local variable***
+
+**用途 1: 避免暴露 inner function**
+
+```python
+def foo(num):
+    def bar():
+        return num + 1
+        # 不能是这种写法
+        # num += 1
+        # return num
+    return bar()
+foo(10)  # OK
+bar      # Error
+foo.bar  # Error
+```
+
+但是从最佳实践上, 可能通过加下划线的方式更适合做这种避免暴露:
+
+```python
+def _bar(num):
+    return num + 1
+    # 可以是这种写法
+    # num += 1
+    # return num
+def foo(num):
+    return _bar(num)
+```
+
+**用途 2: 高阶函数 (Higher-Order function)**
+
+[wiki](https://en.wikipedia.org/wiki/Higher-order_function) 上对 ***Higher-Order function*** 的定义是至少满足如下条件之一:
+
+- 入参里有一些函数
+- 出参是函数
+
+[wiki](https://en.wikipedia.org/wiki/Closure_(computer_programming)) 对 ***Closure*** 的定义
+
+Python 中也沿用这些定义
+
+接下来看下面的例子(【注释是对整节的总结，待定】):
+
+```python
+def generate_power(exponent):     # `generate_power` is enclosing function (higher-order function, closure factory function, outer function)
+    def power(base):              # `power` is inner function (nested function)
+        return base ** exponent
+    return power                  # Return a closure
+from powers import generate_power
+
+raise_two = generate_power(2)     # `generate_power(2)` is specific closure
+raise_three = generate_power(3)   # `generate_power(3)` is specific closure
+
+raise_two(4)   # 16
+raise_two(5)   # 25
+raise_three(4) # 64
+raise_three(5) # 125
+```
+
+这个例子中外层函数 `generate_power` (enclosing function) 的用途是一个 ***closure factory function***, 而外层函数被调用后地返回值 `raise_two` 和 `raise_three` 被称为 ***closure***, 我们可以看到: closure (在这个例子中是 `raise_two` 和 `raise three`) 的特点是它能被其它函数 (这个例子中是 `generate_power`) 动态地创建. 为了理解 closure 是什么, 需要先对变量类型进行理解:
+
+- local
+- global
+- free: nonlocal 只是关键字, 严格地说没有 nonlocal variable 这个词? [stackoverflow](https://stackoverflow.com/questions/12919278/how-to-define-free-variable-in-python)
+
+
+bound variale?【怎么解释?】
+
+参考这个？[https://medium.com/nerd-for-tech/the-ever-confusing-local-nonlocal-and-global-variables-in-python-949b106c0243](https://medium.com/nerd-for-tech/the-ever-confusing-local-nonlocal-and-global-variables-in-python-949b106c0243)
+
+```python
+def outer(y):
+    x = 1
+    z = 3
+    def inner():
+        nonlocal x
+        x += 1   # 对外层的 x 进行修改 (nonlocal variable)
+        print(y) # OK
+        # print(z) # 报错
+        z = 10  # 创建局部变量 z (从内层函数 inner 的视角看)
+    return inner()
+outer(2)
+```
+
+- 注释 `z=10` 后 `print(z)` 就不报错!!!!
+
+
+在下面的例子中, 参考 wiki 对 [nonlocal variable](https://en.wikipedia.org/wiki/Non-local_variable) 也即 [free variable](https://en.wikipedia.org/wiki/Free_variables_and_bound_variables) 的解释:
+
+> there is a *nested function* inner defined in the scope of another function outer. The variable x is local to outer, but non-local to inner (nor is it global)
+
+```python
+def outer():
+    x = 1
+    def inner():
+        nonlocal x
+        x += 1
+        print(x)
+    return inner
+```
+
+***closure*** 的在 wiki 上的 [定义](https://en.wikipedia.org/wiki/Closure_(computer_programming)) 如下:
+
+>  Operationally, a ***closure*** is a record storing a ***function*** together with an ***environment***. The ***environment*** is a mapping associating each ***free variable*** of the function (variables that are **used locally**, but defined in an ***enclosing scope***) with the value or reference to which the name was bound when the closure was created.
+
+注意这里的 ***free varibale***, **used locally**, ***enclosing scope*** 都是站在 inner function 的视角来看待的, 简单来说:
+
+<span style="color: red"> closure 包含 inner function 和它的 free variable </span>
+
+***closure*** 在被调用时的特点如下:
+
+> Unlike a plain function, a closure allows the function to access those captured variables through the closure's **copies** of their values or **references**, **even when the function is invoked outside their scope**.
+
+
+
+
+
+```python
+def foo(text):
+    def bar():
+        nonlocal text   # 如果需要修改 text 的值, 则必须声明为 nonlocal, 否则可以不声明 nonlocal
+        text = text + "xxx"
+        print(text)
+    bar()
+    print(text)
+    return bar
+foo("abc")()
+# 输出结果
+# abcxxx    # 来自foo内部调用的bar()
+# abcxxx    # 来自bar()之后的print(text)
+# abcxxxxxx # 来自foo("abc")()对bar的调用
+```
 
 
 ## 附录 1
