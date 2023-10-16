@@ -2,10 +2,86 @@
 
 ## numpy
 
+### indexing
+
+indexing 操作指的是 `x[obj]` 这种形式获取参数, 其中 `x` 是 `np.ndarray` 对象, 注意: `x[1, 2]` 与 `x[(1, 2)]` 是完全等价的, 只是语法趟, 按 `obj` 的不同类型, 可以区分为如下几类:
+
+**Basic Indexing**
+
+Basic Indexing 触发的条件如下:
+
+```python
+np.newaxis is None  # True
+Ellipsis is ...     # True
+
+# Basic Indexing 总是返回一个 view
+obj: Union[int, slice, Ellipsis, np.newaxis, List[Union[int, slice, Ellipsis, np.newaxis]]]
+```
+
+注意 Basic Indexing 的返回的结果总是原数据的一个 **View**, 这暗示了一个副作用:
+
+```python
+x = np.arange(1000000)
+y = x[1]
+del x   # 不会释放 x, 只是不能使用 x 这个标识符
+```
+
+一些例子:
+
+```python
+x = np.arange(24)
+x.shape = (2, 3, 4)
+x[:, np.newaxis, :, :, None].shape  # (2, 1, 3, 4, 1)
+x[..., 1:2].shape  # (2, 3, 1), 只能最多出现一个 Ellipsis, 并且 1:2 这种写法会保留这个维度本身
+x[..., 1].shape    # (2, 3)
+
+# slice(i, j, k), 首先总是将 i 和 j 转为整数, 然后再区分 k 为正数还是负数, 但区间总是左开右闭: [i, j)
+x[0, 0, -1:-3:-1]  # slice(i=-1, j=-3, k=-1), 首先将 i, j 转换为整数, 转换方式为: i = -1 + x.shape[2] = 3, j = -3 + x.shape[2] = 1
+# 等价于 x[0, 0, 3:1:-1], 因此取出: [x[0, 0, 3], x[0, 0, 2]] 得到数组 [3, 2]
+
+# 空数组情形
+x[1:1, ...].shape   # (0, 3, 4)
+```
+
+**Advanced Indexing**【很复杂，待续】
+
+触发条件:
+
+> Advanced indexing is triggered when the selection object, obj, is a non-tuple sequence object, an ndarray (of data type integer or bool), or a tuple with at least one sequence object or ndarray (of data type integer or bool). There are two types of advanced indexing: integer and Boolean.
+
+如果 `obj` 本身是序列类型(但不是元组)或是数组(数据类型可以是bool或int), 或者 `obj` 是一个元组, 但元组至少有一个元素是序列类型或是数组(数据类型可以是bool或int)
+
+> Advanced indexing always returns a copy of the data (contrast with basic slicing that returns a view).
+
+Advanced Indexing 总是返回**复制**
+
+一些例子:
+
+```python
+x = np.arange(24)
+x.shape = (2, 3, 4)
+x[np.array([[0, 1], [1, 0, 0]])].shape  # (2, 3, 3, 4)
+
+y = np.arange(35).reshape(5, 7)
+y[np.array([0, 2, 4]), np.array([0, 1, 2])]  # (0, 15, 30)
+```
+
+
+### 奇怪的 id
+
+```python
+x = np.array([1, 2])
+id(x[0]) == id(x[0])  # 两次取 id 的结果不一样 !!!
+```
+
+### topk
+
 ```python
 idx = np.argpartition(x, k, axis=1) # (m, n) -> (m, n)
 x[np.range(x.shape[0]), idx[:, k]]  # (m,) 每行的第k大元素值
 ```
+
+### save & load
 
 ```python
 # numpy保存
