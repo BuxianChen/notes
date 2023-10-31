@@ -1700,6 +1700,162 @@ a = A()  # a是一个可迭代对象(Iterable)
 iter(a)  # 返回的是一个生成器(特殊的迭代器)
 ```
 
+[这篇文章](https://realpython.com/introduction-to-python-generators/) 的最后有一个使用迭代器推导式求一个大型 csv 文件某列和的代码, 适用于大文件, 很值得体会:
+
+```python
+file_name = "techcrunch.csv"
+lines = (line for line in open(file_name))
+list_line = (s.rstrip().split(",") for s in lines)
+cols = next(list_line)
+company_dicts = (dict(zip(cols, data)) for data in list_line)
+funding = (
+    int(company_dict["raisedAmt"])
+    for company_dict in company_dicts
+    if company_dict["round"] == "a"
+)
+total_series_a = sum(funding)
+print(f"Total series A fundraising: ${total_series_a}")
+```
+
+### generator 高级用法: `send`, `throw`, `close`
+
+参考资料: [https://realpython.com/introduction-to-python-generators/](https://realpython.com/introduction-to-python-generators/)
+
+generator 还有着三个方法 `send`, `throw`, `close`.
+
+**send**
+
+例子参考: [https://snarky.ca/how-the-heck-does-async-await-work-in-python-3-5/](https://snarky.ca/how-the-heck-does-async-await-work-in-python-3-5/)
+
+```python
+def jumping_range(up_to):
+    index = 0
+    while index < up_to:
+        jump = yield index
+        if jump is None:
+            jump = 1
+        index += jump
+
+if __name__ == '__main__':
+    iterator = jumping_range(5)
+    print(next(iterator))  # 0
+    print(iterator.send(2))  # 2
+    print(next(iterator))  # 3
+    print(iterator.send(-1))  # 2
+    for x in iterator:
+        print(x)  # 3, 4
+```
+
+执行逻辑为：
+- 第一个 `next(iterator)` 会执行到 `yield` 处，返回结果为 `0`
+- 接下来的 `send(2)` 会将 `2` 传递给 `jump`，然后再次执行至 `yield` 处，返回结果为 `2`
+- ...
+
+备注：
+- `next` 实际上等同于 `send(None)`
+- 不能去掉第一个 `next` 直接执行 `send(2)`，会报错 (可以使用 `send(None)`)
+
+
+**close**
+
+close 方法用于关闭迭代器
+
+```python
+def list_gen():
+    data = [1, 2, 3]
+    for x in data:
+        print("x", x)
+        yield x
+it = list_gen()
+next(it)
+it.close()   # 之后再度调用 next(it) 时会触发 StopIteration, 因此后面的 for 不会打印内容
+for i in it:
+    print("i", i)
+```
+
+**throw**
+
+```python
+def list_gen():
+    data = [1, 2, 3]
+    for x in data:
+        print("x", x)
+        try:
+            yield x
+        except ValueError as err:
+            print(err)
+it = list_gen()
+next(it)  # 打印内容如下
+# x: 1
+
+it.throw(ValueError("stop"))  # 打印内容如下, 注意不完全等同于 send(ValueError("stop"))
+# x: 2
+# stop
+
+next(it)
+# x: 3
+
+next(it)
+# 触发 StopIteration
+```
+
+- `throw` 的执行逻辑是在 `yield` 处触发异常, 然后执行到下一次 `yield`. 如果生成器函数不像上面这个例子中那样捕获异常并处理, 则上面代码将直接报错
+
+
+### `yield from` 关键字
+
+python 中还有一个关键字 `yield from`, 虽然在简单场景下, `yield from it` 似乎跟 `for i in it: yield i` 没太大区别, 但实际上, 在 `send`, `close`, `throw` 方法上, 还是有区别的, 参考这个[问答](https://stackoverflow.com/questions/9708902/in-practice-what-are-the-main-uses-for-the-yield-from-syntax-in-python-3-3), 这里仅举一例:
+
+
+```python
+def writer():
+    """A coroutine that writes data *sent* to it to fd, socket, etc."""
+    while True:
+        w = (yield)
+        print('>> ', w)
+
+def writer_wrapper(coro):
+    yield from coro
+    # for i in coro:
+    #     yield i
+
+w = writer()
+wrap = writer_wrapper(w)
+wrap.send(None)  # "prime" the coroutine
+for i in range(4):
+    wrap.send(i)   # 注意这里是对 wrap 调用 send, 如果改成对 w 调用 send, 那么在这个例子中, yield from 和 for 都能得到一样的结果, 然而通常情况下我们没有办法拿到 w 这个变量, 而只能对 wrap 进行操作, 所以 yield from 实际上相当于建立了这里的 send 到 w 的隧道
+```
+
+执行结果
+
+```
+>>  0
+>>  1
+>>  2
+>>  3
+```
+
+如果不使用 `yield from`, 那么执行结果将是:
+
+```
+>>  None
+>>  None
+>>  None
+>>  None
+```
+
+
+引用上面这个问答的理解:
+
+> What `yield from` does is it ***establishes a transparent bidirectional connection between the caller and the sub-generator***
+
+在上面这个例子里:
+
+- `sub-generator` 指的是 `w`
+- `caller` 指的是 `wrap.send()`, 注意这个例子是对 `wrap` 调用 `send`
+- `bidirectional` 指的是 generator 的特性: 即可以 `caller` 可以通过 `yield` 拿到 generator 的结果, 也可以通过 `send` 改变 generator 的行为 
+
+
 ## 14. 写一个 Python 包
 
 ### github
@@ -2222,7 +2378,7 @@ for cell in raise_two.__closure__:
 
 这个例子中外层函数 `generate_power` (enclosing function) 的用途是一个 ***closure factory function***, 而外层函数被调用后地返回值 `raise_two` 和 `raise_three` 被称为 ***closure***, 我们可以看到: closure (在这个例子中是 `raise_two` 和 `raise three`) 的特点是它能被其它函数 (这个例子中是 `generate_power`) 动态地创建.
 
-## `__code__`
+## 18. `__code__`
 
 [深入理解 Python 虚拟机](https://nanguage.gitbook.io/inside-python-vm-cn/)
 

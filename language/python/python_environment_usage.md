@@ -187,17 +187,29 @@ pdb 调试
     "version": "0.2.0",
     "configurations": [
         {
-            "name": "Python: load_detr.py",
+            "name": "MyCode Debug",
             "type": "python",
             "request": "launch",
-            "program": "load_detr.py",
+            // "program": "${workspaceFolder}/a/b.py",
+            "module": "a.b",
             "console": "integratedTerminal",
             "justMyCode": false,
+            "env": {"CUDA_VISIBLE_DEVICES": "2"},
+            "args": ["--port", "7000", "--device", "cpu"],
+            "python": "/home/buxian/anaconda3/envs/exp/bin/python",
             "cwd": "${workspaceFolder}",
-            "args": []
         }
     ]
 }
+```
+
+上面的配置等价于这种写法:
+
+```bash
+# 设定 "module" 参数
+cd ${workspaceFolder} && CUDA_VISIBLE_DEVICES="2" python -m a.b --port 7000 --device cpu
+# 设定 "program" 参数
+cd ${workspaceFolder} && CUDA_VISIBLE_DEVICES="2" python a/b.py --port 7000 --device cpu
 ```
 
 ## Python编程规范

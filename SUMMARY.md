@@ -25,6 +25,7 @@
 - [misc](tool/misc_tools.md)
 
 ## Note
+
 - [DL](note/dl.md)
   - [DL-deploy](note/dl-deploy.md)
   - [huggingface](note/huggingface.md)
@@ -39,3 +40,9 @@
 - [GNN](note/gnn.md)
 - [TODO LIST](note/plan.md)
 - [Draft](note/draft.md)
+
+## Learn
+
+- [C++ Primer](learn/c++primer_5ed.md)
+- [C++ Primer Plus](learn/c++primerplus_6ed.md)
+- [CSAPP](learn/csapp.md)

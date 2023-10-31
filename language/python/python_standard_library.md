@@ -1305,32 +1305,13 @@ json.load(fr)  # read file->dict
 
 ## asyncio
 
-### 更多关于 generator, yield, yield from 的知识
+- 多个参考资料推荐这个, 但貌似是针对 Python 2 的, 可能需要辩证看待: [A Curious Course on Coroutines and Concurrency](http://www.dabeaz.com/coroutines/)
+- [https://realpython.com/async-io-python/](https://realpython.com/async-io-python/)
 
-```python
-def jumping_range(up_to):
-    index = 0
-    while index < up_to:
-        jump = yield index
-        if jump is None:
-            jump = 1
-        index += jump
 
-if __name__ == '__main__':
-    iterator = jumping_range(5)
-    print(next(iterator))  # 0
-    print(iterator.send(2))  # 2
-    print(next(iterator))  # 3
-    print(iterator.send(-1))  # 2
-    for x in iterator:
-        print(x)  # 3, 4
-```
+概念澄清:
 
-执行逻辑为：
-- 第一个 `next(iterator)` 会执行到 `yield` 处，返回结果为 `0`
-- 接下来的 `send(2)` 会将 `2` 传递给 `jump`，然后再次执行至 `yield` 处，返回结果为 `2`
-- ...
-
-备注：
-- `send(None)` 等同于 `next`
-- 不能去掉第一个 `next` 直接执行 `send(2)`，会报错
+- **Asynchronous IO (async IO)**: 是一个语言无关的模型
+- **async/await**: 是 Python 的关键字
+- **asyncio**: 是 Python 的一个标准库
+- **coroutine**: 在 Python 中是一类特殊的 generator 函数

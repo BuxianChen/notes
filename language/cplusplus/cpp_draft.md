@@ -958,5 +958,84 @@ int main() {
 }
 ```
 
+## 2.3 常用函数
+
+### `make_heap`, `priority_queue`
+
+`make_heap` vs `priority_queue`: [stackoverflow](https://stackoverflow.com/questions/11266360/when-should-i-use-make-heap-vs-priority-queue)
+
+相关应用: [leetcode 2558](https://leetcode.cn/problems/take-gifts-from-the-richest-pile/solutions/2477680/cong-shu-liang-zui-duo-de-dui-qu-zou-li-kt246/?envType=daily-question&envId=2023-10-28)
+
+来自 [cppreference](https://en.cppreference.com/w/cpp/algorithm/make_heap) 的例子改编
+
+```c++
+#include <algorithm>
+#include <functional>
+#include <iostream>
+#include <string_view>
+#include <vector>
+ 
+void print(std::string_view text, std::vector<int> const& v = {})
+{
+    std::cout << text << ": ";
+    for (const auto& e : v)
+        std::cout << e << '(' << &e << ')' << ' ';
+    std::cout << '\n';
+}
+ 
+int main()
+{
+    print("Max heap");
+ 
+    std::vector<int> v{3, 2, 4, 1, 5, 9};
+    print("initially, v", v);
+ 
+    std::make_heap(v.begin(), v.end());
+    print("after make_heap, v", v);
+ 
+    std::pop_heap(v.begin(), v.end());
+    print("after pop_heap, v", v);
+ 
+    auto top = v.back();
+    v.pop_back();
+    print("former top element", {top});
+    print("after removing the former top element, v", v);
+ 
+    print("\nMin heap");
+ 
+    std::vector<int> v1{3, 2, 4, 1, 5, 9};
+    print("initially, v1", v1);
+ 
+    std::make_heap(v1.begin(), v1.end(), std::greater<>{});
+    print("after make_heap, v1", v1);
+ 
+    std::pop_heap(v1.begin(), v1.end(), std::greater<>{});
+    print("after pop_heap, v1", v1);
+ 
+    auto top1 = v1.back();
+    v1.pop_back();
+    print("former top element", {top1});
+    print("after removing the former top element, v1", v1);
+}
+```
+
+输出
+
+```
+Max heap: 
+initially, v: 3(0x11c7030) 2(0x11c7034) 4(0x11c7038) 1(0x11c703c) 5(0x11c7040) 9(0x11c7044) 
+after make_heap, v: 9(0x11c7030) 5(0x11c7034) 4(0x11c7038) 1(0x11c703c) 2(0x11c7040) 3(0x11c7044) 
+after pop_heap, v: 5(0x11c7030) 3(0x11c7034) 4(0x11c7038) 1(0x11c703c) 2(0x11c7040) 9(0x11c7044) 
+former top element: 9(0x11c7050) 
+after removing the former top element, v: 5(0x11c7030) 3(0x11c7034) 4(0x11c7038) 1(0x11c703c) 2(0x11c7040) 
+
+Min heap: 
+initially, v1: 3(0x11c7050) 2(0x11c7054) 4(0x11c7058) 1(0x11c705c) 5(0x11c7060) 9(0x11c7064) 
+after make_heap, v1: 1(0x11c7050) 2(0x11c7054) 4(0x11c7058) 3(0x11c705c) 5(0x11c7060) 9(0x11c7064) 
+after pop_heap, v1: 2(0x11c7050) 3(0x11c7054) 4(0x11c7058) 9(0x11c705c) 5(0x11c7060) 1(0x11c7064) 
+former top element: 1(0x11c7070) 
+after removing the former top element, v1: 2(0x11c7050) 3(0x11c7054) 4(0x11c7058) 9(0x11c705c) 5(0x11c7060)
+```
+
 
 
