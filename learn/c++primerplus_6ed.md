@@ -1,8 +1,8 @@
-# C++primerplus\(6ed\)
+# C++ Primer Plus (6ed)
 
-## chapter 9: Memory Models and Namespaces
+# 第 9 章: 内存模型与命名空间 (Memory Models and Namespaces)
 
-### 9.1 Separate Compilation
+## 9.1 分块编译 (Separate Compilation)
 
 C++ 代码文件的推荐组织形式
 
@@ -18,18 +18,18 @@ C++ 代码文件的推荐组织形式
 - 模板
 - 内联函数
 
-## chapter 18: C++ 11 New Features
+# 第 18 章: C++ 11 新特性 (C++ 11 New Features)
 
 本章笔记将对原书进行扩充，主要体现在：
 
 - 补充参考资料：侯捷老师的相关网课等；
 - 逐步增加书中没有覆盖到的新特性，并逐步增加 C++14/17/20 的新特性；
 
-### New DataTypes
+## New DataTypes
 
 C++ 11新增加了 `long long`，`unsigned long long` 类型，确保其至少支持 64 位，`char16_t` 与 `char32_t`。
 
-### Uniform Initialization
+## Uniform Initialization
 
 使用大括号的形式（被称为 *list-initialization*）进行初始化，并且等号可以省略。这一初始化方式对内置类型与用户自定义类型均适用，例如以下初始化方式都是合法的：
 
