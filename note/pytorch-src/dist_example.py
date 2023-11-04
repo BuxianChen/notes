@@ -102,7 +102,7 @@ def reduce_mean(tensor, nprocs):
 for epoch in range(10):
     train_sampler.set_epoch(epoch)
     test_sampler.set_epoch(epoch)
-    # when use DistributedSampler, the `batch_size` here is total batch_size of all gpus
+    # correct: When use DistributedSampler, the `batch_size` here is batch_size_per_gpu
     train_dataloader = torch.utils.data.DataLoader(train_dataset, sampler=train_sampler, batch_size=64, num_workers=2)
     test_dataloader = torch.utils.data.DataLoader(test_dataset, sampler=test_sampler, batch_size=64, num_workers=2)
 
