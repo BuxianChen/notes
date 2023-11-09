@@ -698,7 +698,12 @@ DataParallel、DistributedDataParallel、TorchElastic 均属于 DataPallel，RPC
 
 ### c10d
 
-c10d 是两大类并行方法的共同底层依赖（通信机制）
+c10d 是两大类并行方法的共同底层依赖（通信机制）, 这里只介绍 `torch.distributed` 的一些函数
+
+```python
+import torch.distributed as dist
+# world_size, local_rank, rank, node_rank
+```
 
 ## 模型量化
 
@@ -810,11 +815,14 @@ torch.allclose(embed.weight.grad, linear.weight.grad)
 
 ## 常用函数
 
-`torch.version.cuda` 变量存储了 cuda 的版本号
+**cuda 检查相关**
 
-`torch.cuda.max_memory_allocated(device=None)`函数用于输出程序从开始运行到目前为止GPU占用的最大内存
-
-`torch.cuda.reset_max_memory_allocated()`函数用于将程序从开始运行到目前为止GPU占用的最大内存设置为0
+```python
+major, minor = torch.cuda.get_device_capability("cuda:0")  # 显卡的架构(capability/compute)
+torch.version.cuda  # cuda 的版本号
+torch.cuda.reset_max_memory_allocated()   # 函数用于将程序从开始运行到目前为止GPU占用的最大内存设置为0, 配合下一个使用
+torch.cuda.max_memory_allocated(device=None)  # 输出程序从开始运行到目前为止GPU占用的最大内存
+```
 
 `torch.nn.Module`的默认模式为**train**, 但为了保险起见, 请手动用`model.train()`与`model.eval()`进行切换.
 
@@ -930,6 +938,43 @@ out2 = out2 * weight + bias
 
 - 版本：torch 1.9.0 (以下目的是按类别穷举 `nn.Module` 的方法)
 - 相关代码：`torch/nn/modules/module.py`
+
+### takeaway
+
+**buffer 与 parameter**
+
+[pytorch 问答](https://discuss.pytorch.org/t/what-is-the-difference-between-register-buffer-and-register-parameter-of-nn-module/32723/14) 里有关于这个的内容
+
+原则时: 为保持干净的代码结构, buffer 中存的是不需要求导的 tensor
+
+```python
+import torch
+
+class MyModel(torch.nn.Module):
+    def __init__(self):
+        super().__init__()
+        # 典型用法: buffer 存的是 tensor, 因此它们不涉及自动微分(本身的 require_grad 为 False, 并且model.parameters() 也不包含 buffer)
+        # 一般不会用于存 Parameter, 当然语法上是支持的(因为 Parameter 是 Tensor 的子类)
+        self.register_buffer("buffer_a", torch.tensor([0, 1, 2.]))
+        self.register_parameter("param_b", torch.nn.Parameter(torch.tensor([2, 3, 4.])))
+    
+    def forward(self, x):
+        pass
+model = MyModel()
+# 包含 parameter 和 buffer, 除非 register_buffer 时显式地加上 persistent=False
+# 因为通常使用 torch.save(model.state_dict()), 因此通常 buffer 也会被保存
+model.state_dict()  # OrderedDict([('param_b', tensor([2., 3., 4.])), ('buffer_a', tensor([1., 2., 3.]))])
+
+model.to(0)  # parameter 和 buffer 都会被转到 cuda 上
+
+# 只包含 parameter
+for name, params in model.named_parameters():
+    print(name, params)
+
+# 注意使用优化器时通常这么用: 因此不包含 buffer
+optimizer = torch.optim.SGD(model.parameters(), lr=0.001)
+```
+
 
 ### hook
 

@@ -227,14 +227,21 @@ data["good"]["day"] = True
 ```
 
 
-## typing
+## typing【涉及到generic看不懂】
 
-typing 模块用于注解
+typing 模块用于注解, 这些注解在运行时不起作用, 只适用于 mypy 工具做静态检查, 也方便读者阅读
+
+看不懂的地方大概有这么几处:
+
+- `typing.TypeVar`, `typing.NewType`
+- `typing.Generic` 类
+- python `type` 关键字
+- 
+
 
 **`Tuple`**
 
 - `Tuple`：元组类型
-
 - `Tuple[int, str]`：第一个元素为整数，第二个元素类型为字符串
 - `Tuple[int, ...]`：若干个整数
 - `Tuple[Any, ...]`：等价于 `Tuple`
@@ -257,6 +264,152 @@ def foo(a: Optional[Sized]):
 
 - `Callable[[int], str]`：输入是 int 类型，输出是 str 类型的函数
 - `Callable[..., str]`：输出是 str 类型的函数，对输入不加约束
+
+**`TypeAlias`, `NewType`, `TypeVar`**
+
+`TypeAlias`
+
+```python
+# 以下三种写法等价: TypeAlias
+from typing import TypeAlias
+# Vector 与 list[float] 等同
+type Vector = list[float]  # Python 3.12 引入的关键字 type
+Vector = list[float]
+Vector: TypeAlias = list[float]  # 推荐写法, 兼容性好
+```
+
+`TypeVar` 比较常见, [官方文档](https://docs.python.org/3/library/typing.html#typing.TypeVar) 解释如下
+
+> The preferred way to construct a type variable is via the dedicated syntax for generic functions, generic classes, and generic type aliases
+
+```python
+from typing import TypeVar
+T = TypeVar('T')  # Can be anything
+S = TypeVar('S', bound=str)  # Can be any subtype of str
+A = TypeVar('A', str, bytes)  # Must be exactly str or bytes
+
+def foo(arg: T) -> T:
+    return arg
+```
+
+`NewType`
+
+```python
+from typing import NewType
+UserID = NewType("UserID", int)  # Python 3.10 之前 UserID 是一个函数, 3.10 之后是一个类
+```
+
+在运行时, 基本上 `x = NewType("UserID", int)(x)`, Python 3.8 中对 `NewType` [实现源码](https://github.com/python/cpython/blob/v3.8.1/Lib/typing.py#L1787-L1811) 如下:
+
+```python
+def NewType(name, tp):
+    def new_type(x):
+        return x
+    new_type.__name__ = name
+    new_type.__supertype__ = tp
+    return new_type
+```
+
+`__name__` 属性探索:
+
+```python
+from typing import TypeVar, NewType
+T = TypeVar("T displayname")  # 一般不会让 name="T displayname" 与变量名 T 不一致
+T.__name__   # "T displayname"
+
+UserID = NewType("interger displayname", int)
+UserID(123)
+UserID.__name__  # "interger displayname"
+
+class A:
+    pass
+A.__name__  # "A"
+```
+
+`TypeVar` 与 `NewType` 涉及的 `name` 参数是字符串类型, 影响的是 `__name__` 属性
+
+
+**`Generic`**
+
+类似这个写法 `List[int]`, 这种方括号的写法看起来似乎是 C++ 里的泛型(模板)一样, 我们也可以自定义 (例子参考[这篇博客](https://medium.com/@steveYeah/using-generics-in-python-99010e5056eb))
+
+继承 `Generic`, 就可以在类里面使用“模板类型”
+
+```python
+from typing import Dict, Generic, TypeVar
+
+T = TypeVar("T")
+
+class Registry(Generic[T]):
+    def __init__(self) -> None:
+        self._store: Dict[str, T] = {}
+          
+    def set_item(self, k: str, v: T) -> None:
+        self._store[k] = v
+    
+    def get_item(self, k: str) -> T:
+        return self._store[k]
+  
+if __name__ == "__main__":
+    family_name_reg = Registry[str]()
+    family_age_reg = Registry[int]()
+    
+    family_name_reg.set_item("husband", "steve")
+    family_name_reg.set_item("dad", "john")
+    
+    family_age_reg.set_item("steve", 30)
+```
+
+还存在一个疑问:
+
+这个例子有些看不懂, 起源是 `openai==1.1.1` python 包:
+
+```python
+from openai import Client, OpenAI
+client = OpenAI(
+    # defaults to os.environ.get("OPENAI_API_KEY")
+)
+client.models.list().__class__.__mro__
+```
+
+结果是
+
+```
+(openai.pagination.SyncPage[Model],
+ openai.pagination.SyncPage,
+ openai._base_client.BaseSyncPage,
+ openai._base_client.BasePage,
+ openai._models.GenericModel,
+ openai._compat.GenericModel,
+ openai._models.BaseModel,
+ pydantic.main.BaseModel,
+ typing.Generic,
+ object)
+```
+
+于是写了个测试例子
+
+```python
+import pydantic
+from openai._models import BaseModel
+
+ModelT = TypeVar("ModelT", bound=pydantic.BaseModel)
+class Page(BaseModel, Generic[ModelT]):
+    page: int
+p = Page[pydantic.BaseModel].model_validate({"page": 10})
+print(p.__class__.__mro__)
+```
+
+输出:
+
+```
+(__main__.Page[BaseModel],
+ __main__.Page,
+ openai._models.BaseModel,
+ pydantic.main.BaseModel,
+ typing.Generic,
+ object)
+```
 
 **`overload`**
 
