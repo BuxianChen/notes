@@ -13,6 +13,10 @@
   - [C++ Draft](language/cplusplus/cpp_draft.md)
 - Java
   - [JavaSE](language/java/javase.md)
+- SQL
+  - [SQL](language/sql/sql.md)
+- Rust
+  - [Rust](language/rust/rust.md)
 
 ## Tool
 
