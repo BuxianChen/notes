@@ -1433,6 +1433,27 @@ name: str = cls.__qualname__  # 优于__name__
 
 备注：`__name__` vs `__qualname__`: [stackoverflow](https://stackoverflow.com/questions/58108488/what-is-qualname-in-python)
 
+`inspect.unwrap` 用于解除用 `functools.wraps` 修饰的装饰器
+
+```python
+import inspect
+from functools import wraps
+
+def test_decorator(func):
+    @wraps(func)
+    def wrapper(*args, **kwargs):
+        print('test_decorator')
+        return func(*args, **kwargs)
+    return wrapper
+
+@test_decorator
+def spam():
+    print('spam1', '\n')
+spam()
+print()
+spam = inspect.unwrap(spam)
+spam()
+```
 
 ## json
 

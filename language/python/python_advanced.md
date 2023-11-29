@@ -1223,6 +1223,23 @@ def foo(a, b=1, /, c=2, d=3, *, e=5, f, **kwargs): pass
 - `c` 与 `d` 为普通形参
 - `e` 与 `f` 为限定关键字形参
 
+验证方式:
+
+```python
+def foo(a, b, /, c, d=3, *args, e=5, f, **kwargs): pass
+for name, p in inspect.signature(foo).parameters.items():
+    print(name, p.kind.__str__())
+# 打印结果
+# a POSITIONAL_ONLY
+# b POSITIONAL_ONLY
+# c POSITIONAL_OR_KEYWORD
+# d POSITIONAL_OR_KEYWORD
+# args VAR_POSITIONAL
+# e KEYWORD_ONLY
+# f KEYWORD_ONLY
+# kwargs VAR_KEYWORD
+```
+
 **形实结合的具体过程**
 
 首先用位置实参依次匹配限定位置形参和普通形参，其中位置实参的个数必须大于等于限定位置形参的个数，剩余的位置实参依顺序匹配普通形参。
@@ -2349,7 +2366,7 @@ outer_func("World!")
 
 >  Operationally, a ***closure*** is a record storing a ***function*** together with an ***environment***. The ***environment*** is a mapping associating each ***free variable*** of the function (variables that are **used locally**, but defined in an ***enclosing scope***) with the value or reference to which the name was bound when the closure was created.
 
-注意这里的 ***free varibale***, **used locally**, ***enclosing scope*** 都是站在 inner function 的视角来看待的, 简单来说:
+注意这里的 ***free variable***, **used locally**, ***enclosing scope*** 都是站在 inner function 的视角来看待的, 简单来说:
 
 <span style="color: red"> closure 包含 inner function 和它的 free variable </span>
 
@@ -2378,9 +2395,82 @@ for cell in raise_two.__closure__:
 
 这个例子中外层函数 `generate_power` (enclosing function) 的用途是一个 ***closure factory function***, 而外层函数被调用后地返回值 `raise_two` 和 `raise_three` 被称为 ***closure***, 我们可以看到: closure (在这个例子中是 `raise_two` 和 `raise three`) 的特点是它能被其它函数 (这个例子中是 `generate_power`) 动态地创建.
 
+
+`func.__closure__[0].cell_contents` 与 `func.__code__.co_freevars` 与 `func.__code__.co_cellvars` 与闭包相关, 具体如下:
+
+```python
+def f(a, b, x, y):
+    c = 3
+    def g(e, f, g):
+        return a + c
+    def h():
+        return b
+    d = 1
+    # ("a", "c"), ("b")
+    print(g.__code__.co_freevars, h.__code__.co_freevars)
+    return g
+
+# ("a", "b", "c")
+print(f.__code__.co_cellvars)  # 所有闭包函数要用到的 free variable 的并集, 也就是 g 和 h 的 co_freevars 的并集
+
+cl = f(100, 200, 300, 400)
+cl.__closure__[0].cell_contents  # 100, 也就是 a 的值
+cl.__closure__[1].cell_contents  # 3, 也就是 c 的值
+```
+
+
+
 ## 18. `__code__`
 
 [深入理解 Python 虚拟机](https://nanguage.gitbook.io/inside-python-vm-cn/)
+[inspect 模块](https://docs.python.org/3/library/inspect.html): 包含 `__code__` 的全部属性的解释
+
+前面的第 8 节已经解释过: python [函数定义](https://docs.python.org/3/library/inspect.html#inspect.Parameter.kind)
+
+```
+def funcname(【限定位置形参】,【普通形参】,【特殊形参args】,【限定关键字形参】,【特殊形参kwargs】): pass
+def funcname(【POSITIONAL_ONLY】,【POSITIONAL_OR_KEYWORD】,【VAR_POSITIONAL】,【KEYWORD_ONLY】, 【VAR_KEYWORD】): pass
+```
+
+```python
+def foo(a, /, b, c, d, *args, e, f, **kwargs):
+    h = 1
+    k = 2
+# 包括 a, b, c, d: 4个
+foo.__code__.co_argcount
+# 包括 a: 1 个
+foo.__code__.co_posonlyargcount
+# 包括 e, f: 2 个
+foo.__code__.co_kwonlyargcount
+
+# ('a', 'b', 'c', 'd', 'e', 'f', 'args', 'kwargs', 'h', 'k')
+foo.__code__.co_varnames
+
+# 也就是 co_varnames 的长度: 10
+foo.__code__.co_nlocals
+```
+
+`__code__` 的全部[属性](https://docs.python.org/3/library/inspect.html)
+
+- `co_argcount`
+- `co_code` (待研究)
+- `co_cellvars`: tuple of names of cell variables (referenced by containing scopes), 以闭包函数为例, 外层函数的 `co_cellvars` 是内层函数所使用的外层函数的变量
+- `co_consts` (待研究)
+- `co_filename` (待研究)
+- `co_firstlineno` (待研究)
+- `co_flags` (待研究)
+- `co_lnotab` (待研究)
+- `co_freevars`
+- `co_posonlyargcount`
+- `co_kwonlyargcount`
+- `co_name` (待研究)
+- `co_qualname` (待研究)
+- `co_names` (待研究): tuple of names other than arguments and function locals
+- `co_nlocals`: number of local variables, 实际上就是 `len(co_varnames)`
+- `co_stacksize` (待研究): virtual machine stack space required
+- `co_varnames`: tuple of names of arguments and local variables, 具体顺序是：【pos-only】,【pos】, 【keyword-only】, args, kwargs, 然后其余局部变量按使用顺序排列
+
+
 
 ## 附录 1
 
@@ -2403,10 +2493,10 @@ List[int]()  # 注意报错信息
 
 ### python dict与OrderedDict
 
-关于python自带的字典数据结构, 实现上大致为\([参考stackoverflow回答](https://stackoverflow.com/questions/327311/how-are-pythons-built-in-dictionaries-implemented)\):
+关于python自带的字典数据结构, 实现上大致为([参考stackoverflow回答](https://stackoverflow.com/questions/327311/how-are-pythons-built-in-dictionaries-implemented)):
 
-* 哈希表\(开放定址法: 每个位置只存一个元素, 若产生碰撞, 则试探下一个位置是否可以放下\)
-* python 3.6以后自带的字典也是有序的了\([dict vs OrderedDict](https://realpython.com/python-ordereddict/)\)
+* 哈希表(开放定址法: 每个位置只存一个元素, 若产生碰撞, 则试探下一个位置是否可以放下)
+* python 3.6以后自带的字典也是有序的了([dict vs OrderedDict](https://realpython.com/python-ordereddict/))
 
 说明: 这里的顺序是按照key被插入的顺序决定的, 举例
 
@@ -2414,7 +2504,7 @@ List[int]()  # 注意报错信息
 
 引用赋值: 两者完全一样, 相当于是别名: `x=[1, 2, 3], y=x` 浅赋值: 第一层为复制, 内部为引用: `list.copy(), y=x[:]` 深复制: 全部复制, `import copy; x=[1, 2]; copy.deepcopy(x)`
 
-[Python 直接赋值、浅拷贝和深度拷贝解析 \| 菜鸟教程 \(runoob.com\)](https://www.runoob.com/w3cnote/python-understanding-dict-copy-shallow-or-deep.html)
+[Python 直接赋值、浅拷贝和深度拷贝解析 | 菜鸟教程 (runoob.com)](https://www.runoob.com/w3cnote/python-understanding-dict-copy-shallow-or-deep.html)
 
 ### Immutable与Hashable的区别
 
