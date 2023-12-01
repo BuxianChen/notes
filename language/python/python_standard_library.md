@@ -1455,6 +1455,34 @@ spam = inspect.unwrap(spam)
 spam()
 ```
 
+## weakref
+
+```python
+import weakref
+
+class Model:
+    def __init__(self):
+        self.graph = Graph(weakref.proxy(self))
+        # self.graph = Graph(self)
+
+class Graph:
+    def __init__(self, model):
+        self.model_ref = model
+
+# 创建 Model 实例
+model = Model()
+graph = model.graph
+
+# 销毁对 Model 实例的强引用
+del model
+
+# 尝试访问 Graph 实例中的弱引用
+try:
+    print(graph.model_ref)
+except Exception as e:
+    print("Exception:", e)  # 进入此处!
+```
+
 ## json
 
 ```python
