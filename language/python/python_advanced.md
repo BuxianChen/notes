@@ -503,7 +503,7 @@ __set_name__(self, owner, name)
 
 #### 查找顺序
 
-完整的顺序如下，对于 `obj.x`，获得其值的查找顺序为：
+完整的顺序如下，对于 `obj.x`，获得其值的查找顺序为(参考[Realpython](https://realpython.com/python-descriptors/))：
 
 - 首先寻找命名为 `x` 的 **data descriptor**。即如果在 `obj` 的类 `Obj` 定义里有如下形式：
 

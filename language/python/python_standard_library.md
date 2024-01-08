@@ -1517,3 +1517,56 @@ json.load(fr)  # read file->dict
 - **async/await**: 是 Python 的关键字
 - **asyncio**: 是 Python 的一个标准库
 - **coroutine**: 在 Python 中是一类特殊的 generator 函数
+
+
+使用示例 (八股文?)
+
+```python
+import asyncio
+from contextvars import copy_context
+from functools import partial
+
+async def afn(x, y):
+    return x - y
+
+async def afm(x, y):
+    return await asyncio.get_running_loop().run_in_executor(
+        None,
+        partial(copy_context().run, lambda x, y: x * y, x, y)
+    )
+
+async def run_in_executor(
+    executor_or_config,
+    func,
+    *args,
+    **kwargs,
+):
+    if executor_or_config is None or isinstance(executor_or_config, dict):
+        return await asyncio.get_running_loop().run_in_executor(
+            None,
+            partial(copy_context().run, func, *args, **kwargs),
+        )
+
+    return await asyncio.get_running_loop().run_in_executor(
+        executor_or_config, partial(func, **kwargs), *args
+    )
+
+def foo(x, y):
+    return x + y
+
+async def afoo(x, y):
+    return await run_in_executor(
+        None, foo, x, y
+    )
+
+
+if __name__ == "__main__":
+    res = asyncio.run(afn(1, 2))
+    print(res)
+
+    res = asyncio.run(afm(1, 2))
+    print(res)
+
+    res = asyncio.run(afoo(1, 2))
+    print(res)
+```
