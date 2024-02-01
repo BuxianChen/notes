@@ -1517,6 +1517,7 @@ json.load(fr)  # read file->dict
 - **async/await**: 是 Python 的关键字
 - **asyncio**: 是 Python 的一个标准库
 - **coroutine**: 在 Python 中是一类特殊的 generator 函数
+- 不是太确定: 在讨论协程时, 普通函数也被称为阻塞型函数 (blocking function), 而使用 `async def` 定义的函数被称为 coroutine, 也被称为非阻塞型函数 (nonblocking function)
 
 
 使用示例 (八股文?)
@@ -1537,7 +1538,7 @@ async def afm(x, y):
 
 async def run_in_executor(
     executor_or_config,
-    func,
+    func,  # func 不是 async 修饰的函数, 即普通函数(或者被称为阻塞型函数或blocking function)
     *args,
     **kwargs,
 ):
@@ -1570,3 +1571,53 @@ if __name__ == "__main__":
     res = asyncio.run(afoo(1, 2))
     print(res)
 ```
+
+
+**`asyncio.run(afn())` vs `asyncio.get_event_loop().run_until_complete(afn())`**
+
+两者基本等价? (不确定)
+
+```python
+import asyncio
+
+async def main():
+    # 可以使用 await, async for 等语法
+    ...
+
+asyncio.run(main())
+# asyncio.get_event_loop().run_until_complete(main())
+```
+
+源码如下:
+
+```python
+# asyncio/runners.py
+from . import events
+def run(main):
+    if events._get_running_loop() is not None:
+        raise RuntimeError("asyncio.run() cannot be called from a running event loop")
+    loop = get_event_loop_policy().new_event_loop()  # events.new_event_loop()
+    get_event_loop_policy().set_event_loop(loop)     # events.set_event_loop(loop)
+    return loop.run_until_complete(main)
+
+
+# asyncio/events.py
+def get_event_loop():
+    current_loop = _get_running_loop()
+    if current_loop is not None:
+        return current_loop
+    return get_event_loop_policy().get_event_loop()
+```
+
+疑问:
+
+- `asyncio.get_event_loop()` vs `asyncio.get_running_loop()`: 前者通常是在非协程环境中使用, 例如在模块级别. 后者通常是在 `async def` 的函数体内被使用
+- `run_in_executor()` vs `run_until_complete()`: 前者接收的是普通函数, 后者接收的是 `async def` 的函数
+- `return await` 是在做什么? 仅仅是省一行代码
+    ```python
+    async def example_async_function():
+        result = await some_async_operation()
+        return result
+        # 等价于
+        # return await some_async_operation()
+    ```
