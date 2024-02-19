@@ -860,11 +860,149 @@ class A(object, metaclass=type): pass
 Python 中, type 函数是一个特殊的函数，调用形式有两种：
 
 - `type(obj)`：返回 obj 的类型
-- `type()`
+- `type(name, bases, dict, **kwds)`: 用于创建一个类, 其中 `bases` 是父类元组, `dict` 的类属性, `kwds` 与元类有关, 疑问见下面
+
+```python
+class A:
+    pass
+
+class B:
+    pass
+
+class C(A, B):
+    a = 1
+
+# 等价于
+C = type("C", (A, B), {"a": 1})
+```
+
+关于 `kwds` 的问题 (参考后面几节回过来再看):
+
+- 使用 `type("C", (A,), {"a": 1}, extra=1)` 会报错, 除非 `A` 定义了 `__init_subclass__`, 并且能处理 `extra` 参数
+- 可以使用 `class C(metaclass=M, extra=1)`: 其中 `M` 继承自 `type`, 并且 `M` 重载 `__new__` 方法, 其中 `metaclass` 是固定的变量名, 而 `extra` 是自定义的变量名, 见下一节的例子
+- 这个怎么做到的? [https://docs.pydantic.dev/1.10/usage/model_config/](https://docs.pydantic.dev/1.10/usage/model_config/)
+    ```python
+    from pydantic.v1 import BaseModel, ValidationError, Extra
+    class Model(BaseModel, extra=Extra.forbid):
+        a: str
+    ```
+    
+
+### metaclass 与 `__init_subclass__`
+
+参考 [https://duongnt.com/init_subclass-metaclass/](https://duongnt.com/init_subclass-metaclass/), 原博客写得更好, 这里摘录的内容不完全达意.
+
+使用元类: 所谓元类, 是指继承自 `type` 的类, 并且重载了 `type` 的 `__new__` 方法, 注意 `type.__new__` 与 `object.__new__` 的区别
+
+```python
+class SnakeCaseMeta(type):
+    # cls 是 SnakeCaseMeta, name 是 "Animal", bases 是 Animal 的父类元组, 在这里是空元组, class_dict 是类属性及类方法字典
+    # 触发于子类使用 SnakeCaseMeta 作为 metaclass 的时候
+    def __new__(cls, name, bases, class_dict, **kwargs):  # kwargs 在此例中会是 {"z": 1}
+        print(f"{cls} __new__ called, {name}, {bases}, {class_dict}, {kwargs}")
+        not_camel_case = set()
+
+        for ele in class_dict:
+            if cls._not_snake_case(ele) and ele not in not_camel_case:
+                not_camel_case.add(ele)
+
+        if not_camel_case:
+            raise ValueError(f'The following members are not using snake case: {", ".join(not_camel_case)}')
+
+        return type.__new__(cls, name, bases, class_dict)  # 注意 type.__new__ 不能接受额外的 kwargs 参数
+
+    @classmethod
+    def _not_snake_case(cls, txt):
+        return txt.lower() != txt
 
 
+class Animal(metaclass=SnakeCaseMeta, z=1):
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+    
+    # 注意这个是在实例化 Animal 对象时优先于 Animal.__init__ 触发的
+    def __new__(cls, *args, **kwargs):
+        print("Animal __new__ called")
+        return object.__new__(cls)
+    
+    def eat_method(self):
+        print('This animal can eat.')
 
-### `__new__` 函数与 `__init__` 函数
+    def sleep_method(self):
+        print('This animal can sleep.')
+```
+
+另一种做法是不使用元类, 而是在父类中定义 `__init_subclass__`, 子类只需要继承即可完成
+
+```python
+class VerifySnakeCase:
+    # cls 是 Animal, name 是 "animal", kwargs 是 {}
+    def __init_subclass__(cls, name, **kwargs):
+        print(cls, name, kwargs)
+        super().__init_subclass__(**kwargs)   # 注意 object.__init_subclass__ 实际上只能接收 0 个参数
+        cls.name = name
+
+        not_camel_case = set()
+        for ele in cls.__dict__:
+            if cls._not_snake_case(ele) and ele not in not_camel_case:
+                not_camel_case.add(ele)
+
+        if not_camel_case:
+            raise ValueError(f'The following members are not in snake case: {", ".join(not_camel_case)}')
+
+    @classmethod
+    def _not_snake_case(cls, txt):
+        return txt.lower() != txt
+
+class Animal(VerifySnakeCase, name="animal"):
+    def __init__(self, a, b):
+        self.a = a
+        self.b = b
+    
+    def eat_method(self):
+        print('This animal can eat.')
+
+    def sleep_method(self):
+        print('This animal can sleep.')
+
+Dog = type("Dog", (VerifySnakeCase,), {}, name="dog")  # 此时可以使用第 4 个参数
+```
+
+### `type(...)` vs `type.__new__(...)`
+
+`type(...)` 与 `type.__new__(...)` 仅有一些小区别: 调用 `type(...)` 会在内部调用 `type.__new__`, 然后进一步调用 `type.__init__`
+
+[https://stackoverflow.com/questions/2608708/what-is-the-difference-between-type-and-type-new-in-python](https://stackoverflow.com/questions/2608708/what-is-the-difference-between-type-and-type-new-in-python)
+
+这个例子看上去与上面的描述矛盾, 实际上, 在第一种写法里, `A` 的定义完成时, 先触发 `MetaA.__new__`, 它在内部触发 `type(...)`, 也就是会进一步调用 `type.__new__` 和 `type.__init__`, 而这两步都没有输出; 在第二种写法里, 的定义完成时, 先触发 `MetaA.__new__`, 由于其返回是用 `type.__new__(...)` 调用的, 因此会进一步触发 `Meta.__init__` (类似于下面的 `object.__new__` 与 `object.__init__`).
+
+```python
+>>> class MetaA(type):
+...     def __new__(cls, name, bases, dct):
+...         print('MetaA.__new__')
+...         return type(name, bases, dct)
+...     def __init__(cls, name, bases, dct):
+...         print('MetaA.__init__')
+... 
+>>> class A(object, metaclass=MetaA): pass
+... 
+MetaA.__new__
+
+>>> class MetaA(type):
+...     def __new__(cls, name, bases, dct):
+...         print('MetaA.__new__')
+...         return type.__new__(cls, name, bases, dct)
+...     def __init__(cls, name, bases, dct):
+...         print('MetaA.__init__')
+... 
+>>> class A(object, metaclass=MetaA): pass
+... 
+MetaA.__new__
+MetaA.__init__
+```
+
+### `object.__new__` 函数与 `object.__init__` 函数
 
 以下是一个代码样例:
 
@@ -984,6 +1122,19 @@ a = A()
 super(A, a).foo()
 a.foo()
 a.bar()  # 此时才会抛出异常
+```
+
+### `pydantic.v1.BaseModel`
+
+```python
+# Representation 仅仅是一个 Mixin, 定义一些诸如 __repr__, __str__ 之类的方法
+class BaseModel(Representation, metaclass=ModelMetaclass): ...
+# ModelMetaclass 继承自元类 ABCMeta
+class ModelMetaclass(ABCMeta):
+    def __new__(mcs, name, bases, namespace, **kwargs):
+        ...
+        cls = super().__new__(mcs, name, bases, new_namespace, **kwargs)  # 此处的 kwargs 应该已经不是入参的 kwargs 了, 按理此处应该必须是空字典
+        ...
 ```
 
 ## 5. with语法(含少量contextlib包的笔记)
