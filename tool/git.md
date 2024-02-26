@@ -1369,9 +1369,7 @@ hooks 通常译为“钩子”，Git hooks 本质上是位于 `.git/hooks` 下�
 
 ## github、gitlab
 
-### 
-
-### 
+Github 对比同一仓库的两个分支: `https://github.com/username/Repo_A/compare/29ea234..84ae245`
 
 ## Git Internals
 

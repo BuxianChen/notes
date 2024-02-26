@@ -429,6 +429,32 @@ def foo(name, age=18):
     return "hello" + str(n)
 ```
 
+**Protocol**
+
+python 3.8 新特性, 相当于 Java 的 Interface
+
+```python
+from typing import Protocol
+
+# 定义 Protocol
+class MyProtocol(Protocol):
+    def method1(self, x: int) -> str:
+        ...
+    def method2(self, y: str) -> None:
+        ...
+
+# 实现 Protocol 的类型
+class MyClass:
+    def method1(self, x: int) -> str:
+        return str(x)
+    def method2(self, y: str) -> None:
+        print(y)
+
+# 使用 Protocol 作为 type hint
+def process(obj: MyProtocol) -> None:
+    obj.method2(obj.method1(42))
+```
+
 **typing.cast**
 
 参考[博客](https://adamj.eu/tech/2021/07/06/python-type-hints-how-to-use-typing-cast/)
