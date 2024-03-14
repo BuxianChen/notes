@@ -464,6 +464,17 @@ x = 1
 typing.cast(str, x)  # 运行时依旧是整数1, 但mypy检查时认为它是字符串
 ```
 
+**IO**
+
+```python
+# 一般用于带有 read, write 等方法的变量
+from typing import IO, TextIO, BinaryIO
+
+fr: TextIO = open("x.txt", "rt")
+fr: BinaryIO = open("x.pdf", "rt")
+fr: IO = open("x")  # 不确定是 binary 还是 text 时可以用更一般的 typing.IO
+```
+
 ## enum
 
 枚举类型
