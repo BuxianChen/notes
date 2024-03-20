@@ -14,19 +14,29 @@ cursor = conn.cursor()
 cursor.execute("SELECT name FROM sqlite_master WHERE type='table';")
 tables = cursor.fetchall()
 
-# 遍历每个表格，打印其schema
+# 遍历每个表格，打印其schema, 并打印数据表里的数据
 for table in tables:
+    print("="*50)
     table_name = table[0]
-    print("Schema for table:", table_name)
+    print(f"Schema for table: {table_name}")
     cursor.execute("PRAGMA table_info({})".format(table_name))
     schema = cursor.fetchall()
     for column in schema:
         print(column[1], column[2], end=", ")
     print("\n")
+    print(f"Data for table: {table_name}")
+    cursor.execute(f"select * from {table_name}")
+    result = cursor.fetchall()
+    for row in result:
+        print(row)
+    print("\n")
 
 # 关闭连接
 conn.close()
 ```
+
+# sqlalchemy
+
 
 # faiss
 

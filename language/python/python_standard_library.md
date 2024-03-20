@@ -216,6 +216,8 @@ stream.seek(2, 1)  # 返回 3+2=5
 
 ## collections
 
+### defaultdict
+
 递归定义 `defaultdict`: 参考 (stackoverflow)[https://stackoverflow.com/questions/20428636/how-to-convert-defaultdict-to-dict]
 
 ```python
@@ -224,6 +226,15 @@ recurddict = lambda: defaultdict(recurddict)
 data = recurddict()
 data["hello"] = "world"
 data["good"]["day"] = True
+```
+
+### OrderedDict
+
+```python
+from collections import OrderedDict
+d = OrderedDict({"a": 1, "b": 2, "c": 3, "d": 4})
+d.move_to_end("b")
+print(d)  # OrderedDict([('a', 1), ('c', 3), ('d', 4), ('b', 2)])
 ```
 
 
