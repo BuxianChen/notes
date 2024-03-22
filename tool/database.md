@@ -38,6 +38,126 @@ conn.close()
 # sqlalchemy
 
 
+## 构建表
+
+### Core 构建表
+
+一般都是用多个 `Table` 共享一个 `MetaData`
+
+```python
+# 方式一: Core: Table constructor
+from sqlalchemy import Table, Column, Integer, String
+from sqlalchemy import MetaData
+from sqlalchemy import ForeignKey
+
+metadata_obj = MetaData()  # sqlalchemy.sql.schema.MetaData
+
+user_table = Table(
+    "user_account",
+    metadata_obj,
+    Column("id", Integer, primary_key=True),
+    Column("name", String(30)),
+    Column("fullname", String),
+)
+
+address_table = Table(
+    "address",
+    metadata_obj,
+    Column("id", Integer, primary_key=True),
+    Column("user_id", ForeignKey("user_account.id"), nullable=False),
+    Column("email_address", String, nullable=False),
+)
+
+metadata_obj.create_all(engine)
+```
+
+### ORM 构建表
+
+```python
+# 方式二: ORM: ORM Mapped classes/Declarative Forms
+
+# step 1: Base, 可以用任意一种方式进行
+from sqlalchemy.orm import DeclarativeBase
+class Base(DeclarativeBase):
+    pass
+# Base.metadata   # sqlalchemy.sql.schema.MetaData 对象
+
+# from sqlalchemy.orm import declarative_base
+# Base = declarative_base()
+
+# step 2:
+from typing import List
+from typing import Optional
+from sqlalchemy.orm import Mapped
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import relationship
+
+class User(Base):
+    __tablename__ = "user_account"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    name: Mapped[str] = mapped_column(String(30))
+    fullname: Mapped[Optional[str]]
+    addresses: Mapped[List["Address"]] = relationship(back_populates="user")
+    def __repr__(self) -> str:
+        return f"User(id={self.id!r}, name={self.name!r}, fullname={self.fullname!r})"
+
+class Address(Base):
+    __tablename__ = "address"
+    id: Mapped[int] = mapped_column(primary_key=True)
+    email_address: Mapped[str]
+    user_id = mapped_column(ForeignKey("user_account.id"))
+    user: Mapped[User] = relationship(back_populates="addresses")
+    def __repr__(self) -> str:
+        return f"Address(id={self.id!r}, email_address={self.email_address!r})"
+```
+
+## 操作表
+
+```python
+from sqlalchemy import create_engine
+from sqlalchemy import select, text
+from sqlalchemy.orm import sessionmaker
+from sql_test import Address, User
+
+engine = create_engine('sqlite:///example.db', echo=False)
+Session = sessionmaker(bind=engine)
+with Session() as session:
+    result = session.execute(text("SELECT * FROM user_account"))
+    for row in result:
+        print(type(row), row)  # (sqlalchemy.engine.row.Row, (1, 'Ask', 'AskBob'))
+    result1 = session.execute(select(User))
+    for row1 in result1:
+        print(type(row), row1)  # (sqlalchemy.engine.row.Row, (User(id=1, name='Ask', fullname='AskBob'),))
+
+    # 两种查询方式结果有所不同
+    # for item in result.mappings(): print(item)
+    # {'id': 1, 'name': 'Ask', 'fullname': 'AskBob'}
+    # for item in result1.mappings(): print(item)
+    # {'User': User(id=1, name='Ask', fullname='AskBob')}
+```
+
+## 杂记
+
+```python
+from sqlalchemy import select
+from sqlalchemy.orm import query
+
+# 注意 select(User) 只是语句, 可以使用 print(select(User)) 打印对应的语句
+row = session.execute(select(User)).first()[0]  # User(...)
+row = session.scalars(select(User)).first()     # User(...)
+
+# 注意 query(User) 只是语句, 可以使用 print(query(User)) 打印对应的语句 
+rows = session.query(User).all()                # [User(...), User(...)]
+# 注意 query(User).filter(User.id==1) 只是语句
+rows1 = session.query(User).filter(User.id==1).all()  # [User(...)]
+
+user = session.get(User, 1)  # 直接执行, user=User(...)
+user_alias = session.get(User, 1)
+
+user is user_alias  # True, 在当前会话里, 只会存一个副本
+user is rows[0]     # True, 在当前会话里, 只会存一个副本
+```
+
 # faiss
 
 # neo4j
