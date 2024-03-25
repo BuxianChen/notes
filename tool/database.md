@@ -35,17 +35,81 @@ for table in tables:
 conn.close()
 ```
 
+# MySQL
+
+## 部署: Docker (TODO)
+
+## Python Client (TODO)
+
 # sqlalchemy
 
+sqlalchemy 有两套 API, 一套被称为 Core, 另一套被称为 ORM, 分别使用如下方式进行导入:
+
+```python
+from sqlalchemy import xxx      # Core API
+from sqlalchemy.orm import xxx  # ORM API
+```
+
+其中 ORM 是对 Core 的上层封装, 也更 pythonic
+
+## 建立连接
+
+连接到数据库需要先建立 engine (连接池)
+
+```python
+from sqlalchemy import create_engine
+# sqlite 数据库, 使用 pysqlite 包 (默认情况用 sqlite3 内置包), 在内存中建立数据库
+engine = create_engine("sqlite+pysqlite:///:memory:", echo=True)  # 在执行 sql 语句时会打印语句
+engine = create_engine("sqlite:///example.db")
+# mysql 数据库, 使用 pymysql 包: 登录的用户名, 密码, 服务器地址及端口号, 数据库名
+engine = create_engine("mysql+pymysql://{user}:{password}@{host}:{port}/{database_name}")
+
+
+engine.dispose()  # 释放连接池
+```
+
+### Core: connect
+
+从连接池里获取一个连接, 以进行数据库操作
+
+```python
+connect = engine.connect()
+connect.close()  # 关闭连接
+
+# 或者使用 with 语法
+with engine.connect() as connect:  # __exit__ 时会触发 close
+    ...
+```
+
+### ORM: session
+
+使用 ORM API 时, 与 connect 对应的概念是 Session
+
+```python
+from sqlalchemy.orm import Session
+from sqlalchemy.orm import sessionmaker
+
+# 方式 1
+session = Session(engine)
+
+# 方式 2
+Session = sessionmaker(bind=engine)
+session = Session()
+
+session.close()  # 关闭连接
+
+# 或者使用 with 语法
+with Session(engine) as session:  # __exit__ 时会触发 close
+    ...
+```
 
 ## 构建表
 
 ### Core 构建表
 
-一般都是用多个 `Table` 共享一个 `MetaData`
+使用 Core 的方式定义 Table 的方式被称为 Table constructor. 一般都是用多个 `Table` 共享一个 `MetaData` 实例.
 
 ```python
-# 方式一: Core: Table constructor
 from sqlalchemy import Table, Column, Integer, String
 from sqlalchemy import MetaData
 from sqlalchemy import ForeignKey
@@ -53,7 +117,7 @@ from sqlalchemy import ForeignKey
 metadata_obj = MetaData()  # sqlalchemy.sql.schema.MetaData
 
 user_table = Table(
-    "user_account",
+    "user_account",  # 数据库里的表名
     metadata_obj,
     Column("id", Integer, primary_key=True),
     Column("name", String(30)),
@@ -73,31 +137,40 @@ metadata_obj.create_all(engine)
 
 ### ORM 构建表
 
-```python
-# 方式二: ORM: ORM Mapped classes/Declarative Forms
+使用 ORM 的方式定义 Table 的方式被称为: ORM Mapped classes / Declarative Forms, 具体如下:
 
-# step 1: Base, 可以用任意一种方式进行
+Step 1: Base,可以用任意一种方式进行
+
+```python
+# 方法 1:
 from sqlalchemy.orm import DeclarativeBase
 class Base(DeclarativeBase):
     pass
-# Base.metadata   # sqlalchemy.sql.schema.MetaData 对象
 
-# from sqlalchemy.orm import declarative_base
-# Base = declarative_base()
+# 方法 2
+from sqlalchemy.orm import declarative_base
+Base = declarative_base()
 
-# step 2:
+Base.metadata   # sqlalchemy.sql.schema.MetaData 对象, 与 Core API 里显式用 metadata_obj = MetaData() 得到的 metadata_obj 对应
+```
+
+Step 2: 继承 Base
+
+```python
 from typing import List
 from typing import Optional
 from sqlalchemy.orm import Mapped
 from sqlalchemy.orm import mapped_column
+from sqlalchemy import Column
 from sqlalchemy.orm import relationship
 
 class User(Base):
-    __tablename__ = "user_account"
+    __tablename__ = "user_account"  # 数据库里的表名
     id: Mapped[int] = mapped_column(primary_key=True)
+    # id = Column(Integer, primary_key=True)  # 这种写法是类似于 Core API 的写法, 许多网上的资料会用这种写法 
     name: Mapped[str] = mapped_column(String(30))
     fullname: Mapped[Optional[str]]
-    addresses: Mapped[List["Address"]] = relationship(back_populates="user")
+    addresses: Mapped[List["Address"]] = relationship(back_populates="user")  # 不存储在数据库里
     def __repr__(self) -> str:
         return f"User(id={self.id!r}, name={self.name!r}, fullname={self.fullname!r})"
 
@@ -108,10 +181,14 @@ class Address(Base):
     user_id = mapped_column(ForeignKey("user_account.id"))
     user: Mapped[User] = relationship(back_populates="addresses")
     def __repr__(self) -> str:
-        return f"Address(id={self.id!r}, email_address={self.email_address!r})"
+        return f"Address(id={self.id!r}, email_address={self.email_address!r}, user_id={self.user_id!r})"
 ```
 
-## 操作表
+relationship 是可选的, 实际的数据库存储里并不包含 `user` 及 `addresses` 这两列, 它与 `ForeignKey` 的关系以及给 ORM API 带来的便利性见后续
+
+## 操作表: 增删改查
+
+TODO: 下例其实有些杂糅, 操作语句用的 Core API, 而执行用的 ORM API, 本质上此例算作 Core API
 
 ```python
 from sqlalchemy import create_engine
@@ -135,6 +212,26 @@ with Session() as session:
     # for item in result1.mappings(): print(item)
     # {'User': User(id=1, name='Ask', fullname='AskBob')}
 ```
+
+### Core
+
+```python
+from sqlalchemy import select, text
+
+stmt1 = text("select * from xx")  # stmt1 是一个 TextClause 对象, sqlalchemy.sql.elements.TextClause
+stmt2 = select(User)  # stmt2 是一个 Select 对象 (sqlalchemy.sql.selectable.Select)
+
+# 打印 SQL 语句
+print(stmt1)  # "select * from xx"
+print(stmt2)  # "SELECT user_account.id, user_account.name, user_account.fullname FROM user_account"
+
+# 备注: stmt2 转化为 SQL 语句字符串的过程会先经过 compile
+# compiled = stmt2.compile()
+
+result = connect.execute(stmt2)
+```
+
+### ORM
 
 ## 杂记
 
@@ -190,6 +287,9 @@ docker run -it --rm -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/12345678 -v $H
 
 - 部署多个容器时, 使用 Neo4j browser 登录时要注意选择好正确的 bolt 地址
 - neo4j 社区版一个实例只能有一个图 (database)
+
+## Python Client (TODO)
+
 
 # Milvus
 
