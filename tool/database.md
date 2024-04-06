@@ -257,6 +257,8 @@ user is rows[0]     # True, 在当前会话里, 只会存一个副本
 
 # faiss
 
+faiss 只支持稠密向量的 IP(内积) 和 L2 距离
+
 # neo4j
 
 ## Server
@@ -291,7 +293,7 @@ docker run -it --rm -p 7474:7474 -p 7687:7687 -e NEO4J_AUTH=neo4j/12345678 -v $H
 ## Python Client (TODO)
 
 
-# Milvus
+# Milvus 2.3.x
 
 使用 Docker 启动服务, 并安装相应的 Python Client
 
@@ -370,3 +372,88 @@ assert result[0][0].id == result[0][0].fields['pk']
 result[0][0].distance  # 相似度
 result[0][0].fields: Dict  # {"source": xxx, "text": xxx, "pk": xxx, "vector": [0.1, ..., -0.3]}
 ```
+
+# Milvus 2.4.x 新特性
+
+新特性说明可参考 release 信息: [https://github.com/milvus-io/milvus/releases/tag/v2.4.0-rc.1](https://github.com/milvus-io/milvus/releases/tag/v2.4.0-rc.1)
+
+## Embedding
+
+- 文档: [https://milvus.io/docs/embeddings.md](https://milvus.io/docs/embeddings.md)
+
+以下用法来自上述官方文档
+
+```python
+# pip install pymilvus[model]
+from pymilvus.model.hybrid import BGEM3EmbeddingFunction
+
+docs = [
+    "Artificial intelligence was founded as an academic discipline in 1956.",
+    "Alan Turing was the first person to conduct substantial research in AI.",
+    "Born in Maida Vale, London, Turing was raised in southern England.",
+]
+query = "Who started AI research?"
+bge_m3_ef = BGEM3EmbeddingFunction(use_fp16=False, device="cpu")
+
+docs_embeddings = bge_m3_ef(docs)
+query_embeddings = bge_m3_ef([query])
+```
+
+备注: 实质上这里是对 FlagEmbedding 的简单封装, 因此算不上是 Milvus 的特性
+
+## sparse vector
+
+- 关于 sparse vector search: [https://milvus.io/docs/sparse_vector.md](https://milvus.io/docs/sparse_vector.md)
+
+备注: 关于 sparse vector 所使用的距离函数目前只支持内积 (IP), 不支持 L2 及 COSINE.
+
+## hybrid_search
+
+- API 文档: [https://milvus.io/api-reference/pymilvus/v2.4.x/ORM/Collection/hybrid_search.md](https://milvus.io/api-reference/pymilvus/v2.4.x/ORM/Collection/hybrid_search.md
+)
+- 例子: [https://github.com/milvus-io/pymilvus/blob/master/examples/hello_hybrid_sparse_dense.py](https://github.com/milvus-io/pymilvus/blob/master/examples/hello_hybrid_sparse_dense.py)
+
+备注: 所谓的 `hybrid_search`, 实质上只是根据多个 vector 类型的字段进行独立召回, 然后再对多个召回结果 rerank, 而目前 milvus 支持加权与 RRF 的 rerank 方法. 因此实质上 `hybrid_search` 也算不上是新特性.
+
+## fuzzy match: prefixes, infixes, suffixes search
+
+似乎之前版本的 Milvus 只支持前缀索引 (`text like 'the%'`), 2.4 之后支持前缀, 中缀, 后缀索引. 以下代码参考自 [https://github.com/milvus-io/pymilvus/blob/2.4/examples/fuzzy_match.py](https://github.com/milvus-io/pymilvus/blob/2.4/examples/fuzzy_match.py)
+
+```python
+res = collection.query(expr='title like "The%"', output_fields=["id", "title"])
+res = collection.query(expr='title like "%the%"', output_fields=["id", "title"])
+res = collection.query(expr='title like "%Rye"', output_fields=["id", "title"])
+res = collection.query(expr='title like "Flip_ed"', output_fields=["id", "title"]) # _ 代表一个任意字符
+# you can create inverted index to accelerate the fuzzy match.
+collection.release()
+collection.create_index(
+    "title", {"index_type": "INVERTED"})
+collection.load()
+```
+
+## Grouping Search
+
+也就是对 multi-vector retriever 的支持 (特别地: 可用于 ParentDocumentRetriever), 代码参考 [https://github.com/milvus-io/pymilvus/blob/2.4/examples/example_group_by.py](https://github.com/milvus-io/pymilvus/blob/2.4/examples/example_group_by.py)
+
+```python
+# 这里 vectors[:3] 是 3 个向量: List[List[float]]
+# doc_id 字段只有 44 个取值 (可以理解为 44 篇文章), batch_size=100
+result = collection.search(vectors[:3], "float_vector", search_params, limit=batch_size, timeout=600,
+                           output_fields=["chunk_id", "doc_id"], group_by_field="doc_id")
+# 最终 result 里对于每个检索向量, 最终地检索结果只有 44 个 (小于预定义的 100)
+# 实际的运作逻辑是: 按 doc_id 分组, 以同一个 doc_id 的所有向量里最相似的分数作为这个 doc_id 的相似度值, 然后排序 (注意返回结果里每个 doc_id 底下只返回最相似的那个 chunk)
+```
+
+备注: 这个特性仍然无法用作支持 BGE-M3 的 colbert 向量搜索
+
+## MilvusClient
+
+在 python client 方面, 将 MilvusClient 这种用法做了进一步完善, 估计后续版本的主流用法应该会是用 MilvusClient.
+
+# Weaviate
+
+Weaviate 是一个向量数据库, 支持混合检索. 根据下面的文章可以看出, 其实际上只是分别检索, 然后 rerank 实现的. 注意字面检索使用的是 BM25/BM25F, 而 rerank 可以选择加权重或者是 RRF. 官方比较推荐用加权重的方式 rerank.
+
+这里简述下运作逻辑: 假设最终需要检索 k 个文本, 那么分别用字面检索和向量检索得到 k 个文本 (目前似乎不能设置为多于 k 个, 或者其内部有可能设置更高, 但似乎不对用户暴露), 当使用加权 rerank 时, 首先分别将字面检索/向量检索的分数按线性变换到 0-1 之间, 即最相似的文本的相似度为 1, 第 k 个文本的相似度为 0. 然后再加权重 (权重可以设置), 最后排序得到最终的 k 个文本.
+
+- 关于 hybrid search 的具体运作逻辑: [https://weaviate.io/blog/hybrid-search-fusion-algorithms](https://weaviate.io/blog/hybrid-search-fusion-algorithms)

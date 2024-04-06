@@ -855,12 +855,22 @@ class A: pass
 class A(object, metaclass=type): pass
 ```
 
+### 类继承的写法
+
+定义类的继承关系时的完整格式如下
+
+```python
+class A(B, metaclass=D, x=1, y=2): pass
+```
+
+这里位置参数 `B` 和 `C` 是父类, 关键字参数 `metaclass=D` 是元类, 默认情况下 `D=type`, 而其余关键字参数 `x=1, y=2` 会被 B 的 `__init_subclass__` 所使用到
+
 ### `type` 函数
 
 Python 中, type 函数是一个特殊的函数，调用形式有两种：
 
 - `type(obj)`：返回 obj 的类型
-- `type(name, bases, dict, **kwds)`: 用于创建一个类, 其中 `bases` 是父类元组, `dict` 的类属性, `kwds` 与元类有关, 疑问见下面
+- `type(name, bases, dict, **kwds)`: 用于创建一个类, 其中 `bases` 是父类元组, `dict` 是**类属性**, `kwds` 与元类有关, 疑问见下面
 
 ```python
 class A:
@@ -879,12 +889,18 @@ C = type("C", (A, B), {"a": 1})
 关于 `kwds` 的问题 (参考后面几节回过来再看):
 
 - 使用 `type("C", (A,), {"a": 1}, extra=1)` 会报错, 除非 `A` 定义了 `__init_subclass__`, 并且能处理 `extra` 参数
-- 可以使用 `class C(metaclass=M, extra=1)`: 其中 `M` 继承自 `type`, 并且 `M` 重载 `__new__` 方法, 其中 `metaclass` 是固定的变量名, 而 `extra` 是自定义的变量名, 见下一节的例子
+- 可以使用 `class C(metaclass=M, extra=1)`: 其中 `M` 继承自 `type`, 并且 `M` 重载 `__new__` 方法, 其中 `metaclass` 是固定的变量名, 而 `extra` 是自定义的变量名, 被 `M.__new__` 方法中使用到
 - 这个怎么做到的? [https://docs.pydantic.dev/1.10/usage/model_config/](https://docs.pydantic.dev/1.10/usage/model_config/)
     ```python
     from pydantic.v1 import BaseModel, ValidationError, Extra
     class Model(BaseModel, extra=Extra.forbid):
         a: str
+    ```
+    部分解释
+    ```python
+    # Representation 里并没有什么玄机, 只是定义了 __str__, __repr__ 等方法
+    class BaseModel(Representation, metaclass=ModelMetaclass): ...
+    class ModelMetaclass(ABCMeta): ...  # 元类继承
     ```
     
 
@@ -897,9 +913,13 @@ C = type("C", (A, B), {"a": 1})
 ```python
 class SnakeCaseMeta(type):
     # cls 是 SnakeCaseMeta, name 是 "Animal", bases 是 Animal 的父类元组, 在这里是空元组, class_dict 是类属性及类方法字典
-    # 触发于子类使用 SnakeCaseMeta 作为 metaclass 的时候
+    # 触发于子类使用 SnakeCaseMeta 作为 metaclass 的时候 (即类定义时就会被触发)
     def __new__(cls, name, bases, class_dict, **kwargs):  # kwargs 在此例中会是 {"z": 1}
-        print(f"{cls} __new__ called, {name}, {bases}, {class_dict}, {kwargs}")
+        print(f"[{cls} __new__ called] name: {name}, bases: {bases}, kwargs: {kwargs}")
+        print("class_dict: ")
+        for k, v in class_dict.items():
+            print(k, v)
+        print(f"[{cls} __new__ called print info end]")
         not_camel_case = set()
 
         for ele in class_dict:
@@ -915,22 +935,48 @@ class SnakeCaseMeta(type):
     def _not_snake_case(cls, txt):
         return txt.lower() != txt
 
+class C:
+    pass
 
 class Animal(metaclass=SnakeCaseMeta, z=1):
     def __init__(self, a, b):
+        print(f"Animal.__init__ called, a={a}, b={b}")
         self.a = a
         self.b = b
     
     # 注意这个是在实例化 Animal 对象时优先于 Animal.__init__ 触发的
     def __new__(cls, *args, **kwargs):
-        print("Animal __new__ called")
+        print(f"Animal __new__ called, {args}, {kwargs}")
+        for k, v in kwargs.items():
+            kwargs[k] = v * 10   # 注意: 这里的修改并不会影响到后续对 __init__(*args, **kwargs) 的入参
+        # object.__new__ 只能接受一个参数
         return object.__new__(cls)
+        # 如果此处改为 return object.__new__(C), 那么将不会触发 Animal.__init__(*args, **kwargs) 也不会触发 C.__init__
     
     def eat_method(self):
         print('This animal can eat.')
 
     def sleep_method(self):
         print('This animal can sleep.')
+
+"""
+[<class '__main__.SnakeCaseMeta'> __new__ called] name: Animal, bases: (), kwargs: {'z': 1}
+class_dict: 
+__module__ __main__
+__qualname__ Animal
+__init__ <function Animal.__init__ at 0x7fbab45e99d0>
+__new__ <function Animal.__new__ at 0x7fbab45e9ca0>
+eat_method <function Animal.eat_method at 0x7fbab45e9b80>
+sleep_method <function Animal.sleep_method at 0x7fbab45e9820>
+[<class '__main__.SnakeCaseMeta'> __new__ called print info end]
+"""
+
+a = Animal(1, b=2)
+
+"""
+Animal __new__ called, (1,), {'b': 2}
+Animal.__init__ called, a=1, b=2
+"""
 ```
 
 另一种做法是不使用元类, 而是在父类中定义 `__init_subclass__`, 子类只需要继承即可完成
@@ -975,31 +1021,41 @@ Dog = type("Dog", (VerifySnakeCase,), {}, name="dog")  # 此时可以使用第 4
 
 [https://stackoverflow.com/questions/2608708/what-is-the-difference-between-type-and-type-new-in-python](https://stackoverflow.com/questions/2608708/what-is-the-difference-between-type-and-type-new-in-python)
 
-这个例子看上去与上面的描述矛盾, 实际上, 在第一种写法里, `A` 的定义完成时, 先触发 `MetaA.__new__`, 它在内部触发 `type(...)`, 也就是会进一步调用 `type.__new__` 和 `type.__init__`, 而这两步都没有输出; 在第二种写法里, 的定义完成时, 先触发 `MetaA.__new__`, 由于其返回是用 `type.__new__(...)` 调用的, 因此会进一步触发 `Meta.__init__` (类似于下面的 `object.__new__` 与 `object.__init__`).
+这个例子看上去与上面的描述矛盾, 实际上, 在第一种写法里, `A` 的定义完成时, 先触发 `MetaA.__new__`, 它在内部触发 `type(...)`, 也就是会进一步调用 `type.__new__` 和 `type.__init__`, 而这两步都没有输出; 在第二种写法里, `A` 的定义完成时, 先触发 `MetaA.__new__`, 由于其返回是用 `type.__new__(...)` 调用的, 因此会进一步触发 `Meta.__init__` (类似于下面的 `object.__new__` 与 `object.__init__`).
 
 ```python
->>> class MetaA(type):
-...     def __new__(cls, name, bases, dct):
-...         print('MetaA.__new__')
-...         return type(name, bases, dct)
-...     def __init__(cls, name, bases, dct):
-...         print('MetaA.__init__')
-... 
->>> class A(object, metaclass=MetaA): pass
-... 
-MetaA.__new__
+class MetaA(type):
+    def __new__(cls, name, bases, dct):
+        print('MetaA.__new__ begin')
+        t =  type(name, bases, dct)
+        print('MetaA.__new__ end', t)
+        return t
+    def __init__(cls, name, bases, dct):
+        print('MetaA.__init__')
 
->>> class MetaA(type):
-...     def __new__(cls, name, bases, dct):
-...         print('MetaA.__new__')
-...         return type.__new__(cls, name, bases, dct)
-...     def __init__(cls, name, bases, dct):
-...         print('MetaA.__init__')
-... 
->>> class A(object, metaclass=MetaA): pass
-... 
-MetaA.__new__
+class A(object, metaclass=MetaA): pass
+
+"""
+MetaA.__new__ begin
+MetaA.__new__ end <class '__main__.A'>
+"""
+
+class MetaA(type):
+    def __new__(cls, name, bases, dct):
+        print('MetaA.__new__ begin')
+        t = type.__new__(cls, name, bases, dct)
+        print('MetaA.__new__ end', t)
+        return t
+    def __init__(cls, name, bases, dct):
+        print('MetaA.__init__')
+
+class A(object, metaclass=MetaA): pass
+
+"""
+MetaA.__new__ begin
+MetaA.__new__ end <class '__main__.A'>
 MetaA.__init__
+"""
 ```
 
 ### `object.__new__` 函数与 `object.__init__` 函数
