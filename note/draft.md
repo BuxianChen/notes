@@ -379,6 +379,62 @@ val:
 
 
 
+另一个例子 (常见于 `.pre-commit-config.yaml`):
+
+```yaml
+- 
+  repo: local
+  hooks:
+    -
+      id: abc
+      name: abc-name
+    -
+      id: def
+      name: def-name
+-
+  repo: local
+  hooks:
+    -
+      id: qwe
+      name: qwe-name
+```
+
+以上解析出来是:
+
+```python
+[
+  {
+    'repo': 'local',
+    'hooks': [
+      {'id': 'abc', 'name': 'abc-name'},
+      {'id': 'def', 'name': 'def-name'}
+    ]
+  },
+  {
+    'repo': 'local',
+    'hooks': [
+      {'id': 'qwe', 'name': 'qwe-name'}
+    ]
+  }
+]
+```
+
+也可以简化点写作:
+
+```yaml
+- repo: local
+  hooks:
+    - id: abc
+      name: abc-name
+    - id: def
+      name: def-name
+- repo: local
+  hooks:
+    - id: qwe
+      name: qwe-name
+```
+
+
 ### xml
 
 ### ini
