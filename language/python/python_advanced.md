@@ -2082,6 +2082,10 @@ for i in range(4):
 
 ## 14. 写一个 Python 包
 
+以下内容将在未来全部删除, 请参考并以博客内容为准:
+
+[https://buxianchen.github.io/drafts/2024-04-16-python-package-manager.html](https://buxianchen.github.io/drafts/2024-04-16-python-package-manager.html)
+
 ### github
 
 对照几份源码进行学习

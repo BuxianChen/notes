@@ -43,6 +43,8 @@
   - [mmlab](note/mmlab.md)
 - [Audio](note/audio.md)
 - [GNN](note/gnn.md)
+- [CUDA](note/cuda.md)
+- [Triton](note/triton.md)
 - [TODO LIST](note/plan.md)
 - [Draft](note/draft.md)
 
