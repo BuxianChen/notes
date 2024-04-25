@@ -18,6 +18,12 @@
 - L2 Cache
 - DRAM (GPU主存)
 
+机器信息:
+
+- GeForce MX250: Windows + WSL2
+- Tesla V100-PCIE-16GB: 虚拟化 linux 云主机
+- GeForce GTX 1650: Windows + WSL2
+
 使用 [cuda-samples](https://github.com/NVIDIA/cuda-samples.git) 可以查看 GPU 的设备信心
 
 ```bash
@@ -29,44 +35,44 @@ make
 ./deviceQuery
 ```
 
-输出 (重新 format 了一下, 便于对比, 这里 GeForce MX250 是 Windows 本机搭配 WSL2, Tesla V100-PCIE-16GB 是一个虚拟化的云主机):
+输出 (重新 format 了一下, 便于对比):
 
 ```
-                                                 NVIDIA GeForce MX250                                       Tesla V100-PCIE-16GB
-  CUDA Driver Version / Runtime Version          12.2 / 11.2                                                12.2 / 11.2
-  CUDA Capability Major/Minor version number:    6.1                                                        7.0
-  Total amount of global memory:                 2048 MBytes (2147352576 bytes)                             16151 MBytes (16935419905 bytes)
-  ( 3) Multiprocessors, (128) CUDA Cores/MP:     384 CUDA Cores                                             (080) Multiprocessors, (064) CUDA Cores/MP: 5120 CUDA Cores
-  GPU Max Clock rate:                            1038 MHz (1.04 GHz)                                        1380 MHz (1.38 GHz)
-  Memory Clock rate:                             3004 Mhz                                                   877 MHz
-  Memory Bus Width:                              64-bit                                                     4096-bit
-  L2 Cache Size:                                 524288 bytes                                               6291456 bytes
-  Maximum Texture Dimension Size (x,y,z)         1D=(131072), 2D=(131072, 65536), 3D=(16384, 16384, 16384)  1D=(131072), 2D=(131072, 65536), 3D=(16384, 16384, 16384)
-  Maximum Layered 1D Texture Size, (num) layers  1D=(32768), 2048 layers                                    1D=(32768), 2048 layers
-  Maximum Layered 2D Texture Size, (num) layers  2D=(32768, 32768), 2048 layers                             2D=(32768, 32768), 2048 layers
-  Total amount of constant memory:               65536 bytes                                                65536 bytes
-  Total amount of shared memory per block:       49152 bytes                                                49152 bytes
-  Total shared memory per multiprocessor:        98304 bytes                                                98304 bytes
-  Total number of registers available per block: 65536                                                      65536
-  Warp size:                                     32                                                         32
-  Maximum number of threads per multiprocessor:  2048                                                       2048
-  Maximum number of threads per block:           1024                                                       1024
-  Max dimension size of a thread block (x,y,z):  (1024, 1024, 64)                                           (1024, 1024, 64)
-  Max dimension size of a grid size    (x,y,z):  (2147483647, 65535, 65535)                                 (2147483647, 65535, 65535)
-  Maximum memory pitch:                          2147483647 bytes                                           2147483647 bytes
-  Texture alignment:                             512 bytes                                                  512 bytes
-  Concurrent copy and kernel execution:          Yes with 1 copy engine(s)                                  Yes with 7 copy engine(s)
-  Run time limit on kernels:                     Yes                                                        No
-  Integrated GPU sharing Host Memory:            No                                                         No
-  Support host page-locked memory mapping:       Yes                                                        Yes
-  Alignment requirement for Surfaces:            Yes                                                        Yes
-  Device has ECC support:                        Disabled                                                   Enabled
-  Device supports Unified Addressing (UVA):      Yes                                                        Yes
-  Device supports Managed Memory:                Yes                                                        Yes
-  Device supports Compute Preemption:            Yes                                                        Yes
-  Supports Cooperative Kernel Launch:            Yes                                                        Yes
-  Supports MultiDevice Co-op Kernel Launch:      No                                                         Yes
-  Device PCI Domain ID / Bus ID / location ID:   0 / 1 / 0                                                  0 / 177 / 0
+                                                 NVIDIA GeForce MX250                                       Tesla V100-PCIE-16GB                                          NVIDIA GeForce GTX 1650
+  CUDA Driver Version / Runtime Version          12.2 / 11.2                                                12.2 / 11.5                                                   12.2 / 11.2
+  CUDA Capability Major/Minor version number:    6.1                                                        7.0                                                           7.5
+  Total amount of global memory:                 2048 MBytes (2147352576 bytes)                             16151 MBytes (16935419905 bytes)                              4096 MBytes (4294639616 bytes)
+  ( 3) Multiprocessors, (128) CUDA Cores/MP:     384 CUDA Cores                                             (080) Multiprocessors, (064) CUDA Cores/MP: 5120 CUDA Cores   (14) Multiprocessors, (64) CUDA Cores/MP: 896 CUDA Cores
+  GPU Max Clock rate:                            1038 MHz (1.04 GHz)                                        1380 MHz (1.38 GHz)                                           1710 MHz (1.71 GHz)
+  Memory Clock rate:                             3004 Mhz                                                   877 MHz                                                       6001 Mhz
+  Memory Bus Width:                              64-bit                                                     4096-bit                                                      128-bit
+  L2 Cache Size:                                 524288 bytes                                               6291456 bytes                                                 1048576 bytes
+  Maximum Texture Dimension Size (x,y,z)         1D=(131072), 2D=(131072, 65536), 3D=(16384, 16384, 16384)  1D=(131072), 2D=(131072, 65536), 3D=(16384, 16384, 16384)     1D=(131072), 2D=(131072, 65536), 3D=(16384, 16384, 16384)
+  Maximum Layered 1D Texture Size, (num) layers  1D=(32768), 2048 layers                                    1D=(32768), 2048 layers                                       1D=(32768), 2048 layers
+  Maximum Layered 2D Texture Size, (num) layers  2D=(32768, 32768), 2048 layers                             2D=(32768, 32768), 2048 layers                                2D=(32768, 32768), 2048 layers
+  Total amount of constant memory:               65536 bytes                                                65536 bytes                                                   65536 bytes
+  Total amount of shared memory per block:       49152 bytes                                                49152 bytes                                                   49152 bytes
+  Total shared memory per multiprocessor:        98304 bytes                                                98304 bytes                                                   65536 bytes
+  Total number of registers available per block: 65536                                                      65536                                                         65536
+  Warp size:                                     32                                                         32                                                            32
+  Maximum number of threads per multiprocessor:  2048                                                       2048                                                          1024
+  Maximum number of threads per block:           1024                                                       1024                                                          1024
+  Max dimension size of a thread block (x,y,z):  (1024, 1024, 64)                                           (1024, 1024, 64)                                              (1024, 1024, 64)
+  Max dimension size of a grid size    (x,y,z):  (2147483647, 65535, 65535)                                 (2147483647, 65535, 65535)                                    (2147483647, 65535, 65535)
+  Maximum memory pitch:                          2147483647 bytes                                           2147483647 bytes                                              2147483647 bytes
+  Texture alignment:                             512 bytes                                                  512 bytes                                                     512 bytes
+  Concurrent copy and kernel execution:          Yes with 1 copy engine(s)                                  Yes with 7 copy engine(s)                                     Yes with 6 copy engine(s)
+  Run time limit on kernels:                     Yes                                                        No                                                            Yes
+  Integrated GPU sharing Host Memory:            No                                                         No                                                            No
+  Support host page-locked memory mapping:       Yes                                                        Yes                                                           Yes
+  Alignment requirement for Surfaces:            Yes                                                        Yes                                                           Yes
+  Device has ECC support:                        Disabled                                                   Enabled                                                       Disabled
+  Device supports Unified Addressing (UVA):      Yes                                                        Yes                                                           Yes
+  Device supports Managed Memory:                Yes                                                        Yes                                                           Yes
+  Device supports Compute Preemption:            Yes                                                        Yes                                                           Yes
+  Supports Cooperative Kernel Launch:            Yes                                                        Yes                                                           Yes
+  Supports MultiDevice Co-op Kernel Launch:      No                                                         Yes                                                           No
+  Device PCI Domain ID / Bus ID / location ID:   0 / 1 / 0                                                  0 / 177 / 0                                                   0 / 1 / 0
   Compute Mode:
      < Default (multiple host threads can use ::cudaSetDevice() with device simultaneously) >
 ```
@@ -129,7 +135,7 @@ FAQ:
 
 compute-capability 与 cuda-architecture 是同一个意思: [问答](https://stackoverflow.com/questions/65097396/difference-between-compute-capability-cuda-architecture-clarification-for-us)
 
-举例的两个型号 GPU 的理论最大单精度浮点数计算次数: MX250: 797.2 GFLOPS, V100: 14028 GFLOPS
+举例的两个型号 GPU 的理论最大单精度浮点数计算次数: MX250: 797.2 GFLOPS, V100: 14028 GFLOPS, GTX1650: 2984 GFLOPS
 
 # 矩阵乘法
 
@@ -138,3 +144,4 @@ benchmark for (1024 x 1024) x (1024 x 1024)
 - cuda-sample/matrixMul
   - MX250: 140 GFLOPS / 797.2 GFLOPS
   - V100: 3800 GFLOPS / 14028 GFLOPS
+  - GTX1650: 426 GFLOPS / 2984 GFLOPS
