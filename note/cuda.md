@@ -1,6 +1,7 @@
 
 # 参考资料
 
+- 英伟达各型号 GPU 的关键参数: [https://en.wikipedia.org/wiki/List_of_Nvidia_graphics_processing_units](https://en.wikipedia.org/wiki/List_of_Nvidia_graphics_processing_units)
 - [https://shiyan.medium.com/some-cuda-concepts-explained-12ecc390d10f](https://shiyan.medium.com/some-cuda-concepts-explained-12ecc390d10f)
 
 # 基本概念
@@ -127,3 +128,13 @@ a=1024, b=1, c=1, x=320, y=1, z=1   // 理论上可以利用完整个 GPU 的并
 FAQ:
 
 compute-capability 与 cuda-architecture 是同一个意思: [问答](https://stackoverflow.com/questions/65097396/difference-between-compute-capability-cuda-architecture-clarification-for-us)
+
+举例的两个型号 GPU 的理论最大单精度浮点数计算次数: MX250: 797.2 GFLOPS, V100: 14028 GFLOPS
+
+# 矩阵乘法
+
+benchmark for (1024 x 1024) x (1024 x 1024)
+
+- cuda-sample/matrixMul
+  - MX250: 140 GFLOPS / 797.2 GFLOPS
+  - V100: 3800 GFLOPS / 14028 GFLOPS
