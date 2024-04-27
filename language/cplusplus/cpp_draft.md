@@ -1,6 +1,6 @@
-# 1. C++基本使用
+# 1. C++ 基础语法及原理查漏补缺
 
-## 1.1 命名规范与项目结构
+## 命名规范
 
 | 类别 | 命名方式 |
 | :--- | :--- |
@@ -11,9 +11,16 @@
 | 变量名 | 小写字母开头的驼峰式命名，例如：myString |
 | 枚举类型内部元素/宏定义 | 全大写加下划线 |
 
-## 1.2 基础语法及原理查漏补缺
+## 文件名后缀约定
 
-### lambda
+- `.c`: C 语言的源码文件
+- `.h`: C 语言的头文件
+- `.cpp`: C++ 语言的源码文件
+- `.hpp`: C++ 语言的源码文件
+- `.cu`: CUDA C/C++ 的源码文件
+- `.cuh`: CUDA C/C++ 的头文件
+
+## lambda
 
 ```cpp
 #include<iostream>
@@ -72,7 +79,7 @@ func = Func(id);  // id的值为23, 由于传递方式为传值, 所以后续的
 
   
 
-### 通过指针修改某块内存的值
+## 通过指针修改某块内存的值
 
 下面的程序段演示了数组的诸多问题，这些都没有很好的解决方案，用C++有时就是这么麻烦，可能还需要查看以下别的包例如opencv，gmp加深体会
 
@@ -103,7 +110,7 @@ int main()
 }
 ```
 
-### 关于重载
+## 关于重载
 
 ```cpp
 #include <iostream>
@@ -120,7 +127,7 @@ int main(){
 
 注意: 似乎自动转为选择容量小的重载形式进行执行, 与定义或声明的顺序无关.
 
-### 关于枚举类型与宏定义
+## 关于枚举类型与宏定义
 
 ```cpp
 enum AlternateUrlTableErrors  // 大写开头驼峰式
@@ -134,7 +141,7 @@ enum AlternateUrlTableErrors  // 大写开头驼峰式
 #define PI_ROUNDED 3.0
 ```
 
-### 指针与数组
+## 指针与数组
 
 两个主要的区别：
 
@@ -160,7 +167,7 @@ char a[] = "asd"; // 正常
 //typeid("asd").name()的输出结果为char const [4]
 ```
 
-### 函数声明时展示抛出的异常类型
+## 函数声明时展示抛出的异常类型
 
 ```
 // 返回类型 函数名(形参列表) throw() {函数体}
@@ -169,7 +176,7 @@ void check(void) throw (std::out_of_range);
 
 
 
-### 运算符优先级
+## 运算符优先级
 
 [C++运算优先级\(cpp referrence\)](https://zh.cppreference.com/w/cpp/language/operator_precedence%20)
 
@@ -196,7 +203,7 @@ void check(void) throw (std::out_of_range);
 * \(从右到左\)  a?b:c  {运算符}=
 * ,
 
-### range based for
+## range based for
 
 **例子1：基础用法**
 
@@ -306,7 +313,7 @@ string compressString(string S) {
 
 
 
-### 多级指针
+## 多级指针
 
 ```c
 //允许多级指针, 但一般最多只使用到二级指针
@@ -330,7 +337,7 @@ int main(){
 */
 ```
 
-### 类(模板)成员函数带有其他模板参数(member template)
+## 类(模板)成员函数带有其他模板参数(member template)
 
 ```cpp
 namespace test01{
@@ -354,11 +361,11 @@ namespace test01{
 int main(){test01::test_main();return 0;} //输出: print f l
 ```
 
-### 模板特化
+## 模板特化
 
 函数模板不能特化?[https://www.fluentcpp.com/2017/08/15/function-templates-partial-specialization-cpp/](https://www.fluentcpp.com/2017/08/15/function-templates-partial-specialization-cpp/)
 
-### 运算类型隐式转换
+## 运算类型隐式转换
 
 问题来源于在leetcode上刷题时, 如下一行代码报错:
 
@@ -373,7 +380,7 @@ long long w = (1 << 32) - 1;
 long long w = (1LL << 32) - 1;
 ```
 
-### 静态成员变量
+## 静态成员变量
 
 ```c++
 class A{
@@ -384,7 +391,7 @@ int A::a; // 此处为静态成员变量的定义，即分配空间
 // 也可以使用 int A::a=1; 表示定义并同时初始化。
 ```
 
-### typedef 与 using
+## typedef 与 using
 
 两者都用于为类取别名，C++ 11 推荐使用 using
 
@@ -401,7 +408,7 @@ using namespace std;
 std::cout << "abc" << endl;
 ```
 
-### uniform initialization（待补充）
+## uniform initialization（待补充）
 
 这是 C++ 11 新特性，之前的初始化的写法有：
 
@@ -429,7 +436,7 @@ template<int>
 vector<int> (initializer_list<int>);
 ```
 
-### explicit
+## explicit
 
 C++ 11 之前，只适用于单参数构造函数（或者是只有一个参数没有默认值的构造函数），用于防止编译器做隐式的类型转换：
 
@@ -447,7 +454,7 @@ Complex b = a + 1;  // 报错, explicit阻止了编译器进行隐式转换
 
 C++ 11 后，此关键字也可使用于多个参数的构造函数。
 
-### const 与 extern
+## const 与 extern
 
 在多文件链接时，变量具有 external linkage，函数具有 external linkage，而常量具有 internal linkage 的特性。external linkage（外部链接）指的是在链接时，同一个标识符在多个文件中只能被定义一次，而 internal linkage （内部链接）指的是在链接时，该标识符在只存在于该编译单元中。
 
@@ -571,7 +578,7 @@ file1::a + file2::a = 3
 */
 ```
 
-### 同时定义多个“相似”类型变量
+## 同时定义多个“相似”类型变量
 
 结论: 在同一条语句里, 非const与const不能混用, 唯一的例外是常量指针
 
@@ -594,15 +601,15 @@ int a = 1, b = 100, *p = &a, * const r = &b;
 int a = 1, const b = 100, const *p = &a, const &c=a;
 ```
 
-### 整数与字符串的转换
+## 整数与字符串的转换
 
 C语言中提供函数`atoi`与`itoa`分别进行字符串到整数以及整数到字符串的转换, C++中则使用`std::stoi`与`std::to_string`, 这两个函数在`string`头文件中定义.
 
-### 内建函数
+## 内建函数
 
 `__builtin_popcount(n)`: GCC内建函数, 统计`n`的二进制表示中有多少个1
 
-### C/C++整数存储/自动转换/溢出
+## C/C++整数存储/自动转换/溢出
 
 **计算机存储(整数)**
 
@@ -682,7 +689,7 @@ priority_queue<T> Q; //这种写法需要重载<运算符, 但似乎要严格地
 // bool operator < (const T &other) const;
 ```
 
-### 自加运算符：++（待补充）
+## 自加运算符：++（待补充）
 
 `i++`称为后置自加, `++i`称为前置加加.
 
@@ -741,13 +748,221 @@ struct __list_iterator{
 };
 ```
 
-### 运算符重载（待补充）
+## 运算符重载（待补充）
 
 **特殊情况：`->`的重载**
 
 [https://blog.csdn.net/friendbkf/article/details/45949661](https://blog.csdn.net/friendbkf/article/details/45949661)
 
 **特殊情况：`*`的重载**
+
+## 虚函数与纯虚函数: hidden, override, overload
+
+只带有非纯虚函数函数的类可以实例化, 并且非纯虚函数可以有实现, 子类继承时可以不覆盖 (override) 这个父类的实现. 而带有纯虚函数的类无法实例化, 且子类必须覆盖这个纯虚函数.
+
+虚函数:
+
+```c++
+class Base {
+    // 定义虚函数
+    virtual void print(int value) {
+        std::cout << "Base" << std::endl;
+    }
+};
+class Derived : public Base {
+    // override 关键字是可选的, 但清晰地表示是覆盖父类方法, 注意 override 只能用于对父类虚函数的重写
+    // 使用 override 时, 也相当于默认加上了 virtual, 这个 virtual 可写可不写
+    // virtual void print(int value) override
+    void print(int value) override {
+        std::cout << "Derived" << std::endl;
+    }
+
+    // 这种属于重载
+    void print(double value) {
+        std::cout << "Derived" << std::endl;
+    }
+
+    // 编译报错, 写 override 表示意图是做覆盖, 但是实际的形参列表是重载
+    // void print(double value) override {
+    //     std::cout << "Derived" << std::endl;
+    // }
+    
+};
+
+Base b = Base();  // 可实例化
+```
+
+纯虚函数
+
+```c++
+class Base {
+    // 定义纯虚函数
+    virtual void print(int value) = 0;
+};
+class Derived : public Base {
+    // override 关键字是可选的, 但清晰地表示是覆盖父类方法
+    void print(int value) override {
+        std::cout << "Derived" << std::endl;
+    }
+}
+
+// Base b = Base()  // 不可实例化
+```
+
+隐藏 (hidden): 父类在不声明为虚函数时, 子类继承时实现了一个一模一样的函数时, 发生的是隐藏
+
+```c++
+class Base {
+   void print(int value) {
+        std::cout << "Base" << std::endl;
+    }
+};
+class Derived : public Base {
+    void print(int value) {
+        std::cout << "Derived" << std::endl;
+    }
+}
+
+Base* basePtr = new Derived();
+basePtr->print(10); // 将调用 Base::print，而不是 Derived::print
+
+// 如果父类是声明为 virtual void print(int value), 那么将触发多态机制
+// basePtr->print(10); // 将调用 Derived::print
+```
+
+
+## 强制类型转换
+
+参考: [https://stackoverflow.com/questions/332030/when-should-static-cast-dynamic-cast-const-cast-and-reinterpret-cast-be-used](https://stackoverflow.com/questions/332030/when-should-static-cast-dynamic-cast-const-cast-and-reinterpret-cast-be-used)
+
+C++ 有四种强制类型转换运算符
+
+- `static_cast`: 用于基本数据类型之间的转换, 例如将 float 转换为 int, 也用于类层次结构中将基类指针或引用转换为派生类指针或引用, 前提是它们的类型之间存在明确的转换关系。是最安全的一种转换方式, 而且性能也最好 (**编译期**就确定, 运行时无性能损耗)
+
+- `dynamic_cast`: 主要用于处理多态, 它在类层次结构中仅用于将基类指针或引用安全地转换为派生类指针或引用. 它在转换时会检查类型的安全性, 如果转换失败, 则会返回 `nullptr` (针对指针) 或抛出 `std::bad_cast` 异常 (针对引用). `dynamic_cast` 在**运行期**进行类型检查与转换, 所以它比 `static_cast` 慢.
+
+- `const_cast` 用来移除或添加 const 属性. 例如将 const 类型的引用或指针转换为非 const 类型的引用或指针. 类型转换发生在**编译期**
+
+- `reinterpret_cast` 是用于进行各种不同类型的指针之间的转换, 或者是指针与足够大的整数类型之间的转换, 它可以将任何指针转换为任何其他类型的指针. 这种转换是不安全的, 因为它不进行类型检查和格式转换，所以可能会导致程序错误, 因此应当慎用. 类型转换发生在**编译期**
+
+最佳实践是尽可能使用 `static_cast`, 在无法使用 `static_cast` 时可以考虑使用 `dynamic_cast` 做涉及到多态时的安全类型转换. `const_cast` 一般是为了兼容已有的 API, 例如已有的某个函数的定义中接受的是普通指针, 但作为使用方, 手头上只有一个常指针时, 可以使用 `const_cast` 来做转换. `reinterpret_cast` 应当尽可能避免使用.
+
+一些基本的例子:
+
+```c++
+// static_cast
+double pi = 3.14159;
+int whole_number = static_cast<int>(pi); // 将 double 转换为 int
+
+// 此例也可以用 dynamic_cast
+class Base {};
+class Derived : public Base {};
+Base* b = new Derived();
+Derived* d = static_cast<Derived*>(b);  // 将 base 类型的指针转换为 derived 类型的指针
+
+
+// dynamic_cast (此例也可以使用 static_cast)
+class Base {virtual void print() {}};
+class Derived : public Base {void print() override {}};
+Base* b = new Derived();
+// 安全地将 base 类型的指针转换为 derived 类型的指针
+Derived* d = dynamic_cast<Derived*>(b); 
+if(d) {d->print();} // 如果转换成功，则调用函数
+
+
+// const_cast
+const int val = 10;
+const int* val_ptr = &val;
+int* modifiable_ptr = const_cast<int*>(val_ptr);
+*modifiable_ptr = 20; // 移除了 const，现在可以修改原本 const 的值
+
+// reinterpret_cast
+intptr_t p = 0x12345678;
+char* ch = reinterpret_cast<char*>(p); // 将整数类型转换为 char* 类型
+```
+
+以下是一个只能用 `dynamic_cast` 而不能用 `static_cast` 的例子:
+
+```c++
+class Animal {
+public:
+    virtual void eat() = 0; // 纯虚函数，定义了一个接口
+};
+
+class Dog : public Animal {
+public:
+    void eat() override {}
+    void bark() {}
+};
+
+class Cat : public Animal {
+public:
+    void eat() override {}
+    void meow() {}
+};
+
+void makeAnimalSound(Animal* animal) {
+    Dog* dog = dynamic_cast<Dog*>(animal);
+    if (dog) {
+        dog->bark(); // 只有当 animal 实际上是 Dog 时才会执行
+    }
+}
+
+```
+
+在 C 语言中, 显式的类型转换是使用括号运算符来强制类型转换，例如 `(int) myFloat`. 此外, C 标准库提供了一系列的函数来转换字符串到基本数据类型, 例如 `atoi`, `atof`, `atol` 等
+
+## 智能指针 (Unfinished)
+
+裸指针:
+
+```c++
+void use_raw_pointer() {
+    int* raw_ptr = new int(10); // 分配资源
+    // ... 使用资源
+    delete raw_ptr; // 必须手动释放资源
+}
+```
+
+`unique_ptr` 智能指针: 当 `unique_ptr` 被销毁时, 它指向的资源也会被销毁. 并且不能有多个 `unique_ptr` 指向同一份资源.
+
+```c++
+#include <memory>
+void use_unique_ptr() {
+    std::unique_ptr<int> unique_ptr = std::make_unique<int>(10); // 分配资源
+    // ... 使用资源，不需要手动释放资源
+} // 离开作用域时, 作为局部变量, 自动释放资源
+```
+
+`shared_ptr` 智能指针: 启用引用计数功能, 指向同一个资源的 `shared_ptr` 全部被销毁时, 那么这个资源也会被销毁
+
+```c++
+#include <memory>
+void use_shared_ptr() {
+    std::shared_ptr<int> shared_ptr1 = std::make_shared<int>(10); // 分配资源
+    std::shared_ptr<int> shared_ptr2 = shared_ptr1; // shared_ptr2 也指向相同的资源
+    // ... 使用资源，不需要手动释放资源
+} // 最后一个 shared_ptr 离开作用域时自动释放资源
+```
+
+移动赋值在 `unique_ptr` 下的作用:
+
+```c++
+std::unique_ptr<int> unique_ptr1 = std::make_unique<int>(3);  // 分配在堆上
+std::unique_ptr<int> unique_ptr2 = std::make_unique<int>(4);  // 分配在堆上
+unique_ptr1 = unique_ptr2;  // 编译报错 !!!!
+unique_ptr1 = std::move(unique_ptr2);
+// 这里发生了移动赋值(所有权转移):
+// (1) unique_ptr2=nullptr
+// (2) 原先的整数 3 所占的内存将被释放
+// (3) unique_ptr1 指向整数 4 所占的内存
+```
+
+TODO:
+
+- `weak_ptr`
+- 一些更实际的例子
+
 
 # 2. C++标准库
 

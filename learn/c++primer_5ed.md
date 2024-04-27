@@ -122,11 +122,22 @@ extern int b;  // test.h
 
 top-level const指变量本身不可变, low-level const指与之相关的变量不可变, top-level const变量可以用非const变量赋值, 但low-level const属性必须一致
 
-**constexpr关键字**
+**constexpr 关键字**
 
-`const expression`\(常量表达式\)在编译器被计算出来, 字面量是一个常量表达式, 一个用常量表达式初始化的`const`对象是一个常量表达式. `constexpr`关键词被用来提示编译器检查后面的内容必须是常量表达式, 确保其在编译过程中可以计算并计算出来
+`const expression` (常量表达式) 表示可以在编译期被计算出来, 字面量是一个常量表达式, 一个用常量表达式初始化的 `const` 对象是一个常量表达式. `constexpr`关键词被用来提示编译器检查后面的内容必须是常量表达式, 确保其在编译过程中可以计算并计算出来.
 
-`decltype`关键字
+```c++
+const int max_files = 20; // max_files is a constant expression
+const int limit = max_files + 1; // limit is a constant expression
+int staff_size = 27; // staff_size is not a constant expression
+const int sz = get_size(); // sz is not a constant expression
+
+// 因此可以使用下面的写法代替上面的写法 (基本上就是把 const 替换成 constexpr)
+constexpr int max_files = 20;
+constexpr int limit = max_files + 1;
+```
+
+**`decltype`关键字**
 
 ```text
 decltype(f()) sum = x;//利用f函数的返回类型得到类型
