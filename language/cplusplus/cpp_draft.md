@@ -605,9 +605,26 @@ int a = 1, const b = 100, const *p = &a, const &c=a;
 
 C语言中提供函数`atoi`与`itoa`分别进行字符串到整数以及整数到字符串的转换, C++中则使用`std::stoi`与`std::to_string`, 这两个函数在`string`头文件中定义.
 
-## 内建函数
+## 一些常用函数
 
 `__builtin_popcount(n)`: GCC内建函数, 统计`n`的二进制表示中有多少个1
+
+```c++
+#include <cctype>
+isupper('A');  // 是否为 26 个大写字母
+islower('a');  // 是否为 26 个小写字母
+isalpha('a');  // 是否为字母
+tolower("+");
+toupper("-");
+isdigit('1');  // 是否为数字
+isalnum('a');  // 是否为数字或字母
+```
+
+```c++
+#include <cstdlib>
+int atoi (const char * str);
+float atof (const char * str);
+```
 
 ## C/C++整数存储/自动转换/溢出
 
