@@ -93,18 +93,18 @@ Max dimension size of a grid size (x,y,z):     (2147483647, 65535, 65535)  // de
 ```
 
 - `deviceProp.maxThreadsPerBlock=1024`: CUDA 编程模型视角里 block 的三个维度之积不能超过 1024
-- `deviceProp.maxThreadsPerMultiProcessor=2048`: 一个 SM 可以同时执行的最大硬件线程数为 2048, 注意从 CUDA 编程视角来看, 一个 block 里的所有线程都会被运行在同一个 SM 上 (注意可能不会是并发执行的), 而最终在运行 thread 时, thread 会映射到硬件线程上, 例如 block 的三个维度之积为 68 (这不是最佳实践, 假设硬件的 wrap 的大小为 32), 那么这 68 个软件意义上的线程会被分为 32+32+4 三组, 其中每组内的软件线程总是会映射到同一个硬件线程束 (wrap) 上并发执行的, 但这三组 wrap 有可能不是并发执行的, 但无论如何, 这 68 个线程一定都在同一个 SM 上执行.
+- `deviceProp.maxThreadsPerMultiProcessor=2048`: 一个 SM 可以同时执行的最大硬件线程数为 2048, 注意从 CUDA 编程视角来看, 一个 block 里的所有线程都会被运行在同一个 SM 上 (注意可能不会是并发执行的), 而最终在运行 thread 时, thread 会映射到硬件线程上, 例如 block 的三个维度之积为 68 (这不是最佳实践, 假设硬件的 warp 的大小为 32), 那么这 68 个软件意义上的线程会被分为 32+32+4 三组, 其中每组内的软件线程总是会映射到同一个硬件线程束 (warp) 上并发执行的, 但这三组 warp 有可能不是并发执行的, 但无论如何, 这 68 个线程一定都在同一个 SM 上执行.
 - `deviceProp.multiProcessorCount=80`: GPU 包含 80 个 SM
 - `_ConvertSMVer2Cores(deviceProp.major, deviceProp.minor)=64`: 每个 SM 包含 64 个 CUDA Core
 
 - `deviceProp.maxThreadsDim=(1024, 1024, 64)`. 这代表了 CUDA 编程模型视角里每个 block 的软件线程数在三个维度上的最大值, 注意还需满足三个维度之积不超过 `deviceProp.maxThreadsPerBlock=1024`
 - `deviceProp.maxGridSize=(2147483647, 65535, 65535)`. 这代表了 CUDA 编程模型视角里每个 grid 的 block 数在三个维度上的最大值, 也就是说一个核函数最多只能由 `2147483647*65535*65535*1024` 个线程来完成整个任务.
 
-关于 wrap: wrap 是硬件层的概念, 一个 wrap 里的 32 个物理线程严格并发执行, 且并发执行的指令一模一样, 当然, 操作数可以是不一样的 (这种模式也被称作 SIMD, 即 Single Instruction, Multiple Data).
+~~关于 warp: warp 是硬件层的概念, 一个 warp 里的 32 个物理线程严格并发执行, 且并发执行的指令一模一样, 当然, 操作数可以是不一样的 (这种模式也被称作 SIMD, 即 Single Instruction, Multiple Data).~~
 
 关于 block: block 是纯粹的软件视角的概念
 
-wrap 与 CUDA Core 的关系: 这篇 [博客](https://shiyan.medium.com/some-cuda-concepts-explained-12ecc390d10f) 里有个误解是 1 个 CUDA Core 就对应 1 个 wrap, 但根据这个[问答](https://stackoverflow.com/questions/16986770/cuda-cores-vs-thread-count/16987220#16987220):
+warp 与 CUDA Core 的关系: 这篇 [博客](https://shiyan.medium.com/some-cuda-concepts-explained-12ecc390d10f) 里有个误解是 1 个 CUDA Core 就对应 1 个 warp, 但根据这个[问答](https://stackoverflow.com/questions/16986770/cuda-cores-vs-thread-count/16987220#16987220):
 
 > Now your Card has a total Number of 384 cores on 2 SMs with 192 cores each. The CUDA core count represents the total number of single precision floating point or integer thread instructions that can be executed per cycle. Do not consider CUDA cores in any calculation.
 
@@ -130,12 +130,76 @@ a=68, b=1, c=1, x=320, y=320, z=320 // a*b*c=68 不是 32 的倍数, 强烈不�
 a=1024, b=1, c=1, x=320, y=1, z=1   // 理论上可以利用完整个 GPU 的并发, 只是需要 2 次完全并发才能完成整个任务
 ```
 
+## threadIdx, blockDim, blockIdx, gridDim
 
-FAQ:
+[https://erangad.medium.com/1d-2d-and-3d-thread-allocation-for-loops-in-cuda-e0f908537a52](https://erangad.medium.com/1d-2d-and-3d-thread-allocation-for-loops-in-cuda-e0f908537a52)
+
+```c++
+__global__ void kernel_fun(){
+  threadIdx.x < blockDim.x;
+  threadIdx.y < blockDim.y;
+  threadIdx.z < blockDim.z;
+  (blockDim.x == 2) && (blockDim.y==16) && (blockDim.z==4)
+
+  blockIdx.x < gridDim.x;
+  blockIdx.y < gridDim.y;
+  blockIdx.z < gridDim.z;
+  (gridDim.x == 2) && (gridDim.y==3) && (gridDim.z==6)
+}
+
+int a=2, b=16, c=4;
+int x=2, y=3, z=6;
+
+dim3 block_dim(a, b, c);
+dim3 thread_dim(x, y, z);
+
+kernel_fun <<<grid, threads>>> ();
+```
+
+**注意: `threadIdx.x` 和 `blockIdx.x` 是变化最快的维度**: 上面的例子里: `threadIdx.x=0, threadIdx.y=1, threadIdx.z=2` 的下一个 thread 是 `threadIdx.x=1, threadIdx.y=1, threadIdx.z=2`, 即:
+
+```
+// Thread 0 - Thread 31 会组成一个 warp.
+Thread 0: (threadIdx.x, threadIdx.y, threadIdx.z) = (0, 0, 0)
+Thread 1: (threadIdx.x, threadIdx.y, threadIdx.z) = (1, 0, 0)
+Thread 2: (threadIdx.x, threadIdx.y, threadIdx.z) = (2, 0, 0)
+Thread 3: (threadIdx.x, threadIdx.y, threadIdx.z) = (3, 0, 0)
+Thread 4: (threadIdx.x, threadIdx.y, threadIdx.z) = (0, 1, 0)
+Thread 5: (threadIdx.x, threadIdx.y, threadIdx.z) = (1, 1, 0)
+```
+
+## 执行逻辑
+
+参考: [https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capability-5-x](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html#compute-capability-5-x)
+
+假设一次调用包含 8 个 block, 每个 block 中有 512 个 thread, 即使用这种方式进行调用, `kernel_fun <<<8, 512>>> (p);` 假设 warp 大小为 32, 那么每个 block 的前 32 个 thread 将会最终映射到一个 warp 上, 后 32 个也会映射到一个 warp 上 (warp 不是硬件概念, 而是意味着前 32 个 thread 在同一时钟周期内会执行相同的指令). 假设 GPU 有 80 个 SM, 而每个 SM 包含 4 个 warp scheduler, 那么当一个 block 被调度到一个 SM 上后 (block 一旦被调度到 SM, 那么一定会将其完成, 不会被切换到别的 SM 上), SM 会进一步分配给 4 个 warp scheduler 来处理, 在前面的例子里, 一个 block 被分为 16 组, 一个可能的情况是:
+
+```
+0号调度器：负责执行 0，4，7，9，10，14 组
+1号调度器：负责执行 1，5，8，11 组
+2号调度器：负责执行 2，3，6 组
+3号调度器：负责执行 12，13，15 组
+```
+
+而以 2 号调度器为例, 假设之前描述的每个 thread 只包含 2 个指令, 具体的执行顺序可能是:
+
+```
+block3-warp2-instruct0
+block3-warp6-instruct0
+block3-warp2-instruct1
+block3-warp3-instruct0
+block3-warp3-instruct1
+block3-warp6-instruct1
+```
+
+注意, 在 warp2, warp3, warp6 在执行过程中, 有可能会插入别的 block 的执行, 但是 warp scheduler 的同一时间, 只能执行一个 warp. 也就是说在这个例子里, 一个 SM 的最大并发量是 `4 * 32 = 128` 个线程.
+
+
+## FAQ & 杂录
 
 compute-capability 与 cuda-architecture 是同一个意思: [问答](https://stackoverflow.com/questions/65097396/difference-between-compute-capability-cuda-architecture-clarification-for-us)
 
-举例的两个型号 GPU 的理论最大单精度浮点数计算次数: MX250: 797.2 GFLOPS, V100: 14028 GFLOPS, GTX1650: 2984 GFLOPS
+最大单精度浮点数计算次数: MX250: 797.2 GFLOPS, V100: 14028 GFLOPS, GTX1650: 2984 GFLOPS
 
 # 矩阵乘法
 
