@@ -980,6 +980,102 @@ TODO:
 - `weak_ptr`
 - 一些更实际的例子
 
+## `std::is_same`
+
+```c++
+bool flag = std::is_same<float, float>::value;
+// 一般用在模板参数中
+// bool flag = std::is_same<T, float>::value;
+```
+
+一个简化的实现如下:
+
+```c++
+template<typename T, typename U>
+struct is_same {
+    static const bool value = false;
+};
+
+template<typename T>
+struct is_same<T, T> {
+    static const bool value = true;
+};
+```
+
+其中第一个是主模板, 第二个是模板偏特化, 会优先匹配模板偏特化, 而 value 是结构体 `is_same` 的静态成员变量, 能用 `类名::静态变量名` 或者 `实例名.静态变量名` 来访问, 但后者不推荐
+
+## `std::enable_if`
+
+```c++
+#include<type_traits>
+#include<iostream>
+
+int main(){
+    // 等价于 int a = 100;
+    std::enable_if<true, int>::type a = 100;  // 如果将 true 改为 false 则会出现编译错误
+    std::cout << a << std::endl;
+    return 0;
+}
+```
+
+如果 `enable_if<false, T>::type` 的第一个参数是 `false`, 那么它将不包含 `type` 成员, 触发编译错误. 而 `std::enable_if<true, int>::type` 会在编译器最终确定为 `int`.
+
+## 跳过模板特化
+
+[源码](https://github.com/leimao/CUDA-GEMM-Optimization/blob/e4a9aad4ddd5f22095917de33728a8d188a28258/include/profile_utils.cuh#L263)
+
+```c++
+template <typename T,
+          typename std::enable_if<std::is_same<T, float>::value ||
+                                      std::is_same<T, double>::value ||
+                                      std::is_same<T, __half>::value,
+                                  bool>::type = true>
+T foo(T a){
+    return a;
+}
+```
+
+作用是只有当 T 为 `float`, `double` 或者 `__half` 时, 才能用此模板实例化, 否则去寻找其他重载形式.
+
+
+TODO: 还是不能理解 `typename enable_if<true, bool> = true` 为什么能通过编译并运行
+
+```c++
+#include<type_traits>
+#include<iostream>
+
+template <typename Tp>
+struct enable {
+    typedef Tp type;
+};
+
+template <
+    typename T,
+    // bool Enable = true  // OK
+    // bool = true            // OK
+    // typename bool = true            // Error
+    typename enable<T>::type = true  // OK
+    // typename true
+>
+int foo(T a){
+    // if (Enable)
+    //     return a;
+    // else
+    //     return 0;
+    
+    return a;
+}
+
+int main(){
+    // std::enable_if<true, int>::type a = 100;
+    // std::cout << a << std::endl;
+    int a = 100;
+    std::cout << foo<int, true>(a) << std::endl;
+    std::cout << foo<int, false>(a) << std::endl;
+    return 0;
+}
+```
+
 
 # 2. C++标准库
 
