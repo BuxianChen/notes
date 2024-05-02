@@ -1055,7 +1055,7 @@ template <
     // bool = true            // OK
     // typename bool = true            // Error
     typename enable<T>::type = true  // OK
-    // typename true
+    // typename true  // Error
 >
 int foo(T a){
     // if (Enable)
@@ -1073,6 +1073,117 @@ int main(){
     std::cout << foo<int, true>(a) << std::endl;
     std::cout << foo<int, false>(a) << std::endl;
     return 0;
+}
+```
+
+## 模板 (Alpha)
+
+- 比较完整的介绍: [https://en.cppreference.com/w/cpp/language/templates](https://en.cppreference.com/w/cpp/language/templates)
+- 基本认知:
+  - 函数模板: [https://cplusplus.com/doc/tutorial/functions2/](https://cplusplus.com/doc/tutorial/functions2/)
+  - 类模板: [https://cplusplus.com/doc/tutorial/templates/](https://cplusplus.com/doc/tutorial/templates/)
+
+总结
+
+- 模板参数: 可以是 `typename T`, `int x`, `int`
+- 函数模板:
+  - 偏特化: **不允许**
+  - 全特化: 允许, 函数模板, 全特化, 重载的书写顺序是无所谓的, 但一般会按从一般到特殊的顺序写: 函数模板, 重载/全特化
+  - 重载: 允许
+- 类模板
+  - 对类模板进行偏特化: 允许, 偏特化与全特化的书写顺序无要求, 但一般会按从一般到特殊的顺序写: 类模板, 类模板偏特化, 类模板全特化, 对单个成员函数全特化
+  - 对类模板进行全特化: 允许
+  - 对类模板的单个成员函数进行偏特化: **不允许**
+  - 对类模板的单个成员函数进行全特化: 允许, 书写顺序上必须出现在对类模板的偏/全特化之后
+
+函数模板(基础认知)
+
+```c++
+// template arguments
+#include <iostream>
+
+// 注意: 也可以写作 int = 4, 不过这种匿名用法不知道有什么作用
+template <typename T, int N = 4>
+T fixed_multiply (T val)
+{
+  return val * N;
+}
+
+int main() {
+  int x = 1, y = 10;
+  std::cout << fixed_multiply(x) << std::endl;  // 可以自动推导类型时, 调用时的模板参数可省略, 当然也可以像下面这样手动显式写出来
+  std::cout << fixed_multiply<int>(x) << std::endl;
+  std::cout << fixed_multiply<int, 3>(x) << std::endl;
+  // std::cout << fixed_multiply<int, y>(x) << std::endl;  // Error!, 模板参数是在编译期确定的
+}
+```
+
+类模板(基础认知)
+
+```c++
+// class templates
+#include <iostream>
+using namespace std;
+
+template <typename T, typename S>
+class mypair {
+    T a;
+    S b;
+  public:
+    mypair (T first, S second): a(first), b(second){}
+    T getfirst ();
+};
+
+
+// 这里我有意换了个不同的模板参数名
+template <typename T1, typename S1>
+T1 mypair<T1, S1>::getfirst ()
+{
+  return a;
+}
+
+// Error! 不能只偏特化成员函数
+// template <typename S>
+// float mypair<float, S>::getfirst ()
+// {
+//   return a + 10;
+// }
+
+
+// 正确使用: 对模板类进行偏特化
+// 对整个模板类进行偏特化或者全特化, 所有的成员函数都要重写(不存在与通用模板的继承关系)
+// 特殊说明: 对整个模板类的偏特化必须放在下面的特化模板类成员函数之前, 这是语法规定
+template <typename S>
+class mypair<float, S> {
+  float a;
+  S b;
+public:
+  mypair(float first, S second) : a(first), b(second) {}
+  float getfirst() {
+    return a + 10;
+  }
+};
+
+
+// 特化模板类成员函数, 注意 template <> 是必须的
+// mypair<float> 表示特化的类
+template<>
+float mypair<float, int>::getfirst ()
+{
+  return a + 20;
+}
+
+
+int main () {
+  mypair <float, int> obj1 (100.0, 75);
+  cout << obj1.getfirst() << endl;
+
+  mypair <float, float> obj2 (100.0, 75.0);
+  cout << obj2.getfirst() << endl;
+  
+  mypair <int, float> obj3 (100, 75.0);
+  cout << obj3.getfirst() << endl;
+  return 0;
 }
 ```
 
