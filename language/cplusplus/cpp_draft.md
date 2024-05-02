@@ -20,6 +20,36 @@
 - `.cu`: CUDA C/C++ 的源码文件
 - `.cuh`: CUDA C/C++ 的头文件
 
+## 编译命令
+
+通常来说, 应该先分别编译, 然后再进行链接为可执行文件/动态链接库:
+
+分别编译然后链接为一个可执行文件的步骤通常如下:
+
+```bash
+g++ -c main.cpp -Iinclude -o main.o
+g++ -c mylib.cpp -Iinclude -o mylib.o
+g++ main.o mylib.o -o app
+./app
+```
+
+分别编译然后链接为一个动态链接库, 以及如何使用动态链接库的做法:
+
+```bash
+# 制作动态链接库
+g++ -c -fPIC mylib1.cpp -o mylib1.o -Iheader
+g++ -c -fPIC mylib2.cpp -o mylib2.o -Iheader
+g++ -shared -o libmylib.so mylib1.o mylib2.o  # 打包为一个动态链接库
+
+# 使用动态链接库, 也是先分别编译, 然后链接
+g++ -c -Iheader utils.cpp -o utils.o
+g++ -c -Iheader main.cpp -o main.o
+g++ main.o utils.o -L. -lmylib -o app
+./app
+```
+
+TODO: `libmylib.so` 文件可以随意放置, 然后只要编译 `main.cpp` 和 `utils.cpp` 文件代码中包含 `#include` 相关的头文件, 以及链接时加上 `-L` 和 `-l` 参数即可吗
+
 ## lambda
 
 ```cpp

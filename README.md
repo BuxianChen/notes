@@ -10,6 +10,10 @@ Git 仓库与 GitBook 页面保持同步
 
 推荐资料：
 
+**基础知识**
+
+- [https://missing.csail.mit.edu/](https://missing.csail.mit.edu/)
+
 **Linux**
 
 - [鸟哥 Linux 私房菜](http://linux.vbird.org/linux_basic/)
@@ -28,5 +32,7 @@ Git 仓库与 GitBook 页面保持同步
 
 **C++**
 
-- 《C++ Primer Plus (6 ed)》
-
+- 《C++ Primer (5ed)》: 包含 C++11, 笔者感觉更适合作为字典/参考书
+- 《C++ Primer Plus (6 ed)》: 包含 C++11, 包含大量例子来介绍语法特性, 笔者阅读中文版感觉相对比 C++ Primer 更容易读下去
+- [cppreference](https://en.cppreference.com/): 内容相对权威, 但对初学者不友好
+- [cplusplus](https://cplusplus.com/): 内容对初学者相对友好
