@@ -1,8 +1,20 @@
 
 # 参考资料
 
+官方资料:
+
+- [https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html](https://docs.nvidia.com/cuda/cuda-c-programming-guide/index.html)
+- [https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html](https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html)
+
+其他
+
 - 英伟达各型号 GPU 的关键参数: [https://en.wikipedia.org/wiki/List_of_Nvidia_graphics_processing_units](https://en.wikipedia.org/wiki/List_of_Nvidia_graphics_processing_units)
 - [https://shiyan.medium.com/some-cuda-concepts-explained-12ecc390d10f](https://shiyan.medium.com/some-cuda-concepts-explained-12ecc390d10f)
+
+一些未仔细核验的资料:
+
+- 一个异构编程的课程: [https://safari.ethz.ch/projects_and_seminars/spring2022/doku.php?id=heterogeneous_systems](https://safari.ethz.ch/projects_and_seminars/spring2022/doku.php?id=heterogeneous_systems)
+
 
 # 基本概念
 

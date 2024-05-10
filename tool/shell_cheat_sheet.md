@@ -393,6 +393,20 @@ awk -v v=${var} '{print var" "$0}' data.csv
 awk '{if($2==23) {print $0}}' data.csv
 ```
 
+### free
+
+```bash
+$ free -h
+              total        used        free      shared  buff/cache   available
+Mem:          3.8Gi       3.0Gi       300Mi       1.0Mi       523Mi       577Mi
+Swap:         1.0Gi       585Mi       438Mi
+```
+
+在 Mem 这一行: `total = used + free + buff/cache`, `buff/cache` 是指可以被操作系统回收的内存, 而 `free` 是完全没有被占用的内存, 而 `used` 里面包含 `shared`, `shared` 主要是内核空间或共享库占的内存, 而 `available` 是估算新创建一个进程时可以使用的内存(注意是估算的, 不是精确值), 一般大于 `free`, 但小于 `free+buff/cache`.
+
+在 Swap 这一行: `total = used + free`
+
+操作系统能使用的内存可以认为是 `Mem(total) + Swap(total)`, 而 `Mem` 一般是对应真正的内存, 而 `Swap` 一般是对应磁盘, 一般情况下, 操作系统为了计算机整体性能, 可能会将 Mem 与 Swap 互相交换 (例如把程序 A 的某部分内存从 Mem 暂时换到 Swap 上, 后续又换回来). 而有些编程语言允许将内存声明为 page-locked memory (也称为 pinned memory), 这样会避免操作系统将这部分内存放到 Swap 上, 从而保障这些内存的访问速度. 但注意, 显式声明 pinned memory 可能影响计算机整体性能, 应按需使用 (此处的所谓 page-locked memory 也就是 pytorch dataloader 里的那个参数 `pin_memory=True`).
 
 ## Shell命令组合例子
 
