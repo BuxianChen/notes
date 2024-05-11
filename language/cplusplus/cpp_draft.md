@@ -50,7 +50,7 @@ g++ main.o utils.o -L. -lmylib -o app
 
 TODO: `libmylib.so` 文件可以随意放置, 然后只要编译 `main.cpp` 和 `utils.cpp` 文件代码中包含 `#include` 相关的头文件, 以及链接时加上 `-L` 和 `-l` 参数即可吗
 
-## 编译命令 (编译单元与 include 规范)
+## (TODO 修改标题)编译命令 (编译单元与 include 规范)
 
 先看一个基础版本
 
@@ -120,6 +120,14 @@ g++ a.o b.o main.o -o app
 
 在 C++ 中, 通常把一个 `.cpp` 文件和其依赖的头文件看作是一个编译单元, 先分别编译每一个编译单元为 `.o` 文件, 然后再将 `.o` 文件链接在一起.
 
+首先, 编译过程主要处理的是定义(函数定义, 类定义), 一上面的例子为例, 我们最终都是需要把这些源文件转化为机器码:
+
+- `a.cpp`: `foo` 与 `bar` 函数的定义
+- `b.cpp`: `fn` 函数的定义
+- `main.cpp`: `main` 函数的定义
+
+一步编译是指 `g++ main.cpp a.cpp b.cpp -o app`, 而分开编译使得并行编译成为了可能(例如每个单元使用一个独立的CPU核来编译), 并且在大项目中, 编译一次之后, 做修改后再编译则只需要编译修改了的部分即可.
+
 在上面的例子中我们更细致地分析一下 `#include` 编译预处理指令的用法, 探讨一下怎样用符合最佳实践 (TODO)
 
 - `a.cpp`: 无
@@ -127,6 +135,54 @@ g++ a.o b.o main.o -o app
 - `b.cpp`: 无
 - `b.h`: `#include "a.h"`
 - `main.cpp`: `#include "b.h"`, `include <iostream>`
+
+**模板(TODO, 不确定原因)**
+
+
+```c++
+// t.h
+#ifndef T_H
+#define T_H
+template<typename T>
+class Foo
+{
+public:
+    void doSomething(T param);
+};
+#include "t.tpp"
+#endif
+
+// t.tpp
+#ifndef T_CPP
+#define T_CPP
+
+#include "t.h"
+#include <iostream>
+
+template <typename T>
+void Foo<T>::doSomething(T param){
+    std::cout << param << std::endl;
+}
+
+#endif
+
+// m.cpp
+#include "t.h"
+
+int main()
+{
+    Foo<int> foo;
+    foo.doSomething(2);
+    return 0;
+}
+```
+
+貌似只能一步编译: `g++ m.cpp -o m`
+
+
+一篇关于分开编译的博客: [https://medium.com/@kunal-mod/c-best-practices-understanding-the-need-for-splitting-class-declaration-and-definitions-into-389d523695b9](https://medium.com/@kunal-mod/c-best-practices-understanding-the-need-for-splitting-class-declaration-and-definitions-into-389d523695b9)
+
+template 怎么处理: [https://stackoverflow.com/questions/495021/why-can-templates-only-be-implemented-in-the-header-file](https://stackoverflow.com/questions/495021/why-can-templates-only-be-implemented-in-the-header-file)
 
 ## lambda
 
