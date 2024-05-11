@@ -50,6 +50,84 @@ g++ main.o utils.o -L. -lmylib -o app
 
 TODO: `libmylib.so` 文件可以随意放置, 然后只要编译 `main.cpp` 和 `utils.cpp` 文件代码中包含 `#include` 相关的头文件, 以及链接时加上 `-L` 和 `-l` 参数即可吗
 
+## 编译命令 (编译单元与 include 规范)
+
+先看一个基础版本
+
+目录结构
+
+```
+.
+├── a.cpp
+├── a.h
+├── b.cpp
+├── b.h
+└── main.cpp
+```
+
+代码内容
+
+```c++
+// a.h
+#ifndef A_H
+#define A_H
+int foo(int, int);
+int bar(int, int);
+#endif
+
+// a.cpp
+int foo(int a, int b){
+    return a + b;
+}
+
+int bar(int a, int b){
+    return a - b;
+}
+
+// b.h
+#ifndef B_H
+#define B_H
+int fn(int, int);
+#endif
+
+// b.cpp
+#include "a.h"
+int fn(int a, int b){
+    return foo(a, b) + bar(a, b);
+}
+
+// main.cpp
+#include "b.h"
+#include <iostream>
+
+int main(){
+    int a = 3;
+    int b = 2;
+    std::cout << "fn(a, b)=" << fn(a, b) << std::endl;
+    return 0;
+}
+```
+
+编译指令
+
+```bash
+g++ -c a.cpp -o a.o
+g++ -c b.cpp -o b.o
+g++ -c main.cpp -o main.o
+g++ a.o b.o main.o -o app
+./app  # 运行
+```
+
+在 C++ 中, 通常把一个 `.cpp` 文件和其依赖的头文件看作是一个编译单元, 先分别编译每一个编译单元为 `.o` 文件, 然后再将 `.o` 文件链接在一起.
+
+在上面的例子中我们更细致地分析一下 `#include` 编译预处理指令的用法, 探讨一下怎样用符合最佳实践 (TODO)
+
+- `a.cpp`: 无
+- `a.h`: 无
+- `b.cpp`: 无
+- `b.h`: `#include "a.h"`
+- `main.cpp`: `#include "b.h"`, `include <iostream>`
+
 ## lambda
 
 ```cpp
