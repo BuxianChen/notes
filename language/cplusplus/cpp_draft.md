@@ -126,9 +126,9 @@ g++ a.o b.o main.o -o app
 - `b.cpp`: `fn` 函数的定义
 - `main.cpp`: `main` 函数的定义
 
-一步编译是指 `g++ main.cpp a.cpp b.cpp -o app`, 而分开编译使得并行编译成为了可能(例如每个单元使用一个独立的CPU核来编译), 并且在大项目中, 编译一次之后, 做修改后再编译则只需要编译修改了的部分即可.
+一步编译是指 `g++ main.cpp a.cpp b.cpp -o app`, 而分开编译使得并行编译成为了可能(例如每个单元使用一个独立的CPU核来编译), 并且在大项目中, 编译一次之后, 做修改后再编译则只需要编译修改了的部分即可. 注意: 这种一步编译的写法实际上也是将后面跟的输入文件的每一个都当作是一个编译单元, 然后链接在一起, 只是没有在磁盘上保留 `.o` 文件.
 
-在上面的例子中我们更细致地分析一下 `#include` 编译预处理指令的用法, 探讨一下怎样用符合最佳实践 (TODO)
+在上面的例子中我们更细致地分析一下 `#include` 编译预处理指令的用法应该是符合最佳实践 (TODO)
 
 - `a.cpp`: 无
 - `a.h`: 无
@@ -136,8 +136,7 @@ g++ a.o b.o main.o -o app
 - `b.h`: `#include "a.h"`
 - `main.cpp`: `#include "b.h"`, `include <iostream>`
 
-**模板(TODO, 不确定原因)**
-
+**模板一般只写在头文件中**
 
 ```c++
 // t.h
@@ -149,7 +148,7 @@ class Foo
 public:
     void doSomething(T param);
 };
-#include "t.tpp"
+#include "t.tpp"  // 一般情况下直接遵循将 template 的完整定义写在头文件里即可, 这里展示的是一种可以分开定义与实现的做法, 但不确定是否为最佳实践
 #endif
 
 // t.tpp
@@ -177,8 +176,44 @@ int main()
 }
 ```
 
-貌似只能一步编译: `g++ m.cpp -o m`
+编译命令为(只有一个编译单元因此无需分开编译): `g++ m.cpp -o m`, 在这个例子中, 如果将 `t.h` 中的 `#include "t.tpp"` 删除
 
+- 尝试 `g++ -c t.tpp -o t.o` 进行编译(实质上等同于模板的声明与定义全部写在了 `t.tpp` 文件内), 会发现得不到 `t.o` 文件, 这是因为模板只有在实例化时才会生成代码, 否则就不会生成代码 (TODO: 感觉解释地有些牵强)
+  ```bash
+  $ g++ -c t.tpp -o t.o  # 得不到 t.o
+  g++: warning: t.tpp: linker input file unused because linking not done
+  ```
+- 尝试一步编译 `g++ m.cpp t.tpp -o m`, 也会出现报错, 这是因为一步编译也会分别把 `t.tpp` 当作编译单元进行单独编译, 而它并不能生成 `Foo<int>` 的定义, 然后也将 `main.cpp` 作为单独的编译单元进行编译, 这个时候由于 `#include "t.h"` 的原因会生成 `Foo<int>` 的声明, 因此可以正常得到 `m.o`, 但在链接时会发现找不到 `Foo<int>` 的定义
+  ```bash
+  $ g++ -c m.cpp -o main.o  # OK
+  $ g++ m.cpp t.tpp -o m    # 或者 g++ m.o t.tpp -o m
+  t.tpp: file not recognized: file format not recognized
+  collect2: error: ld returned 1 exit statu
+  ```
+
+在明白上面的原因后, 其实我们可以做一下修改: 首先删去 `t.h` 中的 `#include "t.tpp"`, 而将 `t.hpp` 修改为 `t.cpp`, 且内容改为:
+
+```c++
+#include "t.h"
+#include <iostream>
+
+template <typename T>
+void Foo<T>::doSomething(T param){
+    std::cout << param << std::endl;
+}
+
+template class Foo<int>;  // 全特化(也即模板实例化)
+```
+
+这样一来, 便可以使用分开编译或一次编译了:
+
+```bash
+g++ -c main.cpp -o main.o
+g++ -c t.cpp -o t.o
+g++ m.o t.o -o m
+# 或者
+g++ main.cpp t.cpp -o m
+```
 
 一篇关于分开编译的博客: [https://medium.com/@kunal-mod/c-best-practices-understanding-the-need-for-splitting-class-declaration-and-definitions-into-389d523695b9](https://medium.com/@kunal-mod/c-best-practices-understanding-the-need-for-splitting-class-declaration-and-definitions-into-389d523695b9)
 
