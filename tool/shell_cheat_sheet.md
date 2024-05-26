@@ -408,6 +408,16 @@ Swap:         1.0Gi       585Mi       438Mi
 
 操作系统能使用的内存可以认为是 `Mem(total) + Swap(total)`, 而 `Mem` 一般是对应真正的内存, 而 `Swap` 一般是对应磁盘, 一般情况下, 操作系统为了计算机整体性能, 可能会将 Mem 与 Swap 互相交换 (例如把程序 A 的某部分内存从 Mem 暂时换到 Swap 上, 后续又换回来). 而有些编程语言允许将内存声明为 page-locked memory (也称为 pinned memory), 这样会避免操作系统将这部分内存放到 Swap 上, 从而保障这些内存的访问速度. 但注意, 显式声明 pinned memory 可能影响计算机整体性能, 应按需使用 (此处的所谓 page-locked memory 也就是 pytorch dataloader 里的那个参数 `pin_memory=True`).
 
+### nc: 测试服务端口是否已经可用于接受连接
+
+```bash
+$ until nc -z localhost 5000; do sleep 0.1; done
+```
+
+上述 `nc` 命令用于测试 `localhost:5000` 是否可以接受连接, `until ...; do ...; done` 是一个循环.
+
+一般用于本地启动一个服务端程序绑定在 `localhost:5000`, 然后使用上述命令测试服务是否成功启动.
+
 ## Shell命令组合例子
 
 ### 例 2：管道、curl、grep、cut 结合使用
@@ -556,9 +566,15 @@ tree 08585692ce06452da6f82ae66b90d98b55536fca author xxx <xxx@qq.com> 1663866229
 
 ### 例 11: 跳过前 k 行
 
-```
+```bash
 # tail -n +<N+1> <filename>
 tail -n +3 a.txt  # 跳过前2行
+```
+
+### 例 12: 列出当前目录下各个文件或文件夹大小
+
+```bash
+find . -maxdepth 1 -print0 | xargs -0 -i du -sh {}
 ```
 
 ## Shell 脚本示例 
