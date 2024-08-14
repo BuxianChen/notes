@@ -1669,3 +1669,99 @@ def get_event_loop():
         # 等价于
         # return await some_async_operation()
     ```
+
+## select/selector
+
+select 似乎是对系统调用的直接暴露, 以下代码段暂时不知道在做啥 [https://chatgpt.com/share/2ee353c0-8043-4dd5-a8f4-a7c9504310fd](https://chatgpt.com/share/2ee353c0-8043-4dd5-a8f4-a7c9504310fd)
+
+常见的 epoll 事件类型有：
+
+select.EPOLLIN：对应的值是1，表示文件描述符可读，即有数据可以读取（例如客户端发送了数据，或者有新连接请求）。
+select.EPOLLOUT：对应的值是4，表示文件描述符可写，即可以向其发送数据而不会阻塞。
+select.EPOLLERR：对应的值是8，表示文件描述符上发生了错误。
+select.EPOLLHUP：对应的值是16，表示文件描述符被挂起或连接关闭。
+select.EPOLLET：对应的值是2的31次方，用于启用边沿触发模式（默认是水平触发）。
+
+
+服务端
+
+```python
+import select
+import socket
+
+# 创建一个 TCP/IP socket
+server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+server_socket.bind(('localhost', 8080))
+server_socket.listen(5)
+server_socket.setblocking(False)
+
+# 创建一个 epoll 对象
+epoll = select.epoll()
+
+# 注册服务器 socket 到 epoll，监听其可读事件
+epoll.register(server_socket.fileno(), select.EPOLLIN)
+
+try:
+    connections = {}
+    while True:
+        # 等待事件发生
+        events = epoll.poll(1)  # 1秒超时
+
+        for fileno, event in events:
+            print(fileno, event)
+            if fileno == server_socket.fileno():
+                # 有新的连接
+                connection, address = server_socket.accept()
+                connection.setblocking(False)
+                print(f"Connected by {address}")
+                
+                # 注册新连接的 socket 到 epoll
+                epoll.register(connection.fileno(), select.EPOLLIN)
+                connections[connection.fileno()] = connection
+            
+            elif event & select.EPOLLIN:
+                # socket 可读
+                data = connections[fileno].recv(1024)
+                if data:
+                    print(f"Received: {data.decode()} from {connections[fileno].getpeername()}")
+                    # 响应客户端
+                    connections[fileno].send(data)
+                else:
+                    # 关闭连接
+                    epoll.unregister(fileno)
+                    connections[fileno].close()
+                    del connections[fileno]
+
+finally:
+    epoll.unregister(server_socket.fileno())
+    epoll.close()
+    server_socket.close()
+```
+
+客户端
+
+```python
+import socket
+
+# 创建一个 TCP/IP socket
+client_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+# 连接到服务器
+server_address = ('localhost', 8080)
+print(f"Connecting to {server_address[0]} port {server_address[1]}")
+client_socket.connect(server_address)
+
+try:
+    # 发送数据
+    message = 'This is the message. It will be echoed back by the server.'
+    print(f"Sending: {message}")
+    client_socket.sendall(message.encode())
+
+    # 接收响应
+    data = client_socket.recv(1024)
+    print(f"Received: {data.decode()}")
+
+finally:
+    print("Closing connection")
+    client_socket.close()
+```
