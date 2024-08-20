@@ -2722,3 +2722,29 @@ List[int]()  # 注意报错信息
 immutable是指创建后不能修改的对象, hashable是指定义了`__hash__`函数的对象, 默认情况下, 用户自定义的数据类型是hashable的. 所有的immutable对象都是hashable的, 但反过来不一定.
 
 另外还有特殊方法`__eq__`与`__cmp__`也与这个话题相关
+
+### 类属性与实例属性
+
+```python
+# 以下写法报错:
+class A:
+    name
+
+# 以下写法实际上什么也没做, `name: str` 仅仅是一个注解, A 类并没有 name 这个类属性
+class A:
+    name: str
+
+# 以下写法确实为 A 绑定了一个类属性 name, 并且取值为空字符串: ""
+class A:
+    name: str = ""
+
+
+a = A()
+a.name = "a"  # a
+print(a.name, A.name, A().name, a.__class__.name)  # "a", "", "", ""
+print(a.__dict__)  # {"name": "a"}
+print(A().__dict__)  # {}
+print(A.__dict__)  # 包含 {'name': ''}
+```
+
+也就是说 `a.name = "a"` 是为实例变量赋值, python 中的类属性与 C++ 中的静态成员的处理方式是不同的

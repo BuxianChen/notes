@@ -1,5 +1,27 @@
 # Rust
 
+推荐资料:
+
+- [The Rust Programming Language](https://doc.rust-lang.org/beta/book): [GitHub](https://github.com/rust-lang/book), [中文版](https://rustwiki.org/zh-CN/book/), [中文版 GitHub](https://github.com/rust-lang-cn/book-cn)
+- [Rust By Example](https://doc.rust-lang.org/rust-by-example/)
+
+**hello world**
+
+代码
+
+```rust
+// main.rs
+fn main() {
+    println!("Hello, world!");  // println! 里后面的感叹号!表示这是一个宏, 而不是一个函数
+}
+```
+
+编译与运行
+
+```bash
+rustc main.rc
+./main  # 编译出的文件是可执行文件
+```
 
 <table>
 <tr>
