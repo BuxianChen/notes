@@ -4,6 +4,8 @@
 
 注意：本节课讲的都是 bash 命令。
 
+Bash 权威资料: [https://www.gnu.org/software/bash/manual/bash.html](https://www.gnu.org/software/bash/manual/bash.html)
+
 ### shell 命令的一般性介绍
 
 #### 机器上有哪些 shell 命令？
@@ -98,6 +100,15 @@ shell 命令一般将输出（output）写入到标准输出流中，将错误�
 ```bash
 ls | grep pattern  # 匹配符合 pattern 的文件名
 grep pattern data.txt  # data.txt 中符合 pattern 的行
+```
+
+注意: 一条命令的输入可能包含“参数列表”或者“流”, 而执行这条命令的效果可能会向“流”输出, 而执行完命令后会有一个状态码返回, 状态码返回为 0 则表示命令正常执行. 而管道 `|` 的作用是将上一条
+
+直接将字符串作为命令的标准输入可以使用 `<<<`:
+
+```bash
+# 注意 $'...' 是用于转义 \n 为换行符的
+grep "abc" <<< $'123abc\n234abc\nadb\n'
 ```
 
 **引号**
@@ -303,6 +314,42 @@ wget    -P amicorpus/ES2002b/audio https://groups.inf.ed.ac.uk/ami/AMICorpusMirr
 amicorpus/ES2002a/audio/ES2002a.Mix-Headset.wav
 amicorpus/ES2002b/audio/ES2002b.Mix-Headset.wav
 ```
+
+### Bash Special Characters (TODO)
+
+[https://tldp.org/LDP/abs/html/special-chars.html](https://tldp.org/LDP/abs/html/special-chars.html)
+
+`<<<`:
+
+`<<`:
+
+`<`:
+
+`>>`:
+
+`>`:
+
+`|`: 管道
+
+`&`: 后台运行
+
+`&&`: 前面的命令执行成功(返回值是0)时才执行后面的命令
+
+`||`: 前面的命令执行失败(返回值非0)时才执行后面的命令
+
+`(...)`: 子 shell
+
+`>&` 和 `<&`
+
+`<>`: 读写文件打开
+
+`-`: 不是通用符号, 有些命令会使用 `-` 作为参数表示从标准输入读取数据
+
+`$(...)`: 命令替换
+
+`<(...)`: 进程替换
+
+`[[ ... ]]`: 条件测试
 
 ### /dev/null、文件描述符
 

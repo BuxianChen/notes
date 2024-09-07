@@ -418,6 +418,31 @@ $ until nc -z localhost 5000; do sleep 0.1; done
 
 一般用于本地启动一个服务端程序绑定在 `localhost:5000`, 然后使用上述命令测试服务是否成功启动.
 
+### xargs
+
+xargs 用于将标准输入转换为参数
+
+```bash
+# 等价于一条命令: `rm file1.txt file2.txt file3.txt` 默认使用空白符作为标准输入的分隔符
+$ echo "file1.txt file2.txt file3.txt" | xargs rm
+
+# 每次至多传递 2 个参数, 等价于 2 条命令:
+# rm file1.txt file2.txt
+# rm file3.txt
+$ echo "file1.txt file2.txt file3.txt" | xargs -n 2 rm
+
+# 指定分隔符
+$ echo "file1.txt,file2.txt,file3.txt" | xargs -d ',' rm
+
+# find -print0 会将列出的文件以 null 作为结尾, 而 -0 表示以 null 作为分隔符
+$ find . -name "*.txt" -print0 | xargs -0 rm
+
+# 使用 -I 参数等价于 2 条命令:
+# mv file1.txt /backup/
+# mv file2.txt /backup/
+$ echo "file1.txt file2.txt" | xargs -I {} mv {} /backup/
+```
+
 ## Shell命令组合例子
 
 ### 例 2：管道、curl、grep、cut 结合使用

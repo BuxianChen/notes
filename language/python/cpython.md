@@ -1,6 +1,6 @@
 # cpython
 
-cpython==3.12.4
+基于 cpython==3.12.4, 主要结合 微信公众号古明地觉cpython系列 作为参考
 
 ```C
 // Include/pytypedefs.h

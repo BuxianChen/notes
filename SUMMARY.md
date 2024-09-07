@@ -9,6 +9,7 @@
   - [Advanced Python](language/python/python_advanced.md)
   - [Python Standard Libary](language/python/python_standard_library.md)
   - [Python Third Party](language/python/python_third_party.md)
+  - [CPython](language/python/cpython.md)
 - C++
   - [C++ Draft](language/cplusplus/cpp_draft.md)
 - Java
@@ -53,3 +54,4 @@
 - [C++ Primer](learn/c++primer_5ed.md)
 - [C++ Primer Plus](learn/c++primerplus_6ed.md)
 - [CSAPP](learn/csapp.md)
+- [CPython Internals](learn/cpython_internals.md)
