@@ -234,3 +234,24 @@ pytest:
 - 模型推理服务(工程优化)
   - triton inference server
   - [huggingface text-generation-inference](https://github.com/huggingface/text-generation-inference)
+
+## 细碎的小问题
+
+**C++ 中的移动构造函数, std::move 的语义和用途**
+
+[https://chatgpt.com/share/66e93097-b5cc-800d-8ea3-3823725ce3f3](https://chatgpt.com/share/66e93097-b5cc-800d-8ea3-3823725ce3f3)
+
+**CPython 中 exec 的具体执行过程**
+
+[https://chatgpt.com/share/66e930d0-0578-800d-afee-fc51965583e3](https://chatgpt.com/share/66e930d0-0578-800d-afee-fc51965583e3)
+
+```python
+code = """
+def foo():
+    return bar()
+"""
+
+temp = {}
+exec(code, temp)
+func = temp['foo']  # 为什么 OK, exec 不检查缺失的 bar 这个符号
+```

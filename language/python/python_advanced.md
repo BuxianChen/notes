@@ -2747,4 +2747,30 @@ print(A().__dict__)  # {}
 print(A.__dict__)  # 包含 {'name': ''}
 ```
 
-也就是说 `a.name = "a"` 是为实例变量赋值, python 中的类属性与 C++ 中的静态成员的处理方式是不同的
+也就是说 `a.name = "a"` 是为实例变量赋值, python 中的类属性与 C++ 中的静态成员的处理方式是不同的:
+
+```python
+class B:
+    pass
+
+class A:
+    b = B()
+
+# b 是类属性, 共享
+a1 = A()
+a2 = A()
+
+print(id(a1.b) == id(a2.b))  # True
+
+# 隐藏了 A.b
+a1.b = "a"
+
+print(id(a1.b) == id(a2.b))  # False
+
+print(A.b)  # <__main__.B object at 0x7f4a1dc55e50>
+
+A.b = "b"
+
+# 由于 a2.b 没有被实例变量隐藏, 因此访问的仍然是类属性 A.b
+print(a2.b)  # "b"
+```
