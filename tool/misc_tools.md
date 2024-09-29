@@ -172,7 +172,33 @@ def _default_backend_factory() -> requests.Session:
 
 # 消息队列: RocketMQ
 
-RocketMQ 是阿里开发的消息队列组件
+## 基本概念
+
+RocketMQ 是阿里开发的消息队列组件, 涉及的一些概念参考[官方文档](https://rocketmq.apache.org/docs/introduction/02concepts)
+
+- Producer: 生产者负责向队列里写消息
+  - ProducerGroup: 每个生产者必须指定唯一的一个 ProducerGroup, 但每个队列都可以往队列发送不同的 Topic 的消息
+- Consumer: 消费者负责从队列中读取消息, 注意一个消息被读取, 并不一定立即出队列
+  - ConsumerGroup: 每个消费者必须指定唯一的一个 ConsumerGroup
+  - Subscription: 消费者可以根据 Topic, Tag, Key 这些条件来过滤, 以获取感兴趣的消息. 注意一个消费者必须指定唯一的一个 Topic 进行订阅, 但同属一个 ConsumerGroup 的消费者可以指定不同的 Topic 进行订阅
+  - ConsumerOffset: RocketMQ 会在内部为每个 ConsumerGroup 维护一个 Offset, 以避免消息被重复消费
+- Topic:
+- MessageQueue: 在一个 Topic 下的消息, RocketMQ 可能会使用多个队列来存储消息, 以实现负载均衡
+- Message: 消息需要设置 Topic, 同一个 Topic 的消息会被负载均衡得放入至多个 MessageQueue 中, 每条 Message 可以设置 Tag 和 Key, 便于消费者根据这些元数据过滤信息
+  - MessageTag: 
+  - MessageKey:
+  - MessageType: RocketMQ 支持 NORMAL, FIFO, TRANSACTION, DELAY 这几种消息类型 (TODO:这几个类型的具体含义)
+  - MessageView: 消息的可读视图, 但不能修改消息
+  - MessageOffset: 每个消息在进入消息队列时, RocketMQ 会记录这条消息所在 MessageQueue 的 Offset, Offset 的数据类型是 long int
+  - MessageID: 作为消息的全局唯一标识符, ID 由 RocketMQ 内部自动设定, 确保消息在 RocketMQ 中能够被唯一识别.
+  - MessageBody: 消息的实际内容, 可以是任意形式的字节数据
+- TransactionChecker: 事务相关 (TODO: 具体含义)
+
+Topic, Tag, Key 的通常用法: Topic 一般对应一个项目, Tag 对应于各个子项目, 而 Key 一般用于具体的业务逻辑约定. 例如: `Topic="SALE"` 表示销售场景的项目, 而 `Tag="ONLINE"` 和 `Tag="OFFLINE"` 分别代表线上和线下的场景, 而进一步用 `Key=buy_id` 用于表示一次具体的购买行为的唯一标识.
+
+
+
+## 基础使用
 
 启动服务, 完全参考 [https://rocketmq.apache.org/docs/quickStart/02quickstartWithDocker/](https://rocketmq.apache.org/docs/quickStart/02quickstartWithDocker/) 即可, 如下:
 
@@ -209,6 +235,7 @@ producer = Producer('PID-XXX')  # PID_XXX 是 group_id
 # producer.set_name_server_address('127.0.0.1:9876')
 producer.set_namesrv_addr('127.0.0.1:9876')
 producer.start()
+# 注意: producer 发送的 topic_id 可以各不相同
 msg = Message(topic_id)
 msg.set_keys('X1')
 msg.set_tags('X2')
@@ -224,6 +251,7 @@ def callback(msg):
 consumer = PushConsumer('CID_XXX')  # CID_XXX 是 group_id
 # consumer.set_name_server_address('127.0.0.1:9876')
 consumer.set_namesrv_addr('127.0.0.1:9876')
+# 注意: consumer 订阅时必须指定 topic, 其他筛选条件均为可选
 consumer.subscribe(topic_id, callback)
 consumer.start()
 
@@ -239,23 +267,9 @@ SendStatus.OK 0101007F0000A61200003CF1C4030100 3
 <class 'rocketmq.client.RecvMessage'> 0101007F0000A61200003CF1C4030100 b'hello' b'X2' b'X1' TID-YYY
 ```
 
-**重要概念及解释**
+## 进阶使用
 
-使用消息队列时, 一般有两个角色: 生产者(Producer)和消费者(Consumer), 生产者负责往消息队列里写消息, 消费者从队列里取消息. 而一条消息(Message)包含如下重要的元数据:
-
-- Topic: 决定了消息的大类, 消费者通过订阅 Topic 接收消息, 生产者在生产消息时也必须指定 Topic.
-- Tag: 用于对 Topic 内的消息进行分类, 这一属性是可选的 (属于生产者和消费者之间可自行约定的协议), 消费者可以通过 Tag 过滤不需要的消息.
-- Key: 应用层约定
-- ID: 作为消息的全局唯一标识符, ID 由 RocketMQ 内部自动设定, 确保消息在 RocketMQ 中能够被唯一识别.
-- Queue ID: 是物理层面的标识, 队列是最小的存储消息的单位, 一个 topic 对应多个物理队列
-- Message Body: 消息的实际内容, 可以是任意形式的字节数据
-
-另外还有一些概念 (TODO)
-- Offset: 
-- Group ID: 分为 Producer Group 和 Consumer Group, group id 相当于生产者/消费者的账号
-
-
-**样例1**
+**样例1: 鉴权**
 
 ```python
 from rocketmq.client import PushConsumer, MessageModel
@@ -264,7 +278,7 @@ consumer = PushConsumer(group_id="CID_XXX", orderly=False, message_model=Message
 consumer.set_session_credential(access_key="aa", access_secret="aa", channel="FMQ")
 ```
 
-与 APP 类比, 其中 `access_key` 相当于用户名, `access_secret` 相当于密码, `channel` 相当于设备平台类型, 例如: iOS/Android
+与 手机APP 类比: 其中 `access_key` 相当于用户名, `access_secret` 相当于密码, `channel` 相当于设备平台类型, 例如: iOS/Android
 
 **样例2(待完善)**
 
@@ -375,3 +389,6 @@ consumer.shutdown()
 
 (3) h5 实现客户端
 
+## 杂录
+
+PushConsumer 与 PullConsumer 的区别
