@@ -741,10 +741,33 @@ f179eef20d0db126f8aa3d3758f3f88a904f1163        refs/pr/1
 
 ### git lfs
 
+使用如下方式对大文件进行特殊管理(由 git lfs 管理)
+
+```bash
+git lfs track "*.psd"
+git add .gitattributes
+git add file.psd
+git commit -m "Add design file"
+git push origin main
 ```
+
+git clone 时可以选择是否下载大文件
+
+```bash
 # 不下载大文件的方式进行下载
 GIT_LFS_SKIP_SMUDGE=1 git clone xxx.git
 ```
+
+### git clean
+
+慎用
+
+```bash
+# TODO: 各个参数是什么意思
+git clean -d -f -x -n  # 先看下会删除什么
+git clean -d -f -x
+```
+
 
 ## 常用命令备忘录
 

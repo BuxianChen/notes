@@ -945,6 +945,8 @@ sha256sum pytorch_model.bin  # 097417381d6c7230bd9e3557456d726de6e83245ec8b24f52
 
 # safetensors
 
+pytorch 的 `torch.save` 与 `torch.load` 底层使用了 pickle, 被认为是不安全的格式 (假设你打开这个文件, 那么它就有可能执行任意代码: Arbitrary Code Execution, ACE: people can do whatever they want with your machine), 具体解释可以参考: [https://github.com/huggingface/safetensors/discussions/111](https://github.com/huggingface/safetensors/discussions/111)
+
 具体的API参见官方文档即可, 这里仅对存储格式做探究
 
 ```python
