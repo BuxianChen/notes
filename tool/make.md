@@ -283,7 +283,15 @@ Step4: Adding Generator Expressions
 
 Step5: Installing and Testing
 
-引入 cmake 项目安装, 以及单元测试
+引入 cmake 项目安装, 以及单元测试, TODO: 此处代码移除
+
+```bash
+# 首先 config
+mkdir build && cd build && cmake ..
+# 然后可以 install/test/pack
+ctest
+cpack
+```
 
 Step6: Adding Support for a Testing Dashboard
 
@@ -295,6 +303,23 @@ Step7: Adding System Introspection
 
 Step8: Adding a Custom Command and Generated File
 
+本部分实现了一个特殊功能: 首先编写一段 C 代码, 其执行后会生成一个头文件, 整个项目的构建过程是先得到这个头文件 (通过自定义命令来实现: `add_custom_command`), 然后其他的库/可执行文件可能需要使用这个头文件
+
+Step9: Packaging an Installer
+
+本部分介绍了项目打包, 具体介绍了使用 cpack 的打包方式, 打包为 `.tar.gz` 文件(二进制安装), 操作比较简单, `CMakeLists.txt` 加几行配置即可. 其他的项目打包和发布方式待探索
+
+Step10: Selecting Static or Shared Libraries
+
+前序步骤所有的库都是使用的静态库(当然也可以在 `add_library` 是设定为动态库, 但前面没有明确提到), 本部分介绍怎么“优雅”地配置以生成动态链接库
+
+Step11: Adding Export Configuration
+
+TODO: 似乎是让本项目在其他项目中能使用, TODO
+
+Step12: Packaging Debug and Release
+
+TODO
 
 
 ### 单文件
@@ -473,9 +498,9 @@ cmake --install . --prefix=/path/to/Step5_install
 
 ---
 
-TODO: 待厘清
+TODO: 基本已确认
 
-关于 cmake 命令与 CMakeLists.txt 内的相对路径问题: CMakeLists.txt 的写法只需关注它本身与源码的相对路径, 而不必关心 cmake 命令的参数. 这一点和 python 有区别 (python 代码里的 import 需要与 python 作为启动脚本时的当前目录需要相配)
+关于 cmake 命令与 CMakeLists.txt 内的相对路径问题: CMakeLists.txt 的写法只需关注它本身与源码的相对路径, 而不必关心 cmake 命令行的参数. 这一点和 python 有区别 (python 代码里的 import 需要与 python 作为启动脚本时的当前目录需要相配)
 
 ```
 CMakeLists.txt
@@ -500,4 +525,5 @@ add_executable(Demo ${DIR_SRCS})
 
 使用 `cmake .` 和 `mkdir build && cd build && cmake ..` 或者 `cmake -B build -S .` 均可以成功, 后两者的 Makefile 在 `build/Makefile`
 
+`CMAKE_CURRENT_SOURCE_DIR` 总是指向 `CMakeLists.txt` 所在目录, 而 `CMAKE_CURRENT_BINARY_DIR` 总是指向生产的文件目录
 ---
