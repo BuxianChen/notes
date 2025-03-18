@@ -880,7 +880,7 @@ $ sudo useradd -d /d/ -m -N -s /bin/bash someone
 $ passwd someone  # 设定用户密码
 ```
 
-### 用户登录
+### shell 的属性与配置文件
 
 [链接1](https://thecodecloud.in/what-happens-when-we-login-logout-in-linux/)，[链接2](https://www.stefaanlippens.net/bashrc_and_others/#:~:text=.bash_profile%20is%20for%20making%20sure%20that%20both%20the,if%20you%20would%20omit.bash_profile%2C%20only.profile%20would%20be%20loaded.)，[链接3](https://bencane.com/2013/09/16/understanding-a-little-more-about-etcprofile-and-etcbashrc/)，[链接4](https://linuxize.com/post/bashrc-vs-bash-profile/)
 
@@ -931,6 +931,48 @@ fi
 >     When bash is invoked as an interactive login shell, or as a non-interactive shell with the --login option, it first reads and executes commands from the file /etc/profile, if that file exists. After reading that file, it looks for ~/.bash_profile, ~/.bash_login, and ~/.profile, in that order, and reads and executes commands from the first one that exists and is readable. The --noprofile option may be used when the shell is started to inhibit this behavior.
 >     
 >     When an interactive shell that is not a login shell is started, bash reads and executes commands from /etc/bash.bashrc and ~/.bashrc, if these files exist. This may be inhibited by using the --norc option. The --rcfile file option will force bash to read and execute commands from file instead of /etc/bash.bashrc and ~/.bashrc.
+
+
+推荐的配置文件里写的内容:
+
+做法一: 这种大概是最为合理的做法, 但维护起来比较困难, 适用于需要支持多种 Shell 环境（如登录 Shell 和非登录 Shell）的场景。
+
+(1) 无须使用 `~/.bash_login` 文件
+
+(2) 在 `~/.bash_profile` 文件中包含如下内容即可
+
+```bash
+if [ -f ~/.profile ]; then
+    . ~/.profile
+fi
+
+if [ -f ~/.bashrc ]; then
+    . ~/.bashrc
+fi
+```
+
+(3) 在 `~/.profile` 文件中配置与交互无关的内容, 例如: 环境变量
+
+(4) 在 `~/.bashrc` 中设置与交互式 Shell 相关的配置, 例如: 别名, PS1 变量
+
+(5) `~/.profile` 与 `~/.bashrc` 不要去相互引用
+
+做法二(大多数情况下使用这种即可): 简单, 适用于交互式 shell
+
+(1) 无须使用 `~/.bash_login`, `~/.bash_profile` 文件
+
+(2) 在 `~/.bashrc` 里配置别名, PS1变量, 环境变量等
+
+(3) 在 `~/.profile` 里包含如下内容即可:
+
+```bash
+if [ -n "$BASH_VERSION" ]; then
+  # include .bashrc if it exists
+  if [ -f "$HOME/.bashrc" ]; then
+	. "$HOME/.bashrc"
+  fi
+fi
+```
 
 ## Ubuntu
 
