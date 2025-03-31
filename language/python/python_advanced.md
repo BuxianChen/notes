@@ -1340,6 +1340,34 @@ with message_writer.open_file() as my_file:
 * open_file函数从第一个语句直到第一个yield语句为`__enter__`
 * open_file函数从第一个yield语句到最后为`__exit__`
 
+备注: 这里 `try ... finally ...` 的写法是典型写法:
+
+```
+Typical usage:
+
+    @contextmanager
+    def some_generator(<arguments>):
+        <setup>
+        try:
+            yield <value>
+        finally:
+            <cleanup>
+
+This makes this:
+
+    with some_generator(<arguments>) as <variable>:
+        <body>
+
+equivalent to this:
+
+    <setup>
+    try:
+        <variable> = <value>
+        <body>
+    finally:
+        <cleanup>
+```
+
 ### 5.4 "复合"with语句
 
 ```python
