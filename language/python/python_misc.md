@@ -116,3 +116,12 @@ def main():
         db.commit()
         db.refresh(labeling_item)
 ```
+
+## sys.path
+
+```bash
+# 假设当前目录的绝对路径是 <root>
+python app/run.py  # 那么sys.path包含的搜索路径是 <root>/app
+python -m app.run  # 那么sys.path包含搜索路径是 <root>
+PYTHONPATH=<root>/app python -m app.run  # 那么sys.path包含搜索路径是 <root> (最优先) 和 <root>/app (次优先), 因此可能会出现冲突
+```

@@ -10,6 +10,7 @@
   - [Python Standard Libary](language/python/python_standard_library.md)
   - [Python Third Party](language/python/python_third_party.md)
   - [CPython](language/python/cpython.md)
+  - [Python MISC](language/python/python_misc.md)
 - C++
   - [C++ Draft](language/cplusplus/cpp_draft.md)
 - Java
