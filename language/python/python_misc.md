@@ -125,3 +125,29 @@ python app/run.py  # 那么sys.path包含的搜索路径是 <root>/app
 python -m app.run  # 那么sys.path包含搜索路径是 <root>
 PYTHONPATH=<root>/app python -m app.run  # 那么sys.path包含搜索路径是 <root> (最优先) 和 <root>/app (次优先), 因此可能会出现冲突
 ```
+
+假设目录结构如下:
+
+```
+myproj/
+  app/
+    main.py
+  utils/
+    helper.py
+```
+
+其中 `main.py` 的内容如下:
+
+```python
+from ..utils.helper import a
+print(a)
+```
+
+```bash
+> cd myproj
+> python -m app.main
+ImportError: attempted relative import beyond top-level package
+> cd ..
+> python -m myproj.app.main
+# ok
+```
