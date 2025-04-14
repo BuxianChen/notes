@@ -457,3 +457,103 @@ Weaviate 是一个向量数据库, 支持混合检索. 根据下面的文章可�
 这里简述下运作逻辑: 假设最终需要检索 k 个文本, 那么分别用字面检索和向量检索得到 k 个文本 (目前似乎不能设置为多于 k 个, 或者其内部有可能设置更高, 但似乎不对用户暴露), 当使用加权 rerank 时, 首先分别将字面检索/向量检索的分数按线性变换到 0-1 之间, 即最相似的文本的相似度为 1, 第 k 个文本的相似度为 0. 然后再加权重 (权重可以设置), 最后排序得到最终的 k 个文本.
 
 - 关于 hybrid search 的具体运作逻辑: [https://weaviate.io/blog/hybrid-search-fusion-algorithms](https://weaviate.io/blog/hybrid-search-fusion-algorithms)
+
+# Redis
+
+## Docker 运行
+
+```bash
+docker run -d --name redis-test -p 6379:6379 redis:latest
+```
+
+## 发布/订阅模式
+
+**发布者**
+
+```python
+# redis_publisher.py
+import redis.asyncio as redis
+import json
+import asyncio
+
+async def publish_main():
+    client = redis.Redis(
+        host="127.0.0.1",
+        port=6379,
+        password=None,
+        decode_responses=True
+    )
+    channel_name = "test"
+    await client.ping()
+
+    while True:
+        message = input("User: ")
+        if message.lower() == "exit":
+            print("Exiting...")
+            break
+        # 发送消息需要指定发布到哪个 channel, 可以发送字符串
+        await client.publish(channel_name, message)
+
+if __name__ == "__main__":
+    asyncio.run(publish_main())
+```
+
+
+**订阅者**
+
+```python
+# redis_subscriber.py
+import redis.asyncio as redis
+import asyncio
+
+async def process_fn(*args, **kwargs):
+    print(args, kwargs)
+
+async def subscribe_main():
+    client = redis.Redis(
+        host="127.0.0.1",
+        port=6379,
+        password=None,
+        decode_responses=True
+    )
+    channel_name = "test"
+
+    await client.ping()
+    pubsub = client.pubsub()
+    await pubsub.subscribe(channel_name)
+    try:
+        # 不推荐:
+        # get_message 是非阻塞方法, 总会立刻返回, 但如果没有获取到消息, 将返回 None, 因此采用 while True 轮询的方式
+        # while True:
+        #     message = await pubsub.get_message(ignore_subscribe_messages=True)
+        #     if message:
+        #         await process_fn(message)
+
+        # 推荐:
+        # listen 是阻塞方法, 获取到消息时才会继续执行 async for 里面的内容
+        async for message in pubsub.listen():
+            if message['type'] == 'message':
+                await process_fn(message)
+    finally:
+        await pubsub.unsubscribe(channel_name)
+        await pubsub.close()
+
+if __name__ == "__main__":
+    asyncio.run(subscribe_main())
+```
+
+运行方式: 打开两个终端, 一个运行 `python redis_publisher.py`, 另一个运行 `python redis_subscriber.py`
+
+```bash
+# redis_publisher.py 的终端交互
+User: 123
+User: 234
+User: exit
+Exiting...
+
+# redis_subscriber.py 的终端输出
+({'type': 'message', 'pattern': None, 'channel': 'test', 'data': '123'},) {}
+({'type': 'message', 'pattern': None, 'channel': 'test', 'data': '234'},) {}
+```
+
+Redis 的发布/订阅一般不会存储消息, 也就是说假设先启动 `redis_publisher.py` 并且先发送了一条消息, 然后再启动 `redis_subscriber.py`, 那么这一条消息将不会被收到. 上面的例子是异步的写法.
