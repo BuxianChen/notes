@@ -242,7 +242,7 @@ a = ["a",
 a = ["a", "b"]
 ```
 
-### 3. 注解的规范
+### 3. type hint 与 stub file
 
 [python PEP 484](https://www.python.org/dev/peps/pep-0484/)
 
@@ -267,7 +267,21 @@ def foo(x, y):
 def foo(x: int, y: int) -> int: ...
 ```
 
-这种 `.pyi` 文件除了用于注释普通 `.py` 文件外，通常也用来注释 Python 包中引入的 C 代码。例如在 Pytorch 1.9.0 中，在 `torch/_C` 目录下就有许多 `.pyi` 文件，但注意这并不是 stub file，例如 `torch/_C/__init__.pyi` 文件关于 `torch.version` 的注解如下：
+例如: 将 `pkg.py` 和 `pkg.pyi` 文件放在 `mypkg` 目录下, 使用 `mypy` 进行静态检查:
+
+```bash
+# 这种是通常用法, 用 mypy 检查一个目录下的所有文件. 遇到同名的 .pyi 和 .py 文件, 会优先检查 pyi 文件, 这里能通过检查
+mypy --strict mypkg
+
+# 这种也是通常用法, 用 mypy 检查单个 .py 文件, 但这时要求这个 python 文件本身包含 type hint, 因此这里会报错
+mypy --strict mypkg/pkg.py
+
+# 这种不是通常用法, 不应该直接将 .pyi 文件作为检查目标, 但这里能通过检查
+mypy --strict mypkg/pkg.pyi
+```
+
+
+这种 `.pyi` 文件除了用于注释普通 `.py` 文件外，通常也用来注释 Python 包中引入的 C 代码。例如在 Pytorch 1.9.0 中，在 `torch/_C` 目录下就有许多 `.pyi` 文件，例如 `torch/_C/__init__.pyi` 文件如下内容：
 
 ```python
 # Defined in torch/csrc/Device.cpp
@@ -287,19 +301,7 @@ class device:
     def __reduce__(self) -> Tuple[Any, ...]: ...  # THPDevice_reduce
 ```
 
-关于注解的模块主要是 typing
 
-```python
-# Iterable等也在这里
-from typing import List
-print(isinstance([], List))  # True
-# 注意List不能实例化
-List([1])  # TypeError: Type List cannot be instantiated; use list() instead
-
-# collections模块内也有Iterable
-from collections.abc import Iterable
-isinstance([], Iterable)  # True
-```
 
 ### 4. 避免pycharm中shadows name "xxx" from outer scope的警告
 
