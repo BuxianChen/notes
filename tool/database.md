@@ -35,6 +35,14 @@ for table in tables:
 conn.close()
 ```
 
+## DB Browser for SQLite
+
+下载地址: [https://sqlitebrowser.org/](https://sqlitebrowser.org/)
+
+可以交互式地查看修改 sqlite 的 `xx.db` 文件
+
+坑: 在 windows 上安装 x64 版本的 DB Browser for SQLite, 但希望 `xx.db` 位于 WSL2 内的目录, 无法达到目的.
+
 # MySQL
 
 ## 部署: Docker (TODO)
@@ -142,7 +150,7 @@ metadata_obj.create_all(engine)
 Step 1: Base,可以用任意一种方式进行
 
 ```python
-# 方法 1:
+# 方法 1: SQLAlchemy 2.0 推荐的方式
 from sqlalchemy.orm import DeclarativeBase
 class Base(DeclarativeBase):
     pass
@@ -178,13 +186,26 @@ class Address(Base):
     __tablename__ = "address"
     id: Mapped[int] = mapped_column(primary_key=True)
     email_address: Mapped[str]
-    user_id = mapped_column(ForeignKey("user_account.id"))
+    user_id = mapped_column(ForeignKey("user_account.id"))  # 定义外键约束, 数据库层面的约束
     user: Mapped[User] = relationship(back_populates="addresses")
     def __repr__(self) -> str:
         return f"Address(id={self.id!r}, email_address={self.email_address!r}, user_id={self.user_id!r})"
 ```
 
-relationship 是可选的, 实际的数据库存储里并不包含 `user` 及 `addresses` 这两列, 它与 `ForeignKey` 的关系以及给 ORM API 带来的便利性见后续
+relationship 是可选的, 实际的数据库存储里并不包含 `user` 及 `addresses` 这两列, 它与 `ForeignKey` 的关系以及给 ORM API 带来的便利性具体见后续, 大体如下(TODO: 待确认)
+
+```python
+# 假设 user 是一个 User 对象, 在 User 里定义了 addresses = relationship(back_populates="user")
+user.addresses[0].email_address
+
+from sqlalchemy.orm import Session
+
+with Session(engine) as session:
+    sandy = session.query(User).filter_by(name="sandy").first()
+    if sandy:
+        for addr in sandy.addresses:
+            print(addr.email_address)
+```
 
 ## 操作表: 增删改查
 
