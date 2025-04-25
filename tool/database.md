@@ -140,6 +140,8 @@ address_table = Table(
     Column("email_address", String, nullable=False),
 )
 
+# 注意: 如果 metadata_obj 中的表结构与 engine 里("xx.db")的不一致, create_engine 将不会创建表
+# 注意: 如果 metadata_obj 中的表结构在 engine 中("xx.db")中已存在, create_engine 将不会创建表
 metadata_obj.create_all(engine)
 ```
 
