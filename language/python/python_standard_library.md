@@ -1670,6 +1670,117 @@ def get_event_loop():
         # return await some_async_operation()
     ```
 
+### `await` vs `create_task` (OK)
+
+```python
+import asyncio
+
+async def print_something():
+    await asyncio.sleep(1)
+    print("test")
+
+async def main():
+    asyncio.create_task(print_something())
+    print("done")
+
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+首先观察上面代码的几个变体观察执行行为:
+
+```python
+# ===== 变体1 =====
+async def main():
+    asyncio.create_task(print_something())
+    print("done")
+# 只打印 done
+
+# ===== 变体2 =====
+async def main():
+    await print_something()
+    print("done")
+# 先等待1秒, 先打印 test, 然后答应 done
+
+# ===== 变体3 =====
+async def print_something():
+    print("test")
+async def main():
+    asyncio.create_task(print_something())
+    print("done")
+# 只打印 done
+
+# ===== 变体4 =====
+async def main():
+    task = asyncio.create_task(print_something())
+    print("done")
+    await task
+# 先打印 done, 再等待1秒, 再打印test
+```
+
+`create_task` 会自动加入事件循环(也就是会择机执行), 但它却不会被等待执行完成, 另外如果这个 task 不被显式地 await, 事件循环结束前也不会等待这些 task 完成, 也就是:
+
+```python
+# 可以保证 yyy 一定在 xxx 执行结束后才会执行
+await xxx
+yyy
+
+# yyy 很可能在 xxx 执行前就开始执行
+task = create_task(xxx)
+yyy
+```
+
+### Future and `run_in_executor` (OK)
+
+Task 是 Future 的子类, 一般用的多的是 await, 偶尔需要用到 task, 比较少直接用 future.
+
+下面的代码的主要应用场景是: 假设有一段耗时的同步函数代码, 我希望让它不阻塞我的事件循环, 并且在"后台"执行, 直到某个时间点我需要确认其执行完才能执行后面的逻辑
+
+```python
+import asyncio
+import threading
+import time
+
+def do_work(fut: asyncio.Future):
+    time.sleep(2)  # 假装是一个耗时操作
+    future.set_result("线程完成")  # 手动设置结果
+
+async def main():
+    loop = asyncio.get_running_loop()
+    future = loop.create_future()
+    threading.Thread(target=do_work, args=(future,)).start()
+    # 这里使用 asyncio 再做些别的事情
+    result = await future
+    print(result)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+而这种场景已有官方的解决方案: `run_in_executor`
+
+```python
+import asyncio
+import time
+
+def do_work():
+    time.sleep(2)
+    return "线程完成"
+
+async def main():
+    loop = asyncio.get_running_loop()
+    # 第一个参数传 None, 表示默认用线程池
+    result = await loop.run_in_executor(None, do_work)
+    print(result)
+
+if __name__ == "__main__":
+    asyncio.run(main())
+```
+
+疑问(但基本上可以确认, 只是实现细节不清楚): `run_in_executor` 的底层实现是基于 Future 的 
+
+
 ## select/selector
 
 select 似乎是对系统调用的直接暴露, 以下代码段暂时不知道在做啥 [https://chatgpt.com/share/2ee353c0-8043-4dd5-a8f4-a7c9504310fd](https://chatgpt.com/share/2ee353c0-8043-4dd5-a8f4-a7c9504310fd)
