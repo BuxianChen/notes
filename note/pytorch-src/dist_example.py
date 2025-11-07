@@ -15,7 +15,9 @@ import os
 # dist_example.py
 
 parser = argparse.ArgumentParser()
-parser.add_argument("--local_rank", type=int, default=0, required=True)
+# https://docs.pytorch.org/docs/stable/distributed.html#launch-utility
+# pytorch-2.0 prefer `--local-rank` rather than `--local_rank`
+parser.add_argument("--local-rank", type=int, default=0, required=True)
 args = parser.parse_args()
 
 # ============ environment variable from `torch/distributed/launch.py` script =============
@@ -153,4 +155,4 @@ for epoch in range(10):
     # ============ save checkpoint =============
     # you may want to save optimizer for resume
     if local_rank == 0:
-        torch.save({'state_dict': model.state_dict()})
+        torch.save({'state_dict': model.state_dict()}, f"epoch_{epoch}.pth")
