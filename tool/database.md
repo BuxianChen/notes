@@ -280,7 +280,121 @@ user is rows[0]     # True, 在当前会话里, 只会存一个副本
 
 # faiss
 
-faiss 只支持稠密向量的 IP(内积) 和 L2 距离
+
+## 入门例子
+
+以 IndexFlatL2 为例, 增/删/查以及基础操作:
+
+```python
+import faiss
+import numpy as np
+
+# 向量维数
+d = 128
+# 向量库中向量的维数
+n = 1000
+m = 2
+# top_k
+k = 5
+
+# 注意数据类型要转换为 float32
+xb = np.random.random((n, d)).astype('float32')
+
+# 查询向量也必须是二维的形状
+xq = np.random.random((m, d)).astype('float32')
+
+# 创建索引
+index = faiss.IndexFlatL2(d)
+
+# 添加向量
+index.add(xb)
+
+print("index total vectors:", index.ntotal)  # 1000
+
+# 搜索, k 表示返回 top_k
+D, I = index.search(xq, k=k)
+
+print("search result:")
+print(I)  # np.array, (m, k), 向量在 xb 中的下标
+print(D)  # np.array, (m, k), 对应的距离
+
+# True, IndexFlatL2 类型的索引, 会精确保存原本的向量
+# reconstruct 只接收一个整数作为输入
+bool((index.reconstruct(2) == xb[2]).all())
+
+remove_ids = list(set([int(i[0]) for i in I]))
+
+print("to remove:", remove_ids)
+
+# 注意这里也必须是np.array数组
+index.remove_ids(np.array(remove_ids))
+
+print("index total vectors:", index.ntotal)
+
+D, I = index.search(xq, k=k)
+print("search result:")
+print(I)
+print(D)
+```
+
+输出
+
+```
+index total vectors: 1000
+search result:
+[[284  34 199 356 916]
+ [996 152 191 921  27]]
+[[14.428873 16.254856 16.454624 16.587276 16.673174]
+ [14.197936 14.255698 15.294206 15.601593 15.665497]]
+to remove: [284, 996]
+index total vectors: 998
+search result:
+[[ 34 199 355 915 198]
+ [152 191 920  27 782]]
+[[16.254856 16.454624 16.587276 16.673174 16.87119 ]
+ [14.255698 15.294206 15.601593 15.665497 15.85963 ]]
+```
+
+**支持的距离**
+faiss 只支持稠密向量的 IP(内积) 和 L2 距离, 不支持 cosine 距离, 在对 index 添加向量时, index 不会自动做 L2 归一化, 因此如果调用者希望使用的是 cosine 距离, 必须预先对向量做归一化, 可以通过 `faiss.normalize_L2(xb)` 来做
+
+**train**
+
+faiss 有不同类型的索引(index), 有些需要 train 的步骤, 有些不需要 train 的步骤, 使用模式是先 train, 然后就可以自由增减向量. 也不提供重训接口, 因此如果要实现重训, 必须另外保存原始向量, 新建索引训好后再重新加回去, 使用模式如下
+
+```python
+index.train(x_train)
+
+index.add(x_train)
+index.add(x_other)
+```
+
+(1) 始终另外维护一份原始向量和元数据, 添加与删除时注意要同时维护原始向量和元数据
+(2) 索引更新逻辑
+- 向量数较少时使用 IndexFlatL2
+- 超过一定阈值（如上百万）可切换至 IndexIVFFlat 并用现有数据训练
+- 数据持续增加时，可条件触发重建索引
+- 阈值仅作参考，避免边界情况下频繁重训
+(3) 工程实践要点
+- 可后台训练新 index 并原子切换 (就是索引切换应该瞬时完成,不打断search: 后台训练 + 原子切换 + 并发 search + 锁保护切换)
+
+
+**是否能拿回原始向量**
+
+faiss 中有些类型的索引可以通过 search 拿到对应的向量, 有些索引类型能取回精确的向量, 有些取回的是近似的向量, 有些索引类型不保存向量所以不能取回对应的向量
+
+
+**IndexIDMap**
+
+TODO
+
+**langchain 集成**
+
+langchain 中的 faiss 封装, 只支持两种索引类型 IndexFlatL2 (默认值) 和 IndexFlatIP, 这两种都无需训练, 且能取回原始向量
+
+**其他索引类型**
+
+TODO
 
 # neo4j
 
