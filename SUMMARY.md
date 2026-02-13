@@ -30,6 +30,7 @@
 - [Vim](tool/vim.md)
 - [gcc & make & cmake](tool/make.md)
 - [misc](tool/misc_tools.md)
+- [VSCode](tool/vscode.md)
 
 ## Note
 

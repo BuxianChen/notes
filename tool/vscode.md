@@ -42,6 +42,18 @@ c <- d
 https://update.code.visualstudio.com/1.97.2/win32-x64-archive/stable
 ```
 
+然后直接去安装目录点击 Code.exe, 然后安装相关插件(可能也需要手工下载 vsix 来安装, 为了找到兼容的老插件版本, 可以借助上面的 open-vsx 网站辅助), 直至测试插件功能正常. 之后可以通过点开插件查看插件的 id 与版本号 (插件页右侧), 然后手工构建下载链接:
+
+```
+https://marketplace.visualstudio.com/_apis/public/gallery/publishers/<publisher>/vsextensions/<extension>/<version>/vspackage
+
+例如查看到插件 id 是: ms-vscode-remote.remote-ssh, 版本是 0.120.0, 对应的网址就是
+<publisher> = ms-vscode-remote
+<extension> = remote-ssh
+<version> = 0.120.0
+
+https://marketplace.visualstudio.com/_apis/public/gallery/publishers/ms-vscode-remote/vsextensions/remote-ssh/0.120.0/vspackage
+```
 
 ## VSCode 设置项
 
